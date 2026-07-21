@@ -19,7 +19,7 @@
     "test": "npm run test -w @noter/contracts && npm run test -w @noter/backend && npm run test -w @noter/frontend"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
+    "@types/node": "^26.1.1",
     "typescript": "^6.0.0"
   }
 }
