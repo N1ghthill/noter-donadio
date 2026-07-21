@@ -23,15 +23,29 @@ const SESSION_COOKIE = 'noter_session=valid-session-token-with-more-than-forty-c
 
 class FakeCrmRepository implements CrmRepository {
   public lastWorkspaceId?: string;
-  public lastContactUpdate?: { workspaceId: string; contactId: string; displayName?: string };
+  public lastContactCreate?: Parameters<CrmRepository['createContact']>[0];
+  public lastContactUpdate?: { workspaceId: string; userId: string; contactId: string; displayName?: string };
+  public lastStageUpdate?: Parameters<CrmRepository['updateNegotiationStage']>[0];
   public lastAnalysisDecision?: Parameters<CrmRepository['decideAnalysis']>[0];
   public async listContacts(workspaceId: string): Promise<ContactView[]> {
     this.lastWorkspaceId = workspaceId;
     return [];
   }
-  public async createContact(): Promise<ContactView> { throw new Error('not used'); }
+  public async createContact(input: Parameters<CrmRepository['createContact']>[0]): Promise<ContactView> {
+    this.lastContactCreate = input;
+    return {
+      id: '3a3db76b-c51a-4584-ab4b-6d3e70952e44',
+      displayName: input.displayName,
+      phoneNumber: input.phoneNumber,
+      tags: [...input.tags],
+      source: 'manual',
+      status: 'active',
+      notes: input.notes ?? null,
+      lastInteractionAt: null,
+    };
+  }
   public async updateContact(input: {
-    workspaceId: string; contactId: string; displayName?: string;
+    workspaceId: string; userId: string; contactId: string; displayName?: string;
   }): Promise<ContactView> {
     this.lastContactUpdate = input;
     return {
@@ -66,11 +80,13 @@ class FakeCrmRepository implements CrmRepository {
       },
       messages: [],
       analyses: [],
+      auditTrail: [],
     };
   }
   public async updateNegotiationStage(input: {
-    workspaceId: string; negotiationId: string; stage: NegotiationStage; expectedVersion: number;
+    workspaceId: string; userId: string; negotiationId: string; stage: NegotiationStage; expectedVersion: number;
   }): Promise<NegotiationView> {
+    this.lastStageUpdate = input;
     if (input.expectedVersion !== 1) throw new CrmConflictError();
     return {
       id: input.negotiationId,
@@ -188,6 +204,7 @@ test('edição de contato valida sessão e encaminha apenas dados aceitos', asyn
   assert.equal(response.statusCode, 200);
   assert.deepEqual(repository.lastContactUpdate, {
     workspaceId: WORKSPACE_ID,
+    userId: USER_ID,
     contactId,
     displayName: 'Nome atualizado',
   });
@@ -221,6 +238,33 @@ test('cadastro recusa telefone sem dígitos suficientes na fronteira HTTP', asyn
   });
   assert.equal(response.statusCode, 400);
   assert.deepEqual(response.json(), { error: 'invalid_request' });
+});
+
+test('cadastro e mudança de etapa encaminham o usuário autenticado para auditoria', async (context) => {
+  const repository = new FakeCrmRepository();
+  const app = buildApp({
+    crmRepository: repository,
+    sessionAuthenticator: new FakeSessionAuthenticator(),
+  });
+  context.after(async () => app.close());
+  const created = await app.inject({
+    method: 'POST',
+    url: '/api/contacts',
+    headers: { cookie: SESSION_COOKIE },
+    payload: { displayName: 'Contato fictício', phoneNumber: '5571000000000' },
+  });
+  const moved = await app.inject({
+    method: 'PATCH',
+    url: `/api/negotiations/${NEGOTIATION_ID}/stage`,
+    headers: { cookie: SESSION_COOKIE },
+    payload: { stage: 'qualified', expectedVersion: 1 },
+  });
+  assert.equal(created.statusCode, 201);
+  assert.equal(moved.statusCode, 200);
+  assert.equal(repository.lastContactCreate?.workspaceId, WORKSPACE_ID);
+  assert.equal(repository.lastContactCreate?.userId, USER_ID);
+  assert.equal(repository.lastStageUpdate?.workspaceId, WORKSPACE_ID);
+  assert.equal(repository.lastStageUpdate?.userId, USER_ID);
 });
 
 test('aceita sugestões editadas com identidade e workspace da sessão', async (context) => {

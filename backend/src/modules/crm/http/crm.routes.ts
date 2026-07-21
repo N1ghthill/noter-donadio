@@ -31,17 +31,17 @@ export function registerCrmRoutes(
   });
 
   app.post('/api/contacts', async (request, reply) => {
-    const workspaceId = await authenticatedWorkspace(request, options.sessionAuthenticator);
-    if (!workspaceId) return reply.code(401).send({ error: 'unauthorized' });
+    const user = await authenticatedUser(request, options.sessionAuthenticator);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
     const body = z.object({ displayName: z.string().trim().min(1).max(255), phoneNumber: phoneSchema, tags: z.array(z.string().trim().min(1).max(50)).max(20).default([]), notes: z.string().max(10_000).optional() }).safeParse(request.body);
     if (!body.success) return reply.code(400).send({ error: 'invalid_request' });
-    const contact = await options.repository.createContact({ workspaceId, ...body.data });
+    const contact = await options.repository.createContact({ workspaceId: user.workspaceId, userId: user.userId, ...body.data });
     return reply.code(201).send(contact);
   });
 
   app.patch('/api/contacts/:id', async (request, reply) => {
-    const workspaceId = await authenticatedWorkspace(request, options.sessionAuthenticator);
-    if (!workspaceId) return reply.code(401).send({ error: 'unauthorized' });
+    const user = await authenticatedUser(request, options.sessionAuthenticator);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
     const params = z.object({ id: z.uuid() }).safeParse(request.params);
     const body = z.object({
       displayName: z.string().trim().min(1).max(255).optional(),
@@ -52,7 +52,8 @@ export function registerCrmRoutes(
     if (!params.success || !body.success) return reply.code(400).send({ error: 'invalid_request' });
     try {
       return await options.repository.updateContact({
-        workspaceId,
+        workspaceId: user.workspaceId,
+        userId: user.userId,
         contactId: params.data.id,
         ...body.data,
       });
@@ -84,13 +85,18 @@ export function registerCrmRoutes(
   });
 
   app.patch('/api/negotiations/:id/stage', async (request, reply) => {
-    const workspaceId = await authenticatedWorkspace(request, options.sessionAuthenticator);
-    if (!workspaceId) return reply.code(401).send({ error: 'unauthorized' });
+    const user = await authenticatedUser(request, options.sessionAuthenticator);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
     const params = z.object({ id: z.uuid() }).safeParse(request.params);
     const body = z.object({ stage: stageSchema, expectedVersion: z.number().int().positive() }).safeParse(request.body);
     if (!params.success || !body.success) return reply.code(400).send({ error: 'invalid_request' });
     try {
-      return await options.repository.updateNegotiationStage({ workspaceId, negotiationId: params.data.id, ...body.data });
+      return await options.repository.updateNegotiationStage({
+        workspaceId: user.workspaceId,
+        userId: user.userId,
+        negotiationId: params.data.id,
+        ...body.data,
+      });
     } catch (error: unknown) {
       if (error instanceof CrmNotFoundError) return reply.code(404).send({ error: 'not_found' });
       if (error instanceof CrmConflictError) return reply.code(409).send({ error: 'version_conflict' });

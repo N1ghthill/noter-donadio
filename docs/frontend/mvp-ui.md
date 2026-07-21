@@ -14,6 +14,7 @@ A aplicação React é uma interface autenticada para o CRM e contém:
 - movimentação alternativa por seletor de etapa, acessível via teclado;
 - detalhe da negociação com contato, histórico, transcrições e sugestões estruturadas de IA;
 - edição e confirmação explícita de etapa/tags sugeridas, ou registro de que a sugestão foi ignorada;
+- histórico de auditoria com ator, instante, campos afetados, versões e transições de etapa;
 - caixa de conversas ordenada pela mensagem mais recente, com histórico reconciliado via REST;
 - formulário local para simular recebimento idempotente de texto ou áudio sem enviar mensagens;
 - indicador de conexão em tempo real e reconciliação REST automática;

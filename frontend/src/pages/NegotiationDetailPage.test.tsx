@@ -39,6 +39,12 @@ describe('detalhe da negociação', () => {
         suggestedStage: 'proposal_sent', confidenceScore: '0.91', promptVersion: 'demo-v1',
         modelUsed: 'demo-local', createdAt: '2026-07-20T18:31:00.000Z', decision: null,
       }],
+      auditTrail: [{
+        id: 'audit-1', action: 'negotiation_stage_changed', actorDisplayName: 'Admin fictício',
+        changedFields: ['stage'], previousVersion: 1, resultingVersion: 2,
+        details: { previousStage: 'lead', resultingStage: 'qualified' },
+        createdAt: '2026-07-20T18:32:00.000Z',
+      }],
     }), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
 
@@ -59,6 +65,9 @@ describe('detalhe da negociação', () => {
     expect(screen.getByRole('button', { name: 'Aplicar seleção' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Ignorar sugestão' })).toBeInTheDocument();
     expect(screen.getByText('A IA apenas sugere; toda aplicação exige confirmação e fica auditada.')).toBeInTheDocument();
+    expect(screen.getByText('Etapa alterada manualmente')).toBeInTheDocument();
+    expect(screen.getByText('Lead → Qualificado')).toBeInTheDocument();
+    expect(screen.getByText(/Admin fictício/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ignorar sugestão' }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(

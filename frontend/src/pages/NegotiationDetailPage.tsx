@@ -3,7 +3,16 @@ import { Link, useParams } from 'react-router-dom';
 
 import { ApiError, api } from '../api/client.js';
 import { EmptyState, ErrorState, LoadingState } from '../components/Feedback.js';
-import { formatDate, formatMoney, PROCESSING_LABELS, SENTIMENT_LABELS, STAGE_LABELS } from '../lib/format.js';
+import {
+  AUDIT_ACTION_LABELS,
+  AUDIT_FIELD_LABELS,
+  formatDate,
+  formatDateTime,
+  formatMoney,
+  PROCESSING_LABELS,
+  SENTIMENT_LABELS,
+  STAGE_LABELS,
+} from '../lib/format.js';
 import type { NegotiationDetail } from '../types/api.js';
 import { useRealtime } from '../realtime/RealtimeContext.js';
 
@@ -144,6 +153,26 @@ export function NegotiationDetailPage() {
             </div>
           )}
         </article>
+      </section>
+
+      <section className="panel audit-panel">
+        <div className="panel-heading"><div><p className="eyebrow">Auditoria</p><h2>Histórico de atividades</h2></div><small>Até 50 ações recentes</small></div>
+        {detail.auditTrail.length === 0 ? (
+          <EmptyState title="Nenhuma ação auditada" description="As próximas alterações manuais aparecerão aqui." />
+        ) : (
+          <ol className="audit-list">
+            {detail.auditTrail.map((event) => (
+              <li key={event.id}>
+                <div><strong>{AUDIT_ACTION_LABELS[event.action]}</strong><small>{event.actorDisplayName} · {formatDateTime(event.createdAt)}</small></div>
+                {event.details.previousStage && event.details.resultingStage ? (
+                  <span>{STAGE_LABELS[event.details.previousStage]} → {STAGE_LABELS[event.details.resultingStage]}</span>
+                ) : event.changedFields.length ? (
+                  <span>Campos: {event.changedFields.map((field) => AUDIT_FIELD_LABELS[field] ?? field).join(', ')}</span>
+                ) : null}
+              </li>
+            ))}
+          </ol>
+        )}
       </section>
 
       <section className="panel timeline-panel">

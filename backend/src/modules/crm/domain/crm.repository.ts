@@ -59,6 +59,21 @@ export interface NegotiationDetailView extends NegotiationView {
     readonly createdAt: string;
     readonly decision: AnalysisDecisionView | null;
   }[];
+  readonly auditTrail: readonly AuditEventView[];
+}
+
+export interface AuditEventView {
+  readonly id: string;
+  readonly action: 'contact_created' | 'contact_updated' | 'negotiation_stage_changed' | 'analysis_accepted' | 'analysis_ignored';
+  readonly actorDisplayName: string;
+  readonly changedFields: readonly string[];
+  readonly previousVersion: number | null;
+  readonly resultingVersion: number | null;
+  readonly details: {
+    readonly previousStage?: NegotiationStage | undefined;
+    readonly resultingStage?: NegotiationStage | undefined;
+  };
+  readonly createdAt: string;
 }
 
 export interface AnalysisDecisionView {
@@ -79,6 +94,7 @@ export interface CrmRepository {
   listContacts(workspaceId: string, search: string | undefined, limit: number): Promise<ContactView[]>;
   createContact(input: {
     workspaceId: string;
+    userId: string;
     displayName: string;
     phoneNumber: string;
     tags: readonly string[];
@@ -86,6 +102,7 @@ export interface CrmRepository {
   }): Promise<ContactView>;
   updateContact(input: {
     workspaceId: string;
+    userId: string;
     contactId: string;
     displayName?: string | undefined;
     phoneNumber?: string | undefined;
@@ -96,6 +113,7 @@ export interface CrmRepository {
   getNegotiation(workspaceId: string, negotiationId: string): Promise<NegotiationDetailView>;
   updateNegotiationStage(input: {
     workspaceId: string;
+    userId: string;
     negotiationId: string;
     stage: NegotiationStage;
     expectedVersion: number;

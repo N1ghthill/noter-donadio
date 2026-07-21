@@ -17,7 +17,7 @@ Nenhum token, telefone ou conteúdo deve aparecer em logs ou exemplos versionado
 - `POST /api/contacts`: cria contato manual;
 - `PATCH /api/contacts/:id`: edita nome, telefone, tags e observações do contato;
 - `GET /api/negotiations`: lista o pipeline, opcionalmente filtrado por `stage`;
-- `GET /api/negotiations/:id`: retorna contato, até 100 mensagens cronológicas, mídia/transcrição e até 20 análises recentes;
+- `GET /api/negotiations/:id`: retorna contato, até 100 mensagens cronológicas, mídia/transcrição, até 20 análises e até 50 ações auditadas recentes;
 - `PATCH /api/negotiations/:id/stage`: mudança manual com `expectedVersion` para controle de concorrência.
 - `POST /api/negotiations/:id/analyses/:analysisId/decision`: aceita uma seleção editável de etapa/tags ou ignora a sugestão, com UUID idempotente e `expectedVersion`.
 - `GET /api/conversations`: lista até 50 conversas, usando a mensagem mais recente de cada negociação;
@@ -31,6 +31,8 @@ Uma versão desatualizada na mudança de estágio retorna `409 version_conflict`
 A decisão de análise usa `decisionId` UUID criado pelo cliente. `accepted` exige pelo menos `stage` ou `tags`; `ignored` não aceita campos aplicáveis. Uma análise possui uma única decisão imutável. Repetir o mesmo UUID e payload é idempotente; outra decisão para a mesma análise retorna `409 decision_conflict`. Aceites atualizam CRM, auditoria e outbox na mesma transação.
 
 O detalhe nunca recebe `workspaceId` do navegador: o isolamento é derivado exclusivamente da sessão. A edição de contato produz `contact.updated` na outbox contendo somente IDs e nomes dos campos alterados, sem telefone, notas ou conteúdo.
+
+Criação e edição manual de contato, mudança de etapa e decisão sobre análise gravam `audit_events` na mesma transação da ação. A resposta expõe nome do usuário, instante, campos alterados, versões e transição de etapa quando aplicável. Telefone, observações, mensagens, transcrições e valores completos de tags não são copiados para a auditoria.
 
 ## Processos do backend
 

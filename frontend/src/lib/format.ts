@@ -24,6 +24,22 @@ export const SENTIMENT_LABELS = {
   urgent: 'urgente',
 } as const;
 
+export const AUDIT_ACTION_LABELS = {
+  contact_created: 'Contato criado manualmente',
+  contact_updated: 'Contato atualizado',
+  negotiation_stage_changed: 'Etapa alterada manualmente',
+  analysis_accepted: 'Sugestão da IA aplicada',
+  analysis_ignored: 'Sugestão da IA ignorada',
+} as const;
+
+export const AUDIT_FIELD_LABELS: Record<string, string> = {
+  displayName: 'nome',
+  phoneNumber: 'telefone',
+  tags: 'tags',
+  notes: 'observações',
+  stage: 'etapa',
+};
+
 export function formatMoney(value: string | null, currency = 'BRL'): string {
   if (value === null) return 'Valor não informado';
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency }).format(Number(value));
@@ -32,4 +48,8 @@ export function formatMoney(value: string | null, currency = 'BRL'): string {
 export function formatDate(value: string | null): string {
   if (!value) return 'Sem interação registrada';
   return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium' }).format(new Date(value));
+}
+
+export function formatDateTime(value: string): string {
+  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 }

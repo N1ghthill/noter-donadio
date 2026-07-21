@@ -8,6 +8,7 @@ import {
   CrmNotFoundError,
   CrmTagLimitError,
   type AnalysisDecisionView,
+  type AuditEventView,
   type ContactView,
   type CrmRepository,
   type NegotiationDetailView,
@@ -39,26 +40,44 @@ export class PrismaCrmRepository implements CrmRepository {
 
   public async createContact(input: {
     workspaceId: string;
+    userId: string;
     displayName: string;
     phoneNumber: string;
     tags: readonly string[];
     notes?: string | undefined;
   }) {
-    const contact = await this.prisma.contact.create({
-      data: {
-        workspaceId: input.workspaceId,
-        displayName: input.displayName,
-        phoneNumber: normalizePhoneNumber(input.phoneNumber),
-        tags: [...input.tags],
-        notes: input.notes ?? null,
-        source: 'manual',
-      },
+    return this.prisma.$transaction(async (transaction) => {
+      const contact = await transaction.contact.create({
+        data: {
+          workspaceId: input.workspaceId,
+          displayName: input.displayName,
+          phoneNumber: normalizePhoneNumber(input.phoneNumber),
+          tags: [...input.tags],
+          notes: input.notes ?? null,
+          source: 'manual',
+        },
+      });
+      await transaction.auditEvent.create({
+        data: {
+          workspaceId: input.workspaceId,
+          userId: input.userId,
+          contactId: contact.id,
+          action: 'contact_created',
+          changedFields: [
+            'displayName',
+            'phoneNumber',
+            ...(input.tags.length ? ['tags'] : []),
+            ...(input.notes !== undefined ? ['notes'] : []),
+          ],
+        },
+      });
+      return toContactView(contact);
     });
-    return toContactView(contact);
   }
 
   public async updateContact(input: {
     workspaceId: string;
+    userId: string;
     contactId: string;
     displayName?: string | undefined;
     phoneNumber?: string | undefined;
@@ -97,6 +116,15 @@ export class PrismaCrmRepository implements CrmRepository {
           payload: { contactId: input.contactId, workspaceId: input.workspaceId, changedFields },
         },
       });
+      await transaction.auditEvent.create({
+        data: {
+          workspaceId: input.workspaceId,
+          userId: input.userId,
+          contactId: input.contactId,
+          action: 'contact_updated',
+          changedFields,
+        },
+      });
       return toContactView(contact);
     });
   }
@@ -128,6 +156,15 @@ export class PrismaCrmRepository implements CrmRepository {
       },
     });
     if (!negotiation) throw new CrmNotFoundError();
+    const auditTrail = await this.prisma.auditEvent.findMany({
+      where: {
+        workspaceId,
+        OR: [{ negotiationId }, { contactId: negotiation.contactId }],
+      },
+      include: { user: { select: { displayName: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
 
     return {
       ...toNegotiationView(negotiation),
@@ -161,11 +198,13 @@ export class PrismaCrmRepository implements CrmRepository {
         createdAt: analysis.createdAt.toISOString(),
         decision: analysis.decision ? toAnalysisDecisionView(analysis.decision) : null,
       })),
+      auditTrail: auditTrail.map(toAuditEventView),
     };
   }
 
   public async updateNegotiationStage(input: {
     workspaceId: string;
+    userId: string;
     negotiationId: string;
     stage: NegotiationStage;
     expectedVersion: number;
@@ -174,7 +213,7 @@ export class PrismaCrmRepository implements CrmRepository {
       return await this.prisma.$transaction(async (transaction) => {
       const current = await transaction.negotiation.findFirst({
         where: { id: input.negotiationId, workspaceId: input.workspaceId },
-        select: { id: true },
+        select: { id: true, contactId: true, stage: true, version: true },
       });
       if (!current) throw new CrmNotFoundError();
 
@@ -203,6 +242,19 @@ export class PrismaCrmRepository implements CrmRepository {
             workspaceId: input.workspaceId,
             stage: input.stage,
           },
+        },
+      });
+      await transaction.auditEvent.create({
+        data: {
+          workspaceId: input.workspaceId,
+          userId: input.userId,
+          contactId: current.contactId,
+          negotiationId: input.negotiationId,
+          action: 'negotiation_stage_changed',
+          changedFields: ['stage'],
+          previousVersion: current.version,
+          resultingVersion: current.version + 1,
+          details: { previousStage: current.stage, resultingStage: input.stage },
         },
       });
 
@@ -259,7 +311,7 @@ export class PrismaCrmRepository implements CrmRepository {
           },
           include: {
             decision: true,
-            negotiation: { select: { contactId: true, version: true } },
+            negotiation: { select: { contactId: true, version: true, stage: true } },
           },
         });
         if (!analysis) throw new CrmNotFoundError();
@@ -330,6 +382,23 @@ export class PrismaCrmRepository implements CrmRepository {
             resultingNegotiationVersion: resultingVersion,
           },
         });
+        await transaction.auditEvent.create({
+          data: {
+            workspaceId: input.workspaceId,
+            userId: input.userId,
+            contactId: analysis.negotiation.contactId,
+            negotiationId: input.negotiationId,
+            action: input.decision === 'accepted' ? 'analysis_accepted' : 'analysis_ignored',
+            changedFields: input.decision === 'accepted'
+              ? [...(input.stage !== undefined ? ['stage'] : []), ...(requestedTags.length ? ['tags'] : [])]
+              : [],
+            previousVersion: analysis.negotiation.version,
+            resultingVersion,
+            details: input.decision === 'accepted' && input.stage !== undefined
+              ? { previousStage: analysis.negotiation.stage, resultingStage: input.stage }
+              : {},
+          },
+        });
         events.push({
           workspaceId: input.workspaceId,
           aggregateType: 'analysis_decision',
@@ -382,6 +451,44 @@ function toAnalysisDecisionView(decision: {
     resultingNegotiationVersion: decision.resultingNegotiationVersion,
     createdAt: decision.createdAt.toISOString(),
   };
+}
+
+function toAuditEventView(event: {
+  id: string;
+  action: AuditEventView['action'];
+  changedFields: string[];
+  previousVersion: number | null;
+  resultingVersion: number | null;
+  details: unknown;
+  createdAt: Date;
+  user: { displayName: string };
+}): AuditEventView {
+  return {
+    id: event.id,
+    action: event.action,
+    actorDisplayName: event.user.displayName,
+    changedFields: event.changedFields,
+    previousVersion: event.previousVersion,
+    resultingVersion: event.resultingVersion,
+    details: toAuditDetails(event.details),
+    createdAt: event.createdAt.toISOString(),
+  };
+}
+
+function toAuditDetails(value: unknown): AuditEventView['details'] {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return {};
+  const details = value as Record<string, unknown>;
+  const stage = (name: string) => isNegotiationStage(details[name]) ? details[name] : undefined;
+  return {
+    ...(stage('previousStage') ? { previousStage: stage('previousStage') } : {}),
+    ...(stage('resultingStage') ? { resultingStage: stage('resultingStage') } : {}),
+  };
+}
+
+function isNegotiationStage(value: unknown): value is NegotiationStage {
+  return typeof value === 'string' && [
+    'lead', 'qualified', 'proposal_sent', 'in_negotiation', 'on_hold', 'closed_won', 'closed_lost',
+  ].includes(value);
 }
 
 function normalizeSearchPhone(search: string): string {

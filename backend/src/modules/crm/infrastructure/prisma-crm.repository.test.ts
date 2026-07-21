@@ -12,6 +12,7 @@ test('aceite é atômico, auditável e idempotente no PostgreSQL', async (contex
   const prisma = createPrismaClient(databaseUrl);
   const workspaceId = randomUUID();
   context.after(async () => {
+    await prisma.auditEvent.deleteMany({ where: { workspaceId } });
     await prisma.workspace.deleteMany({ where: { id: workspaceId } });
     await prisma.$disconnect();
   });
@@ -81,6 +82,27 @@ test('aceite é atômico, auditável e idempotente no PostgreSQL', async (contex
   });
 
   const repository = new PrismaCrmRepository(prisma);
+  const createdContact = await repository.createContact({
+    workspaceId,
+    userId,
+    displayName: 'Outro contato fictício',
+    phoneNumber: '5571000000001',
+    tags: [],
+    notes: 'Observação fictícia que não pode ser copiada para a auditoria.',
+  });
+  await repository.updateContact({
+    workspaceId,
+    userId,
+    contactId,
+    displayName: 'Contato fictício atualizado',
+  });
+  await repository.updateNegotiationStage({
+    workspaceId,
+    userId,
+    negotiationId,
+    stage: 'qualified',
+    expectedVersion: 1,
+  });
   const input = {
     workspaceId,
     userId,
@@ -88,7 +110,7 @@ test('aceite é atômico, auditável e idempotente no PostgreSQL', async (contex
     analysisId,
     decisionId,
     decision: 'accepted' as const,
-    expectedVersion: 1,
+    expectedVersion: 2,
     stage: 'proposal_sent' as const,
     tags: ['prioridade'],
   };
@@ -96,18 +118,34 @@ test('aceite é atômico, auditável e idempotente no PostgreSQL', async (contex
   const replay = await repository.decideAnalysis(input);
 
   assert.deepEqual(replay, first);
-  assert.equal(first.resultingNegotiationVersion, 2);
+  assert.equal(first.resultingNegotiationVersion, 3);
   const negotiation = await prisma.negotiation.findUniqueOrThrow({
     where: { id: negotiationId },
     include: { contact: true },
   });
   assert.equal(negotiation.stage, 'proposal_sent');
-  assert.equal(negotiation.version, 2);
+  assert.equal(negotiation.version, 3);
   assert.deepEqual(negotiation.contact.tags, ['existente', 'prioridade']);
   assert.equal(await prisma.analysisDecision.count({ where: { analysisId } }), 1);
   assert.equal(await prisma.outboxEvent.count({
     where: { eventType: 'analysis.decision.changed', aggregateId: decisionId },
   }), 1);
+  const auditEvents = await prisma.auditEvent.findMany({
+    where: { workspaceId },
+    orderBy: { createdAt: 'asc' },
+  });
+  assert.deepEqual(auditEvents.map((event) => event.action), [
+    'contact_created',
+    'contact_updated',
+    'negotiation_stage_changed',
+    'analysis_accepted',
+  ]);
+  assert.equal(auditEvents[0]?.contactId, createdContact.id);
+  assert.equal(JSON.stringify(auditEvents).includes('5571000000001'), false);
+  assert.equal(JSON.stringify(auditEvents).includes('Observação fictícia'), false);
+  const detail = await repository.getNegotiation(workspaceId, negotiationId);
+  assert.equal(detail.auditTrail.length, 3);
+  assert.equal(detail.auditTrail.every((event) => event.actorDisplayName === 'Administrador fictício'), true);
   await assert.rejects(
     repository.decideAnalysis({
       ...input,

@@ -123,3 +123,9 @@ Jobs e eventos carregam apenas IDs e estado. Resultados permanecem no PostgreSQL
 O usuário pode aceitar uma seleção editável de etapa e tags ou ignorar uma análise concluída. Cada análise possui no máximo uma decisão, vinculada ao usuário autenticado. Um UUID fornecido pelo cliente permite reentrega idempotente; decisões diferentes para a mesma análise são recusadas.
 
 No aceite, decisão, atualização da negociação, união das tags do contato e eventos da outbox são gravados em uma transação serializável com controle otimista da versão da negociação. A decisão registra os valores efetivamente aplicados e a versão resultante. Entidades de valor, produto e prazo continuam apenas informativas até receberem contratos próprios de confirmação e precedência manual.
+
+## ADR-020 — Auditoria manual é append-only e minimizada
+
+Criação e edição manual de contato, mudança de etapa e decisões sobre sugestões geram um `AuditEvent` na mesma transação da mutação. O registro guarda workspace, usuário, ação, campos afetados, versões e transição de etapa quando aplicável. Eventos não são atualizados depois da criação.
+
+A trilha não duplica telefone, observações, conteúdo de mensagens, transcrições ou valores completos de tags. O detalhe da negociação reúne ações vinculadas à negociação e ao contato correspondente, limitado às 50 mais recentes e sempre filtrado pelo workspace autenticado. Exclusão futura por política de privacidade pode remover a referência ao contato ou à negociação sem apagar a identificação do ator e da ação enquanto o workspace existir.

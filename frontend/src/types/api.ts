@@ -68,6 +68,21 @@ export interface NegotiationDetail extends Negotiation {
     createdAt: string;
     decision: AnalysisDecision | null;
   }>;
+  auditTrail: AuditEvent[];
+}
+
+export interface AuditEvent {
+  id: string;
+  action: 'contact_created' | 'contact_updated' | 'negotiation_stage_changed' | 'analysis_accepted' | 'analysis_ignored';
+  actorDisplayName: string;
+  changedFields: string[];
+  previousVersion: number | null;
+  resultingVersion: number | null;
+  details: {
+    previousStage?: NegotiationStage;
+    resultingStage?: NegotiationStage;
+  };
+  createdAt: string;
 }
 
 export interface AnalysisDecision {

@@ -87,6 +87,14 @@ enum AnalysisDecisionKind {
   ignored
 }
 
+enum AuditAction {
+  contact_created
+  contact_updated
+  negotiation_stage_changed
+  analysis_accepted
+  analysis_ignored
+}
+
 model Workspace {
   id        String   @id @default(uuid()) @db.Uuid
   slug      String   @unique @db.VarChar(100)
@@ -103,6 +111,7 @@ model Workspace {
   outboxEvents      OutboxEvent[]
   users             User[]
   analysisDecisions AnalysisDecision[]
+  auditEvents       AuditEvent[]
 
   @@map("workspaces")
 }
@@ -121,6 +130,7 @@ model User {
   workspace         Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   sessions          Session[]
   analysisDecisions AnalysisDecision[]
+  auditEvents       AuditEvent[]
 
   @@unique([workspaceId, email])
   @@unique([workspaceId, id])
@@ -197,6 +207,7 @@ model Contact {
   workspace         Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   negotiations      Negotiation[]
   messages          Message[]
+  auditEvents       AuditEvent[]
 
   @@unique([workspaceId, jid])
   @@unique([workspaceId, id])
@@ -231,6 +242,7 @@ model Negotiation {
   messages           Message[]
   aiAnalyses         AiAnalysis[]
   analysisDecisions  AnalysisDecision[]
+  auditEvents        AuditEvent[]
 
   @@unique([workspaceId, id])
   @@index([workspaceId, stage])
@@ -356,6 +368,29 @@ model AnalysisDecision {
   @@index([workspaceId, createdAt])
   @@index([negotiationId, createdAt])
   @@map("analysis_decisions")
+}
+
+model AuditEvent {
+  id               String      @id @default(uuid()) @db.Uuid
+  workspaceId      String      @map("workspace_id") @db.Uuid
+  userId           String      @map("user_id") @db.Uuid
+  contactId        String?     @map("contact_id") @db.Uuid
+  negotiationId    String?     @map("negotiation_id") @db.Uuid
+  action           AuditAction
+  changedFields    String[]    @default([]) @map("changed_fields")
+  previousVersion  Int?        @map("previous_version")
+  resultingVersion Int?        @map("resulting_version")
+  details          Json        @default("{}")
+  createdAt        DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  workspace        Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user             User        @relation(fields: [workspaceId, userId], references: [workspaceId, id], onDelete: Restrict)
+  contact          Contact?    @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  negotiation      Negotiation? @relation(fields: [negotiationId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, createdAt])
+  @@index([contactId, createdAt])
+  @@index([negotiationId, createdAt])
+  @@map("audit_events")
 }
 
 model OutboxEvent {
