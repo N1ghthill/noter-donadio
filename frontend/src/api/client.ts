@@ -1,6 +1,6 @@
 import type { NegotiationStage } from '@noter/contracts';
 
-import type { Contact, Negotiation, NegotiationDetail, SessionUser } from '../types/api.js';
+import type { Contact, Negotiation, NegotiationDetail, SessionUser, WhatsappConnection } from '../types/api.js';
 
 export class ApiError extends Error {
   public constructor(
@@ -92,5 +92,17 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(input),
     });
+  },
+
+  async whatsappConnection() {
+    return request<WhatsappConnection>('/api/whatsapp/connection');
+  },
+
+  async startWhatsappSetup() {
+    return request<WhatsappConnection>('/api/whatsapp/setup', { method: 'POST' });
+  },
+
+  async simulateWhatsappConnection() {
+    return request<WhatsappConnection>('/api/whatsapp/demo/connect', { method: 'POST' });
   },
 };

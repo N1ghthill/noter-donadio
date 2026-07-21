@@ -64,4 +64,15 @@ describe('cliente HTTP', () => {
       body: JSON.stringify({ displayName: 'Nome atualizado' }),
     }));
   });
+
+  it('inicia setup e leitura simulada sem enviar dados do workspace', async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => new Response(JSON.stringify({ status: 'connected' }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await api.startWhatsappSetup();
+    await api.simulateWhatsappConnection();
+
+    expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/whatsapp/setup', expect.objectContaining({ method: 'POST' }));
+    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/whatsapp/demo/connect', expect.objectContaining({ method: 'POST' }));
+  });
 });

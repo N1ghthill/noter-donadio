@@ -47,3 +47,4 @@ A API disponível nesta fase está documentada em [`docs/api/mvp-rest.md`](docs/
 O modelo de login, cookies, sessões e bootstrap está em [`docs/security/authentication.md`](docs/security/authentication.md).
 O fluxo da interface e sua execução local estão em [`docs/frontend/mvp-ui.md`](docs/frontend/mvp-ui.md).
 O fluxo Socket.IO, isolamento por workspace e contratos de eventos estão em [`docs/realtime/events.md`](docs/realtime/events.md).
+O setup simulado e a fronteira do adapter de WhatsApp estão em [`docs/integrations/whatsapp.md`](docs/integrations/whatsapp.md).

@@ -19,6 +19,9 @@ Nenhum token, telefone ou conteúdo deve aparecer em logs ou exemplos versionado
 - `GET /api/negotiations`: lista o pipeline, opcionalmente filtrado por `stage`;
 - `GET /api/negotiations/:id`: retorna contato, até 100 mensagens cronológicas, mídia/transcrição e até 20 análises recentes;
 - `PATCH /api/negotiations/:id/stage`: mudança manual com `expectedVersion` para controle de concorrência.
+- `GET /api/whatsapp/connection`: consulta o estado da conta principal;
+- `POST /api/whatsapp/setup`: inicia setup e retorna QR efêmero no adapter falso;
+- `POST /api/whatsapp/demo/connect`: simula a leitura do QR, disponível somente quando o adapter falso está habilitado.
 
 Uma versão desatualizada na mudança de estágio retorna `409 version_conflict`. O cliente deve recarregar a negociação antes de tentar novamente.
 
@@ -35,3 +38,4 @@ npm run start:realtime -w @noter/backend
 O processo da outbox publica `message.text.ingested`, `message.audio.ingested` e eventos de atualização do CRM nas filas correspondentes. Os jobs contêm IDs e metadados de roteamento, nunca o conteúdo integral da conversa.
 
 O protocolo de atualização e seus contratos sanitizados estão documentados em [`docs/realtime/events.md`](../realtime/events.md).
+O fluxo de setup e os limites do adapter falso estão em [`docs/integrations/whatsapp.md`](../integrations/whatsapp.md).

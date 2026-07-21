@@ -8,18 +8,28 @@ import { AuthService } from './modules/auth/domain/auth.service.js';
 import { ScryptPasswordHasher } from './modules/auth/domain/password-hasher.js';
 import { PrismaAuthRepository } from './modules/auth/infrastructure/prisma-auth.repository.js';
 import { attachRealtimeServer } from './modules/realtime/http/realtime.server.js';
+import { WhatsappConnectionService } from './modules/whatsapp/domain/whatsapp-connection.js';
+import { FakeWhatsappGateway } from './modules/whatsapp/infrastructure/fake-whatsapp.gateway.js';
+import { PrismaWhatsappConnectionRepository } from './modules/whatsapp/infrastructure/prisma-whatsapp.repository.js';
 
 const environment = readEnvironment();
 const prisma = createPrismaClient(environment.DATABASE_URL);
 const ingestionRepository = new PrismaMessageIngestionRepository(prisma);
 const ingestionService = new MessageIngestionService(ingestionRepository);
 const authService = new AuthService(new PrismaAuthRepository(prisma), new ScryptPasswordHasher());
+const whatsappService = environment.WHATSAPP_ADAPTER === 'fake'
+  ? new WhatsappConnectionService(
+      new PrismaWhatsappConnectionRepository(prisma),
+      new FakeWhatsappGateway(),
+    )
+  : undefined;
 const app = buildApp({
   ingestionService,
   internalIngestionToken: environment.INTERNAL_INGESTION_TOKEN,
   crmRepository: new PrismaCrmRepository(prisma),
   authService,
   secureCookie: environment.NODE_ENV === 'production',
+  ...(whatsappService ? { whatsappService } : {}),
 });
 attachRealtimeServer(app, { sessionAuthenticator: authService, redisUrl: environment.REDIS_URL });
 

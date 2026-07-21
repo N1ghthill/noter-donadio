@@ -10,6 +10,8 @@ import type { CrmRepository } from './modules/crm/domain/crm.repository.js';
 import { registerCrmRoutes } from './modules/crm/http/crm.routes.js';
 import type { AuthService, SessionAuthenticator } from './modules/auth/domain/auth.service.js';
 import { registerAuthRoutes } from './modules/auth/http/auth.routes.js';
+import type { WhatsappConnectionService } from './modules/whatsapp/domain/whatsapp-connection.js';
+import { registerWhatsappRoutes } from './modules/whatsapp/http/whatsapp.routes.js';
 
 interface AppOptions {
   readonly ingestionService?: MessageIngestionService;
@@ -18,6 +20,7 @@ interface AppOptions {
   readonly authService?: AuthService;
   readonly sessionAuthenticator?: SessionAuthenticator;
   readonly secureCookie?: boolean;
+  readonly whatsappService?: WhatsappConnectionService;
 }
 
 export function buildApp(options: AppOptions = {}): FastifyInstance {
@@ -90,6 +93,13 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
   if (options.crmRepository && sessionAuthenticator) {
     registerCrmRoutes(app, {
       repository: options.crmRepository,
+      sessionAuthenticator,
+    });
+  }
+
+  if (options.whatsappService && sessionAuthenticator) {
+    registerWhatsappRoutes(app, {
+      service: options.whatsappService,
       sessionAuthenticator,
     });
   }

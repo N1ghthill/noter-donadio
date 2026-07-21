@@ -38,6 +38,15 @@ Todos são emitidos como `crm.updated`:
 
 ```json
 {
+  "type": "whatsapp.connection.changed",
+  "workspaceId": "uuid",
+  "accountId": "uuid",
+  "status": "connected"
+}
+```
+
+```json
+{
   "type": "negotiation.stage.changed",
   "workspaceId": "uuid",
   "negotiationId": "uuid",
@@ -63,5 +72,5 @@ O primeiro processo move eventos transacionais para BullMQ. O segundo consome `r
 - Redis e Socket.IO são transporte descartável; PostgreSQL continua sendo a fonte de verdade;
 - eventos repetidos são seguros porque apenas invalidam consultas;
 - eventos perdidos são recuperados na reconexão por REST;
-- nesta fatia, somente edição de contato e mudança de etapa geram notificações de CRM;
+- nesta fatia, edição de contato, mudança de etapa e estado da conexão geram notificações;
 - ingestão, transcrição e análise deverão publicar eventos próprios quando seus workers forem implementados.

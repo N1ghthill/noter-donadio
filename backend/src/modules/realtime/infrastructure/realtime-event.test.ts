@@ -24,3 +24,18 @@ test('evento em tempo real preserva somente campos permitidos', () => {
 test('evento desconhecido é recusado', () => {
   assert.throws(() => parseRealtimeEvent('message.content.exposed', {}), /unsupported_realtime_event/);
 });
+
+test('evento de conexão nunca transporta QR', () => {
+  const event = parseRealtimeEvent('whatsapp.connection.changed', {
+    workspaceId: WORKSPACE_ID,
+    accountId: '2f31a180-6127-48cd-82da-7b324e49a31d',
+    status: 'qr_generated',
+    qrCode: 'conteúdo efêmero proibido',
+  });
+  assert.deepEqual(event, {
+    type: 'whatsapp.connection.changed',
+    workspaceId: WORKSPACE_ID,
+    accountId: '2f31a180-6127-48cd-82da-7b324e49a31d',
+    status: 'qr_generated',
+  });
+});

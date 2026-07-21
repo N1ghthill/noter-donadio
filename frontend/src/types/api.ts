@@ -1,4 +1,5 @@
 import type { NegotiationStage } from '@noter/contracts';
+import type { WhatsappConnectionStatus } from '@noter/contracts';
 
 export interface SessionUser {
   userId: string;
@@ -59,4 +60,14 @@ export interface NegotiationDetail extends Negotiation {
     confidenceScore: string | null;
     createdAt: string;
   }>;
+}
+
+export interface WhatsappConnection {
+  accountId: string | null;
+  status: WhatsappConnectionStatus;
+  phoneNumber: string | null;
+  updatedAt: string | null;
+  qrCode: { payload: string; expiresAt: string } | null;
+  adapter: 'fake';
+  canSimulate: true;
 }

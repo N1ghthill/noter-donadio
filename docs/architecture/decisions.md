@@ -93,3 +93,9 @@ Senhas usam `scrypt` com salt individual e parâmetros versionados. O token inte
 Toda alteração de schema deve incluir uma migration versionada e aplicável em um banco PostgreSQL vazio. O CI inicia PostgreSQL 16 e executa `prisma migrate deploy` antes de typecheck, testes e build.
 
 A migration inicial publicada em 20 de julho de 2026 continha acidentalmente uma linha de saída do CLI antes do SQL. Ela foi corrigida no dia seguinte, antes de qualquer aplicação bem-sucedida ou uso compartilhado do banco. Essa é a única exceção à regra de não editar migrations publicadas; migrations futuras devem receber correções incrementais.
+
+## ADR-015 — Jornada do WhatsApp começa com adapter falso explícito
+
+Setup, QR e estados de conexão são desenvolvidos contra a porta `WhatsappGateway`. O primeiro adapter é um simulador em memória habilitado somente por `WHATSAPP_ADAPTER=fake`; ausência da configuração mantém as rotas desabilitadas.
+
+O QR é efêmero e nunca é persistido ou propagado por eventos. Essa etapa valida domínio, autenticação, frontend e tempo real antes de introduzir uma biblioteca não oficial ou uma conta real.

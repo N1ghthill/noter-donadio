@@ -7,6 +7,7 @@ const navigation: Array<{ to: string; label: string; end: boolean }> = [
   { to: '/', label: 'Visão geral', end: true },
   { to: '/contatos', label: 'Contatos', end: false },
   { to: '/pipeline', label: 'Pipeline', end: false },
+  { to: '/whatsapp', label: 'WhatsApp', end: false },
 ];
 
 export function AppShell() {

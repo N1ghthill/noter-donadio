@@ -1,0 +1,38 @@
+import { fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { RealtimeProvider } from '../realtime/RealtimeContext.js';
+import { WhatsappSetupPage } from './WhatsappSetupPage.js';
+
+vi.mock('socket.io-client', () => ({
+  io: () => ({ on: vi.fn(), connect: vi.fn(), disconnect: vi.fn(), removeAllListeners: vi.fn() }),
+}));
+
+describe('configuração simulada do WhatsApp', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('gera QR e conclui a leitura simulada', async () => {
+    const base = {
+      accountId: 'account-1', phoneNumber: null, updatedAt: '2026-07-21T00:00:00.000Z',
+      adapter: 'fake', canSimulate: true,
+    };
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(response({ ...base, accountId: null, status: 'disconnected', updatedAt: null, qrCode: null }))
+      .mockResolvedValueOnce(response({ ...base, status: 'qr_generated', qrCode: { payload: 'noter-demo:opaque', expiresAt: '2026-07-21T00:05:00.000Z' } }))
+      .mockResolvedValueOnce(response({ ...base, status: 'connected', phoneNumber: '5571000000001', qrCode: null }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<RealtimeProvider><WhatsappSetupPage /></RealtimeProvider>);
+    expect(await screen.findByText('Desconectado')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Iniciar configuração' }));
+    expect(await screen.findByLabelText('QR code de demonstração')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Simular leitura do QR' }));
+    expect(await screen.findByRole('heading', { name: 'Conexão simulada concluída' })).toBeInTheDocument();
+  });
+});
+
+function response(body: unknown): Response {
+  return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+}
