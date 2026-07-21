@@ -1,4 +1,4 @@
-import { Queue } from 'bullmq';
+import { Queue, type JobsOptions } from 'bullmq';
 import { Redis } from 'ioredis';
 
 import type { EventPublisher, PendingOutboxEvent } from '../domain/outbox-dispatcher.js';
@@ -22,13 +22,7 @@ export class BullMqEventPublisher implements EventPublisher {
 
   public async publish(event: PendingOutboxEvent): Promise<void> {
     const queue = this.queueFor(event.eventType);
-    await queue.add(event.eventType, event.payload, {
-      jobId: event.id,
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 1_000 },
-      removeOnComplete: { age: 86_400, count: 10_000 },
-      removeOnFail: { age: 604_800, count: 10_000 },
-    });
+    await queue.add(event.eventType, event.payload, eventJobOptions(event.eventType, event.id));
   }
 
   public async close(): Promise<void> {
@@ -45,4 +39,17 @@ export class BullMqEventPublisher implements EventPublisher {
     if (eventType === 'message.text.ingested') return this.textQueue;
     return this.realtimeQueue;
   }
+}
+
+export function eventJobOptions(eventType: string, eventId: string): JobsOptions {
+  const audio = eventType === 'message.audio.ingested';
+  return {
+    jobId: eventId,
+    attempts: audio ? 12 : 3,
+    backoff: audio
+      ? { type: 'fixed', delay: 30_000 }
+      : { type: 'exponential', delay: 1_000 },
+    removeOnComplete: { age: 86_400, count: 10_000 },
+    removeOnFail: { age: 604_800, count: 10_000 },
+  };
 }

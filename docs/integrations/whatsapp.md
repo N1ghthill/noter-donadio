@@ -24,7 +24,7 @@ Com `disabled`, que é o padrão quando a variável está ausente, as rotas de s
 
 ## Caixa de entrada simulada
 
-Com a conta falsa conectada, `/conversas` permite registrar uma mensagem fictícia recebida. O navegador cria um `clientMessageId` UUID; o servidor deriva workspace e conta da sessão, acrescenta uma identidade fictícia fixa e executa o mesmo serviço de ingestão usado pelos eventos internos.
+Com a conta falsa conectada, `/conversas` permite registrar texto ou áudio fictício recebido. O navegador cria um `clientMessageId` UUID; o servidor deriva workspace e conta da sessão, acrescenta uma identidade fictícia fixa e executa o mesmo serviço de ingestão usado pelos eventos internos. No áudio, texto fornecido pelo navegador é descartado e nunca tratado como transcrição.
 
 A transação resolve contato e negociação, persiste a mensagem antes de qualquer processamento e cria dois eventos de outbox: um para processamento e `message.persisted` para reconciliação da interface. Repetir o mesmo UUID não duplica a mensagem. O formulário não envia dados a uma conta ou provedor externo.
 

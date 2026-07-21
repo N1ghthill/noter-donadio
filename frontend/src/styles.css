@@ -130,6 +130,7 @@ label { display: grid; gap: .4rem; color: #4c5b53; font-size: .8rem; font-weight
 .demo-message-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .8rem; align-items: end; margin: .9rem 0 .55rem; }
 .demo-message-form label { color: #675e43; }
 .demo-message-form textarea { resize: vertical; }
+.demo-message-actions { display: flex; gap: .55rem; }
 .conversation-layout { display: grid; grid-template-columns: minmax(18rem, .75fr) minmax(24rem, 1.25fr); gap: 1rem; min-height: 34rem; }
 .conversation-list { align-content: start; padding: .7rem; }
 .conversation-list .panel-heading { padding: .65rem; }
@@ -218,6 +219,7 @@ label { display: grid; gap: .4rem; color: #4c5b53; font-size: .8rem; font-weight
   .detail-summary { justify-items: start; }
   .message { width: 92%; }
   .demo-message-form { grid-template-columns: 1fr; }
+  .demo-message-actions { align-items: stretch; flex-direction: column; }
   .full-width { grid-column: auto; }
   .login-page { align-content: center; padding: 1.5rem; }
   .login-copy > p:last-child { display: none; }

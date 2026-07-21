@@ -36,13 +36,23 @@ describe('caixa de conversas', () => {
     fireEvent.change(screen.getByLabelText('Mensagem fictícia recebida'), {
       target: { value: 'Nova mensagem inteiramente fictícia.' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Simular nova mensagem' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Simular mensagem de texto' }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
       '/api/whatsapp/demo/messages',
       expect.objectContaining({
         method: 'POST',
         body: expect.stringContaining('Nova mensagem inteiramente fictícia.'),
+      }),
+    ));
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Simular áudio recebido' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: 'Simular áudio recebido' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      '/api/whatsapp/demo/messages',
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('"messageType":"audio"'),
       }),
     ));
   });

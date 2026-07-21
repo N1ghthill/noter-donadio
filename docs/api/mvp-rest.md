@@ -23,7 +23,7 @@ Nenhum token, telefone ou conteúdo deve aparecer em logs ou exemplos versionado
 - `GET /api/whatsapp/connection`: consulta o estado da conta principal;
 - `POST /api/whatsapp/setup`: inicia setup e retorna QR efêmero no adapter falso;
 - `POST /api/whatsapp/demo/connect`: simula a leitura do QR, disponível somente quando o adapter falso está habilitado.
-- `POST /api/whatsapp/demo/messages`: simula uma mensagem recebida, somente no adapter falso e com conta conectada.
+- `POST /api/whatsapp/demo/messages`: simula texto ou áudio recebido, somente no adapter falso e com conta conectada.
 
 Uma versão desatualizada na mudança de estágio retorna `409 version_conflict`. O cliente deve recarregar a negociação antes de tentar novamente.
 
@@ -35,11 +35,12 @@ O detalhe nunca recebe `workspaceId` do navegador: o isolamento é derivado excl
 npm run start -w @noter/backend
 npm run start:outbox -w @noter/backend
 npm run start:realtime -w @noter/backend
+npm run start:transcription -w @noter/backend
 ```
 
 O processo da outbox publica `message.text.ingested`, `message.audio.ingested`, `message.persisted` e eventos de atualização do CRM nas filas correspondentes. Os jobs e notificações contêm IDs e metadados de roteamento, nunca o conteúdo integral da conversa.
 
-A simulação exige `clientMessageId` UUID e `content`. O identificador fornecido pelo navegador compõe a chave idempotente; `workspaceId`, conta, direção, contato fictício e horário são definidos no servidor. Não existe endpoint de envio de mensagem nesta fase.
+A simulação exige `clientMessageId` UUID e aceita `messageType` igual a `text` ou `audio`. Texto exige `content`; no áudio, qualquer conteúdo é ignorado e a transcrição é produzida apenas pelo adapter falso. O identificador fornecido pelo navegador compõe a chave idempotente; `workspaceId`, conta, direção, contato fictício e horário são definidos no servidor. Não existe endpoint de envio de mensagem nesta fase.
 
 O protocolo de atualização e seus contratos sanitizados estão documentados em [`docs/realtime/events.md`](../realtime/events.md).
 O fluxo de setup e os limites do adapter falso estão em [`docs/integrations/whatsapp.md`](../integrations/whatsapp.md).

@@ -105,3 +105,9 @@ O QR é efêmero e nunca é persistido ou propagado por eventos. Essa etapa vali
 No MVP, uma conversa corresponde ao histórico de uma negociação e não recebe tabela ou estado independente. A caixa de entrada consulta a mensagem mais recente de cada negociação diretamente no PostgreSQL, com limite explícito, e abre o histórico já oferecido pelo detalhe da negociação.
 
 Uma nova mensagem produz `message.persisted` na mesma transação da mensagem e do evento de processamento. A notificação contém somente IDs e invalida as consultas React; conteúdo e telefone continuam disponíveis apenas nas rotas REST autenticadas. A simulação local percorre o serviço de ingestão normal e usa um UUID do cliente na chave de idempotência.
+
+## ADR-017 — Transcrição usa lease persistido por tentativa
+
+O worker de áudio adquire no PostgreSQL um lease identificado por UUID e instante de início. Somente a tentativa atual pode gravar sucesso ou falha; entregas repetidas de uma mídia concluída não chamam o adapter, e leases abandonados podem ser retomados depois de cinco minutos.
+
+O job contém apenas IDs. O resultado do adapter é validado e permanece no `MediaAsset` da mensagem original. Sucesso ou falha cria `message.transcription.changed` com IDs e estado, nunca com o texto transcrito. O adapter falso valida esse contrato sem obter mídia ou acessar um provedor externo.

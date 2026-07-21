@@ -57,3 +57,20 @@ test('evento de mensagem transporta somente identificadores para reconciliação
     negotiationId: 'db71084e-5829-4a90-8346-5832998294ea',
   });
 });
+
+test('evento de transcrição descarta o texto produzido', () => {
+  const event = parseRealtimeEvent('message.transcription.changed', {
+    workspaceId: WORKSPACE_ID,
+    messageId: 'fbdff1c4-5a25-4e24-b694-d5dc6c21f227',
+    negotiationId: 'db71084e-5829-4a90-8346-5832998294ea',
+    state: 'completed',
+    transcriptionText: 'texto que deve permanecer apenas no REST autenticado',
+  });
+  assert.deepEqual(event, {
+    type: 'message.transcription.changed',
+    workspaceId: WORKSPACE_ID,
+    messageId: 'fbdff1c4-5a25-4e24-b694-d5dc6c21f227',
+    negotiationId: 'db71084e-5829-4a90-8346-5832998294ea',
+    state: 'completed',
+  });
+});

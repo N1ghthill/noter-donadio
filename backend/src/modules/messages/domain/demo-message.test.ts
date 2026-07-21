@@ -57,3 +57,26 @@ test('simulação recusa mensagem quando a conta falsa não está conectada', as
     DemoWhatsappNotConnectedError,
   );
 });
+
+test('simulação de áudio cria mídia pendente sem conteúdo artificial', async () => {
+  let persisted: Parameters<MessageIngestionRepository['persist']>[0] | undefined;
+  const repository: MessageIngestionRepository = {
+    async persist(command) {
+      persisted = command;
+      return { messageId: 'message-1', contactId: 'contact-1', negotiationId: 'deal-1', duplicate: false };
+    },
+  };
+  const accounts: ConnectedWhatsappAccountRepository = {
+    async findConnectedAccountId() { return ACCOUNT_ID; },
+  };
+
+  await new DemoMessageService(accounts, new MessageIngestionService(repository)).simulateInbound({
+    workspaceId: WORKSPACE_ID,
+    clientMessageId: CLIENT_MESSAGE_ID,
+    messageType: 'audio',
+  });
+
+  assert.equal(persisted?.messageType, 'audio');
+  assert.equal(persisted?.content, undefined);
+  assert.equal(persisted?.contentHash, undefined);
+});

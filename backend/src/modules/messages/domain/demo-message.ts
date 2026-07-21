@@ -7,7 +7,8 @@ export interface ConnectedWhatsappAccountRepository {
 export interface SimulateInboundMessageCommand {
   readonly workspaceId: string;
   readonly clientMessageId: string;
-  readonly content: string;
+  readonly messageType?: 'text' | 'audio' | undefined;
+  readonly content?: string | undefined;
   readonly occurredAt?: Date | undefined;
 }
 
@@ -28,6 +29,7 @@ export class DemoMessageService {
     const whatsappAccountId = await this.accounts.findConnectedAccountId(command.workspaceId);
     if (!whatsappAccountId) throw new DemoWhatsappNotConnectedError();
 
+    const messageType = command.messageType ?? 'text';
     return this.ingestion.execute({
       workspaceId: command.workspaceId,
       whatsappAccountId,
@@ -36,8 +38,8 @@ export class DemoMessageService {
       phoneNumber: '5571000000002',
       displayName: 'Contato simulado',
       direction: 'inbound',
-      messageType: 'text',
-      content: command.content,
+      messageType,
+      content: messageType === 'text' ? command.content : undefined,
       occurredAt: command.occurredAt ?? new Date(),
       metadata: { source: 'local_demo' },
     });

@@ -8,6 +8,7 @@ const environmentSchema = z.object({
   REDIS_URL: z.url(),
   INTERNAL_INGESTION_TOKEN: z.string().min(32),
   WHATSAPP_ADAPTER: z.enum(['disabled', 'fake']).default('disabled'),
+  TRANSCRIPTION_ADAPTER: z.enum(['disabled', 'fake']).default('disabled'),
 });
 
 export type Environment = z.infer<typeof environmentSchema>;

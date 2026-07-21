@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 
 import { ApiError, api } from '../api/client.js';
 import { EmptyState, ErrorState, LoadingState } from '../components/Feedback.js';
-import { formatDate, formatMoney, STAGE_LABELS } from '../lib/format.js';
+import { formatDate, formatMoney, PROCESSING_LABELS, STAGE_LABELS } from '../lib/format.js';
 import type { NegotiationDetail } from '../types/api.js';
 import { useRealtime } from '../realtime/RealtimeContext.js';
 
@@ -79,8 +79,10 @@ export function NegotiationDetailPage() {
                 <p>{message.content ?? (message.messageType === 'audio' ? 'Mensagem de áudio' : 'Conteúdo indisponível')}</p>
                 {message.media ? (
                   <div className="transcription">
-                    <strong>Transcrição · {message.media.transcriptionState}</strong>
-                    <p>{message.media.transcriptionText ?? 'Aguardando transcrição.'}</p>
+                    <strong>Transcrição · {PROCESSING_LABELS[message.media.transcriptionState]}</strong>
+                    <p>{message.media.transcriptionText ?? (message.media.transcriptionState === 'failed'
+                      ? 'Não foi possível transcrever este áudio.'
+                      : 'Aguardando transcrição.')}</p>
                   </div>
                 ) : null}
               </article>

@@ -49,6 +49,7 @@ describe('detalhe da negociação', () => {
 
     expect(await screen.findByRole('heading', { name: 'Projeto fictício' })).toBeInTheDocument();
     expect(screen.getByText('Podemos agendar uma apresentação?')).toBeInTheDocument();
+    expect(screen.getByText('Transcrição · concluída')).toBeInTheDocument();
     expect(screen.getByText('Agendar demonstração')).toBeInTheDocument();
     expect(screen.getByText('Sugestões não são aplicadas automaticamente.')).toBeInTheDocument();
   });

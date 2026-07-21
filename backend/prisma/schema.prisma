@@ -269,6 +269,8 @@ model MediaAsset {
   durationSeconds         Int?            @map("duration_seconds")
   mimeType                String?         @map("mime_type") @db.VarChar(100)
   transcriptionState      ProcessingState @default(pending) @map("transcription_state")
+  transcriptionAttemptId  String?         @map("transcription_attempt_id") @db.Uuid
+  processingStartedAt     DateTime?       @map("processing_started_at") @db.Timestamptz(6)
   transcriptionText       String?         @map("transcription_text")
   transcriptionConfidence Decimal?        @map("transcription_confidence") @db.Decimal(5, 4)
   transcriptionLanguage   String?         @map("transcription_language") @db.VarChar(10)
@@ -282,6 +284,7 @@ model MediaAsset {
 
   @@unique([workspaceId, messageId])
   @@index([workspaceId, transcriptionState])
+  @@index([transcriptionState, processingStartedAt])
   @@map("media_assets")
 }
 

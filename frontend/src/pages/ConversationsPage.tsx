@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { ApiError, api } from '../api/client.js';
 import { ErrorState, LoadingState } from '../components/Feedback.js';
-import { formatDate, STAGE_LABELS } from '../lib/format.js';
+import { formatDate, PROCESSING_LABELS, STAGE_LABELS } from '../lib/format.js';
 import { useRealtime } from '../realtime/RealtimeContext.js';
 import type { ConversationSummary, NegotiationDetail } from '../types/api.js';
 
@@ -13,7 +13,7 @@ export function ConversationsPage() {
   const [selectedId, setSelectedId] = useState<string>();
   const [detail, setDetail] = useState<NegotiationDetail>();
   const [content, setContent] = useState('Olá! Esta é uma nova mensagem simulada para validar a caixa de entrada.');
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<'text' | 'audio'>();
   const [error, setError] = useState<string>();
 
   const loadConversations = useCallback(async () => {
@@ -48,15 +48,20 @@ export function ConversationsPage() {
     event.preventDefault();
     const message = content.trim();
     if (!message) return;
-    setBusy(true);
+    await simulateMessage('text', message);
+  }
+
+  async function simulateMessage(messageType: 'text' | 'audio', message?: string) {
+    setBusy(messageType);
     setError(undefined);
     try {
       const result = await api.simulateInboundMessage({
         clientMessageId: globalThis.crypto.randomUUID(),
-        content: message,
+        messageType,
+        ...(message ? { content: message } : {}),
       });
       setSelectedId(result.negotiationId);
-      setContent('');
+      if (messageType === 'text') setContent('');
       await loadConversations();
       setDetail(await api.negotiation(result.negotiationId));
     } catch (caught: unknown) {
@@ -64,7 +69,7 @@ export function ConversationsPage() {
         ? 'Conecte primeiro o WhatsApp no modo de demonstração.'
         : 'Não foi possível simular o recebimento da mensagem.');
     } finally {
-      setBusy(false);
+      setBusy(undefined);
     }
   }
 
@@ -86,9 +91,14 @@ export function ConversationsPage() {
             Mensagem fictícia recebida
             <textarea value={content} maxLength={2000} rows={2} onChange={(event) => setContent(event.target.value)} />
           </label>
-          <button className="button secondary" type="submit" disabled={busy || !content.trim()}>
-            {busy ? 'Recebendo…' : 'Simular nova mensagem'}
-          </button>
+          <div className="demo-message-actions">
+            <button className="button secondary" type="submit" disabled={Boolean(busy) || !content.trim()}>
+              {busy === 'text' ? 'Recebendo…' : 'Simular mensagem de texto'}
+            </button>
+            <button className="button secondary" type="button" disabled={Boolean(busy)} onClick={() => void simulateMessage('audio')}>
+              {busy === 'audio' ? 'Processando áudio…' : 'Simular áudio recebido'}
+            </button>
+          </div>
         </form>
         <small>Nada é enviado ao WhatsApp. A ação exercita apenas o fluxo local de ingestão.</small>
       </aside>
@@ -128,7 +138,12 @@ export function ConversationsPage() {
                   <article className={`message ${message.direction}`} key={message.id}>
                     <small>{message.direction === 'inbound' ? 'Recebida' : 'Enviada'} · {formatDate(message.occurredAt)}</small>
                     <p>{message.content ?? (message.messageType === 'audio' ? 'Mensagem de áudio' : 'Conteúdo não textual')}</p>
-                    {message.media?.transcriptionText ? <div className="transcription"><strong>Transcrição</strong><p>{message.media.transcriptionText}</p></div> : null}
+                    {message.media ? <div className="transcription">
+                      <strong>Transcrição · {PROCESSING_LABELS[message.media.transcriptionState]}</strong>
+                      <p>{message.media.transcriptionText ?? (message.media.transcriptionState === 'failed'
+                        ? 'Não foi possível transcrever este áudio.'
+                        : 'Aguardando transcrição.')}</p>
+                    </div> : null}
                   </article>
                 ))}
               </div>

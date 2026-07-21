@@ -1,4 +1,4 @@
-import type { NegotiationStage } from '@noter/contracts';
+import type { NegotiationStage, ProcessingState } from '@noter/contracts';
 import type { WhatsappConnectionStatus } from '@noter/contracts';
 
 export interface SessionUser {
@@ -42,7 +42,7 @@ export interface NegotiationDetail extends Negotiation {
     content: string | null;
     occurredAt: string;
     media: {
-      transcriptionState: string;
+      transcriptionState: ProcessingState;
       transcriptionText: string | null;
       durationSeconds: number | null;
       mimeType: string | null;

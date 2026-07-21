@@ -127,3 +127,41 @@ test('simulação informa quando o WhatsApp falso não está conectado', async (
   assert.equal(response.statusCode, 409);
   assert.deepEqual(response.json(), { error: 'whatsapp_not_connected' });
 });
+
+test('simulação de áudio não aceita conteúdo como transcrição', async (context) => {
+  let persisted: Parameters<MessageIngestionRepository['persist']>[0] | undefined;
+  const conversations: ConversationRepository = { async list() { return []; } };
+  const accounts: ConnectedWhatsappAccountRepository = {
+    async findConnectedAccountId() { return ACCOUNT_ID; },
+  };
+  const ingestionRepository: MessageIngestionRepository = {
+    async persist(command) {
+      persisted = command;
+      return { messageId: 'message-1', contactId: 'contact-1', negotiationId: 'deal-1', duplicate: false };
+    },
+  };
+  const app = buildApp({
+    sessionAuthenticator: new FakeSessionAuthenticator(),
+    conversationRepository: conversations,
+    demoMessageService: new DemoMessageService(
+      accounts,
+      new MessageIngestionService(ingestionRepository),
+    ),
+  });
+  context.after(async () => app.close());
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/whatsapp/demo/messages',
+    headers: { cookie: SESSION_COOKIE },
+    payload: {
+      clientMessageId: '11b3f58b-4f89-47f2-93bc-89be57028a48',
+      messageType: 'audio',
+      content: 'texto forjado pelo navegador',
+    },
+  });
+
+  assert.equal(response.statusCode, 201);
+  assert.equal(persisted?.messageType, 'audio');
+  assert.equal(persisted?.content, undefined);
+});

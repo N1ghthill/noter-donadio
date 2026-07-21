@@ -1,4 +1,4 @@
-import type { NegotiationStage } from '@noter/contracts';
+import type { NegotiationStage, ProcessingState } from '@noter/contracts';
 
 export const STAGE_LABELS: Record<NegotiationStage, string> = {
   lead: 'Lead',
@@ -8,6 +8,13 @@ export const STAGE_LABELS: Record<NegotiationStage, string> = {
   on_hold: 'Em espera',
   closed_won: 'Fechado ganho',
   closed_lost: 'Fechado perdido',
+};
+
+export const PROCESSING_LABELS: Record<ProcessingState, string> = {
+  pending: 'aguardando',
+  processing: 'processando',
+  completed: 'concluída',
+  failed: 'falhou',
 };
 
 export function formatMoney(value: string | null, currency = 'BRL'): string {

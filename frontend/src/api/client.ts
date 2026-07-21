@@ -117,7 +117,11 @@ export const api = {
     return request<{ data: ConversationSummary[] }>('/api/conversations');
   },
 
-  async simulateInboundMessage(input: { clientMessageId: string; content: string }) {
+  async simulateInboundMessage(input: {
+    clientMessageId: string;
+    messageType?: 'text' | 'audio';
+    content?: string;
+  }) {
     return request<{ messageId: string; contactId: string; negotiationId: string; duplicate: boolean }>(
       '/api/whatsapp/demo/messages',
       { method: 'POST', body: JSON.stringify(input) },

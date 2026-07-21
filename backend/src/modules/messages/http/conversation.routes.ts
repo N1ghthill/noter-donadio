@@ -36,7 +36,12 @@ export function registerConversationRoutes(
       if (!workspaceId) return reply.code(401).send({ error: 'unauthorized' });
       const body = z.object({
         clientMessageId: z.uuid(),
-        content: z.string().trim().min(1).max(2_000),
+        messageType: z.enum(['text', 'audio']).default('text'),
+        content: z.string().trim().min(1).max(2_000).optional(),
+      }).superRefine((value, context) => {
+        if (value.messageType === 'text' && !value.content) {
+          context.addIssue({ code: 'custom', path: ['content'], message: 'required_for_text' });
+        }
       }).safeParse(request.body);
       if (!body.success) return reply.code(400).send({ error: 'invalid_request' });
 
