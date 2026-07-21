@@ -1,0 +1,38 @@
+import { readEnvironment } from './config/env.js';
+import { createPrismaClient } from './config/database.js';
+import { buildApp } from './app.js';
+import { MessageIngestionService } from './modules/messages/domain/message-ingestion.js';
+import { PrismaMessageIngestionRepository } from './modules/messages/infrastructure/prisma-message-ingestion.repository.js';
+import { PrismaCrmRepository } from './modules/crm/infrastructure/prisma-crm.repository.js';
+import { AuthService } from './modules/auth/domain/auth.service.js';
+import { ScryptPasswordHasher } from './modules/auth/domain/password-hasher.js';
+import { PrismaAuthRepository } from './modules/auth/infrastructure/prisma-auth.repository.js';
+
+const environment = readEnvironment();
+const prisma = createPrismaClient(environment.DATABASE_URL);
+const ingestionRepository = new PrismaMessageIngestionRepository(prisma);
+const ingestionService = new MessageIngestionService(ingestionRepository);
+const authService = new AuthService(new PrismaAuthRepository(prisma), new ScryptPasswordHasher());
+const app = buildApp({
+  ingestionService,
+  internalIngestionToken: environment.INTERNAL_INGESTION_TOKEN,
+  crmRepository: new PrismaCrmRepository(prisma),
+  authService,
+  secureCookie: environment.NODE_ENV === 'production',
+});
+
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.once(signal, () => {
+    void app.close().finally(async () => {
+      await prisma.$disconnect();
+    });
+  });
+}
+
+try {
+  await app.listen({ host: environment.HOST, port: environment.PORT });
+} catch (error: unknown) {
+  app.log.error({ err: error }, 'Falha ao iniciar o backend');
+  await prisma.$disconnect();
+  process.exitCode = 1;
+}

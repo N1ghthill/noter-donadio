@@ -1,0 +1,89 @@
+# Decisões arquiteturais do MVP
+
+Status: aprovado como base inicial de implementação em 20/07/2026.
+
+Este documento resolve ambiguidades encontradas no relatório técnico original. Mudanças futuras devem acrescentar uma decisão datada e explicar impacto e migração.
+
+## ADR-001 — Monólito modular com processos independentes
+
+O MVP terá um único backend TypeScript organizado por módulos, executado em processos separados para API, conexão do WhatsApp e workers. Isso reduz duplicação e custo operacional sem misturar responsabilidades em runtime.
+
+Não haverá microsserviços distribuídos no MVP. Limites de módulo e adapters devem permitir extração futura se houver necessidade comprovada.
+
+## ADR-002 — Workspace explícito desde o início
+
+Embora o primeiro deployment atenda um único cliente, todas as entidades de negócio terão `workspaceId`. A unicidade de identificadores externos será composta pelo workspace ou pela conta do WhatsApp.
+
+Isso substitui referências inconsistentes a `client_id` no fluxo original e evita uma migração estrutural para isolamento futuro.
+
+## ADR-003 — Etapa da negociação separada de atividade
+
+O campo do Kanban será `stage`. Negociações ativas são obtidas por exclusão das etapas finais, e não por `status = 'active'`.
+
+Etapas iniciais:
+
+1. `lead`
+2. `qualified`
+3. `proposal_sent`
+4. `in_negotiation`
+5. `on_hold`
+6. `closed_won`
+7. `closed_lost`
+
+A IA registra uma sugestão de etapa. Apenas uma ação explícita do usuário muda a etapa no MVP.
+
+## ADR-004 — Persistência antes do processamento
+
+Contato, negociação, mensagem e evento de publicação são persistidos atomicamente antes de chamar IA ou transcrição. Um dispatcher publica eventos pendentes no BullMQ e pode repeti-los com segurança.
+
+Workers recebem IDs e releem o estado no PostgreSQL. Uma restrição única e registros de execução impedem efeitos duplicados.
+
+Essa decisão substitui os diagramas que inserem a mensagem somente após a resposta do modelo.
+
+## ADR-005 — Transcrição pertence à mensagem de áudio
+
+Não será criada uma segunda mensagem virtual para a transcrição. A mensagem original mantém o tipo `audio`; um artefato associado armazena mídia, estado de transcrição, texto e erro sanitizado.
+
+O worker de IA pode consumir a transcrição como representação textual da mesma mensagem. Assim, timeline, contagem e idempotência não ficam duplicadas.
+
+## ADR-006 — Contato manual pode não possuir JID
+
+`jid` será anulável. Um contato manual pode nascer com nome e telefone normalizado e ser vinculado posteriormente a uma identidade observada no WhatsApp.
+
+A vinculação automática só é permitida quando a identidade for inequívoca. Casos ambíguos geram sugestão de mesclagem para confirmação humana.
+
+## ADR-007 — QR code é exibido, não lido pelo frontend
+
+O backend recebe o QR de autenticação da sessão e o disponibiliza temporariamente ao frontend autenticado. O usuário abre o WhatsApp no telefone e escaneia o QR exibido.
+
+Não será adicionada biblioteca de leitura de QR pela câmera para esse fluxo.
+
+## ADR-008 — Baileys é uma integração não oficial
+
+Baileys não é uma API oficial da Meta. A integração ficará isolada atrás de uma porta de domínio, com reconexão, health state e possibilidade de troca por outro provedor.
+
+Antes de produção, devem ser validados termos de uso, risco de bloqueio da conta, requisitos de consentimento e alternativa oficial. Nenhum teste automatizado utiliza conta real.
+
+## ADR-009 — Estado de autenticação criptografado no PostgreSQL
+
+O MVP usará um adapter de autenticação próprio para persistir credenciais e chaves da sessão no PostgreSQL. Cada payload sensível será criptografado pela aplicação com AES-256-GCM e chave externa ao banco.
+
+`useMultiFileAuthState` pode ser usado apenas em protótipo local descartável e nunca como armazenamento de produção.
+
+## ADR-010 — REST reconciliável e tempo real descartável
+
+Socket.IO informa que algo mudou, mas não é a fonte de verdade. Cada evento inclui IDs e versão suficiente para o frontend invalidar ou atualizar consultas. Após desconexão, o frontend reconcilia o estado pela API REST.
+
+## ADR-011 — Valores manuais têm precedência
+
+Campos atualizáveis por IA guardam origem e instante da última confirmação. Uma extração do modelo não sobrescreve um valor marcado como confirmado pelo usuário. Divergências aparecem como sugestões pendentes.
+
+## ADR-012 — Privacidade entra no desenho do MVP
+
+O produto deve possuir política configurável de retenção de mídia, exclusão por contato/workspace, trilha de auditoria e minimização do contexto enviado à IA. Logs de produção não armazenam conteúdo de conversas.
+
+## ADR-013 — Sessões opacas em cookie, sem JWT no navegador
+
+O frontend autentica por cookie `HttpOnly`, `SameSite=Strict` e `Secure` em produção. O valor da sessão possui 256 bits aleatórios; apenas seu SHA-256 é persistido. Sessões expiram em oito horas, podem ser revogadas no servidor e nunca são guardadas em `localStorage` ou `sessionStorage`.
+
+Senhas usam `scrypt` com salt individual e parâmetros versionados. O token interno continua existindo somente para ingestão entre processos e não autoriza rotas do CRM.

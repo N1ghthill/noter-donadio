@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: noter_donadio
+      POSTGRES_USER: ${DB_USER:-noter}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-noter_local_only}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - noter_postgres_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - noter_redis_dev:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  noter_postgres_dev:
+  noter_redis_dev:

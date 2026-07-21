@@ -1,0 +1,25 @@
+{
+  "name": "noter-donadio",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Pipeline inteligente de contatos e negociações",
+  "workspaces": [
+    "backend",
+    "frontend",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=24 <25",
+    "npm": ">=11"
+  },
+  "packageManager": "npm@11.16.0",
+  "scripts": {
+    "build": "npm run build -w @noter/contracts && npm run build -w @noter/backend && npm run build -w @noter/frontend",
+    "typecheck": "npm run typecheck -w @noter/contracts && npm run typecheck -w @noter/backend && npm run typecheck -w @noter/frontend",
+    "test": "npm run test -w @noter/contracts && npm run test -w @noter/backend && npm run test -w @noter/frontend"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^6.0.0"
+  }
+}

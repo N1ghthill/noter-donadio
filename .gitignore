@@ -1,0 +1,20 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+
+# Dados locais e credenciais
+backend/storage/
+backend/.baileys-auth/
+backend/src/generated/prisma/
+*.dump
+*.sql.gz
+
+# Ferramentas
+.idea/
+.vscode/
+*.tsbuildinfo
