@@ -13,10 +13,13 @@ import type { CrmRepository } from './modules/crm/domain/crm.repository.js';
 import { registerCrmRoutes } from './modules/crm/http/crm.routes.js';
 import type { AuthService, SessionAuthenticator } from './modules/auth/domain/auth.service.js';
 import { registerAuthRoutes } from './modules/auth/http/auth.routes.js';
+import { registerOriginProtection } from './modules/auth/http/origin-protection.js';
 import type { WhatsappConnectionService } from './modules/whatsapp/domain/whatsapp-connection.js';
 import { registerWhatsappRoutes } from './modules/whatsapp/http/whatsapp.routes.js';
 import type { MediaAccessService } from './modules/media/domain/media-access.js';
 import { registerMediaRoutes } from './modules/media/http/media.routes.js';
+import type { ContactDeletionService } from './modules/privacy/domain/contact-deletion.js';
+import { registerContactDeletionRoute } from './modules/privacy/http/contact-deletion.route.js';
 
 interface AppOptions {
   readonly ingestionService?: MessageIngestionService;
@@ -29,6 +32,8 @@ interface AppOptions {
   readonly conversationRepository?: ConversationRepository;
   readonly demoMessageService?: DemoMessageService;
   readonly mediaAccessService?: MediaAccessService;
+  readonly allowedOrigins?: readonly string[];
+  readonly contactDeletionService?: ContactDeletionService;
 }
 
 export function buildApp(options: AppOptions = {}): FastifyInstance {
@@ -55,6 +60,8 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
 
   void app.register(cookie);
   void app.register(rateLimit, { global: false });
+
+  if (options.allowedOrigins) registerOriginProtection(app, options.allowedOrigins);
 
   app.setErrorHandler((error, request, reply) => {
     const errorName = error instanceof Error ? error.name : 'UnknownError';
@@ -101,6 +108,13 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
   if (options.crmRepository && sessionAuthenticator) {
     registerCrmRoutes(app, {
       repository: options.crmRepository,
+      sessionAuthenticator,
+    });
+  }
+
+  if (options.contactDeletionService && sessionAuthenticator) {
+    registerContactDeletionRoute(app, {
+      service: options.contactDeletionService,
       sessionAuthenticator,
     });
   }

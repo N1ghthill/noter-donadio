@@ -27,6 +27,7 @@ export const SENTIMENT_LABELS = {
 export const AUDIT_ACTION_LABELS = {
   contact_created: 'Contato criado manualmente',
   contact_updated: 'Contato atualizado',
+  contact_deleted: 'Contato excluído',
   negotiation_stage_changed: 'Etapa alterada manualmente',
   analysis_accepted: 'Sugestão da IA aplicada',
   analysis_ignored: 'Sugestão da IA ignorada',

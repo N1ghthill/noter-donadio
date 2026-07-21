@@ -25,6 +25,20 @@ test('evento desconhecido é recusado', () => {
   assert.throws(() => parseRealtimeEvent('message.content.exposed', {}), /unsupported_realtime_event/);
 });
 
+test('evento de exclusão carrega somente identificadores para reconciliação', () => {
+  const event = parseRealtimeEvent('contact.deleted', {
+    workspaceId: WORKSPACE_ID,
+    contactId: '3a3db76b-c51a-4584-ab4b-6d3e70952e44',
+    displayName: 'Dado que não pode atravessar o evento',
+    phoneNumber: '5571999999999',
+  });
+  assert.deepEqual(event, {
+    type: 'contact.deleted',
+    workspaceId: WORKSPACE_ID,
+    contactId: '3a3db76b-c51a-4584-ab4b-6d3e70952e44',
+  });
+});
+
 test('evento de conexão nunca transporta QR', () => {
   const event = parseRealtimeEvent('whatsapp.connection.changed', {
     workspaceId: WORKSPACE_ID,

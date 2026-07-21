@@ -3,6 +3,8 @@ import { createPrismaClient } from './config/database.js';
 import { MediaRetentionService } from './modules/media/domain/media-retention.js';
 import { LocalMediaStorage } from './modules/media/infrastructure/local-media-storage.js';
 import { PrismaMediaRetentionRepository } from './modules/media/infrastructure/prisma-media-retention.repository.js';
+import { ContactDeletionService } from './modules/privacy/domain/contact-deletion.js';
+import { PrismaContactDeletionRepository } from './modules/privacy/infrastructure/prisma-contact-deletion.repository.js';
 
 const BATCH_SIZE = 100;
 const INTERVAL_MS = 60 * 60 * 1_000;
@@ -13,6 +15,10 @@ const service = new MediaRetentionService(
   new PrismaMediaRetentionRepository(prisma),
   new LocalMediaStorage(environment.MEDIA_STORAGE_PATH, environment.MEDIA_MAX_BYTES),
 );
+const pendingDeletionService = new ContactDeletionService(
+  new PrismaContactDeletionRepository(prisma),
+  new LocalMediaStorage(environment.MEDIA_STORAGE_PATH, environment.MEDIA_MAX_BYTES),
+);
 
 let stopping = false;
 let timer: NodeJS.Timeout | undefined;
@@ -20,6 +26,13 @@ let timer: NodeJS.Timeout | undefined;
 async function sweep(): Promise<void> {
   if (stopping) return;
   try {
+    let deletionResult = await pendingDeletionService.flushPendingMedia(BATCH_SIZE);
+    while (!stopping && deletionResult.selected === BATCH_SIZE && deletionResult.completedMedia > 0) {
+      deletionResult = await pendingDeletionService.flushPendingMedia(BATCH_SIZE);
+    }
+    if (deletionResult.pendingMedia > 0) {
+      console.error('Algumas remoções físicas de mídia continuam pendentes para nova tentativa.');
+    }
     let result = await service.runBatch(new Date(), BATCH_SIZE);
     while (!stopping && result.selected === BATCH_SIZE) {
       result = await service.runBatch(new Date(), BATCH_SIZE);

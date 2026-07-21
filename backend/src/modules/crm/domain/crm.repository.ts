@@ -65,7 +65,7 @@ export interface NegotiationDetailView extends NegotiationView {
 
 export interface AuditEventView {
   readonly id: string;
-  readonly action: 'contact_created' | 'contact_updated' | 'negotiation_stage_changed' | 'analysis_accepted' | 'analysis_ignored';
+  readonly action: 'contact_created' | 'contact_updated' | 'contact_deleted' | 'negotiation_stage_changed' | 'analysis_accepted' | 'analysis_ignored';
   readonly actorDisplayName: string;
   readonly changedFields: readonly string[];
   readonly previousVersion: number | null;

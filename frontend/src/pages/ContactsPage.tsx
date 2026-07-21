@@ -14,6 +14,7 @@ export function ContactsPage() {
   const [editing, setEditing] = useState<Contact>();
   const [error, setError] = useState<string>();
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string>();
 
   const load = useCallback(async (term = search) => {
     setError(undefined);
@@ -59,6 +60,27 @@ export function ContactsPage() {
     }
   }
 
+  async function remove(contact: Contact): Promise<void> {
+    const confirmed = window.confirm(
+      `Excluir ${contact.displayName}? Conversas, negociações, análises e mídias associadas serão removidas. Esta ação não pode ser desfeita.`,
+    );
+    if (!confirmed) return;
+    setDeletingId(contact.id);
+    setError(undefined);
+    try {
+      await api.deleteContact(contact.id);
+      if (editing?.id === contact.id) {
+        setEditing(undefined);
+        setShowForm(false);
+      }
+      await load();
+    } catch {
+      setError('Não foi possível excluir o contato. Tente novamente.');
+    } finally {
+      setDeletingId(undefined);
+    }
+  }
+
   return (
     <div className="page-stack">
       <header className="page-header compact">
@@ -97,7 +119,12 @@ export function ContactsPage() {
                 <div><h3>{contact.displayName}</h3><a href={`tel:${contact.phoneNumber}`}>{contact.phoneNumber}</a></div>
                 <div className="tag-list">{contact.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
                 <small>{formatDate(contact.lastInteractionAt)}</small>
-                <button className="button-link card-action" type="button" onClick={() => { setEditing(contact); setShowForm(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Editar</button>
+                <div className="card-actions">
+                  <button className="button-link" type="button" disabled={Boolean(deletingId)} onClick={() => { setEditing(contact); setShowForm(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Editar</button>
+                  <button className="button-link danger" type="button" disabled={Boolean(deletingId)} onClick={() => void remove(contact)}>
+                    {deletingId === contact.id ? 'Excluindo…' : 'Excluir'}
+                  </button>
+                </div>
               </article>
             ))}
           </div>

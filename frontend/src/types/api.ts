@@ -74,7 +74,7 @@ export interface NegotiationDetail extends Negotiation {
 
 export interface AuditEvent {
   id: string;
-  action: 'contact_created' | 'contact_updated' | 'negotiation_stage_changed' | 'analysis_accepted' | 'analysis_ignored';
+  action: 'contact_created' | 'contact_updated' | 'contact_deleted' | 'negotiation_stage_changed' | 'analysis_accepted' | 'analysis_ignored';
   actorDisplayName: string;
   changedFields: string[];
   previousVersion: number | null;

@@ -8,6 +8,10 @@ const eventSchemas = {
     contactId: z.uuid(),
     changedFields: z.array(z.enum(['displayName', 'phoneNumber', 'tags', 'notes'])).max(4),
   }),
+  'contact.deleted': z.object({
+    workspaceId,
+    contactId: z.uuid(),
+  }),
   'negotiation.stage.changed': z.object({
     workspaceId,
     negotiationId: z.uuid(),
@@ -48,6 +52,7 @@ const eventSchemas = {
 
 export type RealtimeEvent =
   | { type: 'contact.updated'; workspaceId: string; contactId: string; changedFields: string[] }
+  | { type: 'contact.deleted'; workspaceId: string; contactId: string }
   | { type: 'negotiation.stage.changed'; workspaceId: string; negotiationId: string; stage: string }
   | { type: 'whatsapp.connection.changed'; workspaceId: string; accountId: string; status: string }
   | { type: 'message.persisted'; workspaceId: string; messageId: string; contactId: string; negotiationId: string }
@@ -57,6 +62,9 @@ export type RealtimeEvent =
 
 export function parseRealtimeEvent(name: string, data: unknown): RealtimeEvent {
   if (name === 'contact.updated') {
+    return { type: name, ...eventSchemas[name].parse(data) };
+  }
+  if (name === 'contact.deleted') {
     return { type: name, ...eventSchemas[name].parse(data) };
   }
   if (name === 'negotiation.stage.changed') {

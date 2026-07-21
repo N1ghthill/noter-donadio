@@ -18,6 +18,8 @@ import { LocalMediaStorage } from './modules/media/infrastructure/local-media-st
 import { FakeDemoAudioProvisioner } from './modules/media/infrastructure/fake-demo-audio.provisioner.js';
 import { MediaAccessService } from './modules/media/domain/media-access.js';
 import { PrismaMediaAccessRepository } from './modules/media/infrastructure/prisma-media-access.repository.js';
+import { ContactDeletionService } from './modules/privacy/domain/contact-deletion.js';
+import { PrismaContactDeletionRepository } from './modules/privacy/infrastructure/prisma-contact-deletion.repository.js';
 
 const environment = readEnvironment();
 const prisma = createPrismaClient(environment.DATABASE_URL);
@@ -25,6 +27,10 @@ const ingestionRepository = new PrismaMessageIngestionRepository(prisma);
 const ingestionService = new MessageIngestionService(ingestionRepository);
 const conversationRepository = new PrismaConversationRepository(prisma);
 const mediaStorage = new LocalMediaStorage(environment.MEDIA_STORAGE_PATH, environment.MEDIA_MAX_BYTES);
+const contactDeletionService = new ContactDeletionService(
+  new PrismaContactDeletionRepository(prisma),
+  mediaStorage,
+);
 const demoMessageService = environment.WHATSAPP_ADAPTER === 'fake'
   ? new DemoMessageService(
       new PrismaConnectedWhatsappAccountRepository(prisma),
@@ -51,6 +57,8 @@ const app = buildApp({
     mediaStorage,
     environment.MEDIA_SIGNING_SECRET,
   ),
+  contactDeletionService,
+  allowedOrigins: environment.APP_ORIGINS,
   ...(demoMessageService ? { demoMessageService } : {}),
   ...(whatsappService ? { whatsappService } : {}),
 });

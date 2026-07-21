@@ -31,7 +31,7 @@ Senhas são derivadas com `scrypt`, salt aleatório individual de 16 bytes e par
 
 O login aceita `workspace`, `email` e `password`. Há limite de cinco tentativas por minuto por origem no processo atual. Antes de exposição pública, o proxy também deve aplicar rate limiting.
 
-`SameSite=Strict` é a defesa inicial contra CSRF. Antes do deploy público, mutações também devem validar `Origin` no proxy ou na aplicação, principalmente se forem usados subdomínios sob o mesmo site.
+`SameSite=Strict` é a primeira defesa contra CSRF. A aplicação também rejeita toda mutação web sem `Origin` ou com origem ausente de `APP_ORIGINS`; login, logout, CRM, setup e simulações passam pela mesma política. Rotas internas autenticadas por token são excluídas porque não usam a sessão do navegador. Em produção, a lista deve conter somente as origens HTTPS efetivamente publicadas.
 
 ## Bootstrap do primeiro administrador
 

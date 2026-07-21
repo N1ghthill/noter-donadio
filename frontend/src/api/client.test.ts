@@ -84,6 +84,18 @@ describe('cliente HTTP', () => {
     }));
   });
 
+  it('confirma a exclusão usando somente o identificador do contato', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await api.deleteContact('contact-1');
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/contacts/contact-1', expect.objectContaining({
+      method: 'DELETE',
+      body: JSON.stringify({ confirmation: 'contact-1' }),
+    }));
+  });
+
   it('inicia setup e leitura simulada sem enviar dados do workspace', async () => {
     const fetchMock = vi.fn().mockImplementation(async () => new Response(JSON.stringify({ status: 'connected' }), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);

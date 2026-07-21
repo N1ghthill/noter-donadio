@@ -135,3 +135,15 @@ A trilha não duplica telefone, observações, conteúdo de mensagens, transcri�
 O primeiro adapter de armazenamento grava apenas áudio fictício no filesystem local, fora dos arquivos públicos e com permissões restritas. A chave física nunca é exposta. O navegador obtém uma URL relativa HMAC válida por dois minutos, mas a leitura continua exigindo sessão ativa e revalidação do workspace e da retenção no PostgreSQL.
 
 Cada ativo nasce com prazo configurável. Um processo separado apaga o arquivo antes de minimizar a referência no banco; exclusão ausente é tratada como sucesso e a atualização condicionada torna a rotina repetível. O adapter local valida o contrato do domínio, mas produção deverá usar objeto privado criptografado e preservar a mesma porta, autorização e semântica de retenção.
+
+## ADR-022 — Exclusão de contato usa cascata e tarefa durável de mídia
+
+A ação explícita do administrador bloqueia o contato, registra auditoria e tarefas de mídia, publica uma notificação sanitizada e apaga o agregado em uma transação. As relações removem negociações, mensagens, ativos, análises e decisões; auditorias sobrevivem sem as referências e sem cópia de conteúdo ou identidade pessoal.
+
+O arquivo está fora da transação do PostgreSQL. Por isso, sua chave é copiada para `media_deletion_tasks` antes da cascata. A aplicação tenta removê-lo após o commit e o worker de retenção repete pendências. O acesso é revogado assim que o registro de mídia desaparece, enquanto a tarefa garante a remoção física mesmo depois de falha ou reinício.
+
+## ADR-023 — Mutações web exigem Origin permitido
+
+Cookies de sessão continuam `HttpOnly`, `SameSite=Strict` e `Secure` em produção. Como defesa adicional contra CSRF, toda requisição mutável em `/api/` exige um `Origin` exatamente presente em `APP_ORIGINS`. A lista é explícita e aceita apenas origens HTTP(S), sem caminho, credenciais, query ou fragmento.
+
+Rotas de leitura não dependem de `Origin`. A ingestão `/api/internal/` também fica fora da regra porque usa token próprio e não autenticação ambiente do navegador.

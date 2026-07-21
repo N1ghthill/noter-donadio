@@ -16,6 +16,7 @@ Nenhum token, telefone ou conteúdo deve aparecer em logs ou exemplos versionado
 - `GET /api/contacts`: lista e busca contatos do workspace;
 - `POST /api/contacts`: cria contato manual;
 - `PATCH /api/contacts/:id`: edita nome, telefone, tags e observações do contato;
+- `DELETE /api/contacts/:id`: exclui o contato e seus agregados após confirmação explícita do mesmo UUID;
 - `GET /api/negotiations`: lista o pipeline, opcionalmente filtrado por `stage`;
 - `GET /api/negotiations/:id`: retorna contato, até 100 mensagens cronológicas, mídia/transcrição, até 20 análises e até 50 ações auditadas recentes;
 - `PATCH /api/negotiations/:id/stage`: mudança manual com `expectedVersion` para controle de concorrência.
@@ -36,6 +37,8 @@ O detalhe nunca recebe `workspaceId` do navegador: o isolamento é derivado excl
 
 Criação e edição manual de contato, mudança de etapa e decisão sobre análise gravam `audit_events` na mesma transação da ação. A resposta expõe nome do usuário, instante, campos alterados, versões e transição de etapa quando aplicável. Telefone, observações, mensagens, transcrições e valores completos de tags não são copiados para a auditoria.
 
+Todas as mutações de navegador sob `/api/` exigem um cabeçalho `Origin` presente em `APP_ORIGINS`. A ingestão em `/api/internal/` continua protegida pelo token interno e não depende de origem de navegador. A exclusão de contato retorna `204` também em reentregas ou IDs não pertencentes ao workspace, evitando enumeração.
+
 ## Processos do backend
 
 ```bash
@@ -55,3 +58,4 @@ O protocolo de atualização e seus contratos sanitizados estão documentados em
 O fluxo de setup e os limites do adapter falso estão em [`docs/integrations/whatsapp.md`](../integrations/whatsapp.md).
 O contrato da análise e sua execução local estão em [`docs/integrations/analysis.md`](../integrations/analysis.md).
 O armazenamento privado, acesso e retenção estão em [`docs/integrations/media.md`](../integrations/media.md).
+O contrato de exclusão e suas cascatas estão em [`docs/security/privacy-deletion.md`](../security/privacy-deletion.md).

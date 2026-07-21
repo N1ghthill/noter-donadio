@@ -26,21 +26,24 @@ describe('reconciliação em tempo real', () => {
     act(() => socketState.handlers.get('crm.updated')?.({ type: 'contact.updated' }));
     expect(screen.getByTestId('realtime')).toHaveTextContent('online:1');
 
-    act(() => socketState.handlers.get('crm.updated')?.({ type: 'message.persisted' }));
+    act(() => socketState.handlers.get('crm.updated')?.({ type: 'contact.deleted' }));
     expect(screen.getByTestId('realtime')).toHaveTextContent('online:2');
 
-    act(() => socketState.handlers.get('crm.updated')?.({ type: 'message.transcription.changed' }));
+    act(() => socketState.handlers.get('crm.updated')?.({ type: 'message.persisted' }));
     expect(screen.getByTestId('realtime')).toHaveTextContent('online:3');
 
-    act(() => socketState.handlers.get('crm.updated')?.({ type: 'analysis.changed' }));
+    act(() => socketState.handlers.get('crm.updated')?.({ type: 'message.transcription.changed' }));
     expect(screen.getByTestId('realtime')).toHaveTextContent('online:4');
 
-    act(() => socketState.handlers.get('crm.updated')?.({ type: 'analysis.decision.changed' }));
+    act(() => socketState.handlers.get('crm.updated')?.({ type: 'analysis.changed' }));
     expect(screen.getByTestId('realtime')).toHaveTextContent('online:5');
+
+    act(() => socketState.handlers.get('crm.updated')?.({ type: 'analysis.decision.changed' }));
+    expect(screen.getByTestId('realtime')).toHaveTextContent('online:6');
 
     act(() => socketState.handlers.get('disconnect')?.());
     act(() => socketState.handlers.get('connect')?.());
-    expect(screen.getByTestId('realtime')).toHaveTextContent('online:6');
+    expect(screen.getByTestId('realtime')).toHaveTextContent('online:7');
   });
 
   it('ignora payload desconhecido', () => {

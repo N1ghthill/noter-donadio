@@ -23,7 +23,7 @@ Inicie a remoção periódica em um processo próprio:
 npm run start:retention -w @noter/backend
 ```
 
-O processo executa ao iniciar e a cada hora. Em lotes de 100, apaga primeiro o arquivo expirado e depois minimiza o registro, removendo `storageKey` e tamanho e registrando `removedAt`. A exclusão do arquivo é idempotente, de modo que uma falha de banco pode ser tentada novamente com segurança. A transcrição e os metadados não sensíveis permanecem associados à mensagem.
+O processo executa ao iniciar e a cada hora. Primeiro conclui tarefas físicas deixadas por exclusões de contato. Depois, em lotes de 100, apaga cada arquivo expirado e minimiza o registro, removendo `storageKey` e tamanho e registrando `removedAt`. A exclusão do arquivo é idempotente, de modo que uma falha pode ser tentada novamente com segurança. A transcrição e os metadados não sensíveis permanecem associados à mensagem quando a remoção ocorreu apenas por retenção.
 
 ## Limites desta fatia
 
@@ -31,5 +31,5 @@ O processo executa ao iniciar e a cada hora. Em lotes de 100, apaga primeiro o a
 - somente o WAV fictício local é provisionado; formatos reais dependerão do adapter de mídia;
 - não há endpoint público, URL permanente nem chave física na resposta da API;
 - o endpoint entrega o arquivo completo; suporte otimizado a `Range` fica para o adapter de objeto/produção;
-- exclusão manual por contato ou workspace e limpeza de órfãos ainda serão implementadas antes de produção;
+- exclusão manual por contato possui tarefas duráveis; exclusão integral do workspace e uma varredura geral de órfãos ainda serão implementadas antes de produção;
 - `MEDIA_SIGNING_SECRET` deve vir de um gerenciador de segredos em produção, e o armazenamento local deverá ser substituído por objeto privado criptografado.

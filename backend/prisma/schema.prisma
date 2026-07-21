@@ -90,6 +90,7 @@ enum AnalysisDecisionKind {
 enum AuditAction {
   contact_created
   contact_updated
+  contact_deleted
   negotiation_stage_changed
   analysis_accepted
   analysis_ignored
@@ -102,16 +103,17 @@ model Workspace {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  whatsappAccounts  WhatsappAccount[]
-  contacts          Contact[]
-  negotiations      Negotiation[]
-  messages          Message[]
-  mediaAssets       MediaAsset[]
-  aiAnalyses        AiAnalysis[]
-  outboxEvents      OutboxEvent[]
-  users             User[]
-  analysisDecisions AnalysisDecision[]
-  auditEvents       AuditEvent[]
+  whatsappAccounts   WhatsappAccount[]
+  contacts           Contact[]
+  negotiations       Negotiation[]
+  messages           Message[]
+  mediaAssets        MediaAsset[]
+  aiAnalyses         AiAnalysis[]
+  outboxEvents       OutboxEvent[]
+  users              User[]
+  analysisDecisions  AnalysisDecision[]
+  auditEvents        AuditEvent[]
+  mediaDeletionTasks MediaDeletionTask[]
 
   @@map("workspaces")
 }
@@ -309,6 +311,17 @@ model MediaAsset {
   @@index([transcriptionState, processingStartedAt])
   @@index([retentionUntil, removedAt])
   @@map("media_assets")
+}
+
+model MediaDeletionTask {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @map("workspace_id") @db.Uuid
+  storageKey  String    @unique @map("storage_key") @db.VarChar(500)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@map("media_deletion_tasks")
 }
 
 model AiAnalysis {

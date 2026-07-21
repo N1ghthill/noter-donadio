@@ -45,6 +45,7 @@ O MVP usa Node.js 24 LTS, TypeScript 6, Fastify 5, React 19 e Vite 8. A API, per
 
 A API disponível nesta fase está documentada em [`docs/api/mvp-rest.md`](docs/api/mvp-rest.md).
 O modelo de login, cookies, sessões e bootstrap está em [`docs/security/authentication.md`](docs/security/authentication.md).
+O fluxo de exclusão, cascatas, auditoria minimizada e limpeza de mídia está em [`docs/security/privacy-deletion.md`](docs/security/privacy-deletion.md).
 O fluxo da interface e sua execução local estão em [`docs/frontend/mvp-ui.md`](docs/frontend/mvp-ui.md).
 O fluxo Socket.IO, isolamento por workspace e contratos de eventos estão em [`docs/realtime/events.md`](docs/realtime/events.md).
 O setup simulado e a fronteira do adapter de WhatsApp estão em [`docs/integrations/whatsapp.md`](docs/integrations/whatsapp.md).

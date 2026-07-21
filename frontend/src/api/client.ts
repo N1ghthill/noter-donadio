@@ -83,6 +83,13 @@ export const api = {
     });
   },
 
+  async deleteContact(id: string) {
+    return request<void>(`/api/contacts/${id}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ confirmation: id }),
+    });
+  },
+
   async negotiations(stage?: NegotiationStage) {
     const query = stage ? `?stage=${stage}` : '';
     return request<{ data: Negotiation[] }>(`/api/negotiations${query}`);
