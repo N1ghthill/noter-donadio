@@ -25,6 +25,8 @@ Nenhum token, telefone ou conteúdo deve aparecer em logs ou exemplos versionado
 - `POST /api/whatsapp/setup`: inicia setup e retorna QR efêmero no adapter falso;
 - `POST /api/whatsapp/demo/connect`: simula a leitura do QR, disponível somente quando o adapter falso está habilitado.
 - `POST /api/whatsapp/demo/messages`: simula texto ou áudio recebido, somente no adapter falso e com conta conectada.
+- `GET /api/media/:messageId/access`: cria URL relativa assinada por dois minutos para mídia acessível no workspace autenticado;
+- `GET /api/media/:messageId/content`: entrega a mídia somente com sessão ativa, workspace correspondente, prazo e assinatura válidos.
 
 Uma versão desatualizada na mudança de estágio retorna `409 version_conflict`. O cliente deve recarregar a negociação antes de tentar novamente.
 
@@ -42,6 +44,7 @@ npm run start:outbox -w @noter/backend
 npm run start:realtime -w @noter/backend
 npm run start:transcription -w @noter/backend
 npm run start:analysis -w @noter/backend
+npm run start:retention -w @noter/backend
 ```
 
 O processo da outbox publica `message.text.ingested`, `message.audio.ingested`, `message.audio.ready_for_analysis`, `message.persisted` e eventos de atualização do CRM nas filas correspondentes. Os jobs e notificações contêm IDs e metadados de roteamento, nunca o conteúdo integral da conversa.
@@ -51,3 +54,4 @@ A simulação exige `clientMessageId` UUID e aceita `messageType` igual a `text`
 O protocolo de atualização e seus contratos sanitizados estão documentados em [`docs/realtime/events.md`](../realtime/events.md).
 O fluxo de setup e os limites do adapter falso estão em [`docs/integrations/whatsapp.md`](../integrations/whatsapp.md).
 O contrato da análise e sua execução local estão em [`docs/integrations/analysis.md`](../integrations/analysis.md).
+O armazenamento privado, acesso e retenção estão em [`docs/integrations/media.md`](../integrations/media.md).

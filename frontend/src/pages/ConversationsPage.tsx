@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { ApiError, api } from '../api/client.js';
 import { ErrorState, LoadingState } from '../components/Feedback.js';
+import { AudioPlayer } from '../components/AudioPlayer.js';
 import { formatDate, PROCESSING_LABELS, STAGE_LABELS } from '../lib/format.js';
 import { useRealtime } from '../realtime/RealtimeContext.js';
 import type { ConversationSummary, NegotiationDetail } from '../types/api.js';
@@ -138,12 +139,17 @@ export function ConversationsPage() {
                   <article className={`message ${message.direction}`} key={message.id}>
                     <small>{message.direction === 'inbound' ? 'Recebida' : 'Enviada'} · {formatDate(message.occurredAt)}</small>
                     <p>{message.content ?? (message.messageType === 'audio' ? 'Mensagem de áudio' : 'Conteúdo não textual')}</p>
-                    {message.media ? <div className="transcription">
-                      <strong>Transcrição · {PROCESSING_LABELS[message.media.transcriptionState]}</strong>
-                      <p>{message.media.transcriptionText ?? (message.media.transcriptionState === 'failed'
-                        ? 'Não foi possível transcrever este áudio.'
-                        : 'Aguardando transcrição.')}</p>
-                    </div> : null}
+                    {message.media ? (
+                      <>
+                        <AudioPlayer messageId={message.id} playbackAvailable={message.media.playbackAvailable} />
+                        <div className="transcription">
+                          <strong>Transcrição · {PROCESSING_LABELS[message.media.transcriptionState]}</strong>
+                          <p>{message.media.transcriptionText ?? (message.media.transcriptionState === 'failed'
+                            ? 'Não foi possível transcrever este áudio.'
+                            : 'Aguardando transcrição.')}</p>
+                        </div>
+                      </>
+                    ) : null}
                   </article>
                 ))}
               </div>

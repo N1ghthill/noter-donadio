@@ -92,6 +92,15 @@ export const api = {
     return request<NegotiationDetail>(`/api/negotiations/${id}`);
   },
 
+  async mediaAccess(messageId: string) {
+    return request<{
+      url: string;
+      expiresAt: string;
+      mimeType: string;
+      durationSeconds: number | null;
+    }>(`/api/media/${messageId}/access`);
+  },
+
   async updateNegotiationStage(
     id: string,
     input: { stage: NegotiationStage; expectedVersion: number },

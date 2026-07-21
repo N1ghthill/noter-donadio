@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import type { MessageDirection, MessageType } from '@noter/contracts';
 
 import { normalizePhoneNumber } from '../../../shared/domain/phone.js';
+import type { StoredMediaDescriptor } from '../../media/domain/media-storage.js';
 
 export type IngestibleMessageType = Extract<MessageType, 'text' | 'audio'>;
 
@@ -18,6 +19,7 @@ export interface IngestMessageCommand {
   readonly content?: string | undefined;
   readonly occurredAt: Date;
   readonly metadata?: Readonly<Record<string, unknown>> | undefined;
+  readonly media?: StoredMediaDescriptor | undefined;
 }
 
 export interface PersistMessageCommand extends IngestMessageCommand {

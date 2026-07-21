@@ -162,6 +162,10 @@ label { display: grid; gap: .4rem; color: #4c5b53; font-size: .8rem; font-weight
 .conversation-heading { padding-bottom: 1rem; border-bottom: 1px solid #eceeea; }
 .conversation-heading .card-link { margin: 0; }
 .conversation-timeline { align-content: start; max-height: 40rem; overflow-y: auto; padding: .5rem .2rem; }
+.audio-player { display: grid; gap: .45rem; margin: .55rem 0; }
+.audio-player audio { width: min(100%, 25rem); height: 2.6rem; }
+.audio-player .button { justify-self: start; }
+.media-unavailable { margin: .5rem 0; color: #7b8580; font-size: .78rem; }
 
 .connection-grid { display: grid; grid-template-columns: minmax(18rem, .8fr) minmax(22rem, 1.2fr); gap: 1rem; }
 .connection-status-card { display: grid; align-content: start; gap: 1.2rem; }

@@ -30,7 +30,7 @@ describe('detalhe da negociação', () => {
       messages: [{
         id: 'message-1', direction: 'inbound', messageType: 'audio', content: null,
         occurredAt: '2026-07-20T18:30:00.000Z',
-        media: { transcriptionState: 'completed', transcriptionText: 'Podemos agendar uma apresentação?', durationSeconds: 18, mimeType: 'audio/ogg' },
+        media: { transcriptionState: 'completed', transcriptionText: 'Podemos agendar uma apresentação?', durationSeconds: 18, mimeType: 'audio/ogg', playbackAvailable: true },
       }],
       analyses: [{
         id: 'analysis-1', state: 'completed', summary: 'Contato interessado.', sentiment: 'positive',
@@ -59,6 +59,7 @@ describe('detalhe da negociação', () => {
     expect(await screen.findByRole('heading', { name: 'Projeto fictício' })).toBeInTheDocument();
     expect(screen.getByText('Podemos agendar uma apresentação?')).toBeInTheDocument();
     expect(screen.getByText('Transcrição · concluída')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Carregar áudio' })).toBeInTheDocument();
     expect(screen.getByText('Agendar demonstração')).toBeInTheDocument();
     expect(screen.getByText('Produto fictício')).toBeInTheDocument();
     expect(screen.getByText('demonstração')).toBeInTheDocument();

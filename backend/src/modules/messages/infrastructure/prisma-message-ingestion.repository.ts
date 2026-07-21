@@ -134,6 +134,11 @@ export class PrismaMessageIngestionRepository implements MessageIngestionReposit
               workspaceId: command.workspaceId,
               messageId: message.id,
               transcriptionState: 'pending',
+              storageKey: command.media?.storageKey ?? null,
+              fileSizeBytes: command.media ? BigInt(command.media.fileSizeBytes) : null,
+              durationSeconds: command.media?.durationSeconds ?? null,
+              mimeType: command.media?.mimeType ?? null,
+              retentionUntil: command.media?.retentionUntil ?? null,
             },
           });
         }

@@ -15,6 +15,8 @@ import type { AuthService, SessionAuthenticator } from './modules/auth/domain/au
 import { registerAuthRoutes } from './modules/auth/http/auth.routes.js';
 import type { WhatsappConnectionService } from './modules/whatsapp/domain/whatsapp-connection.js';
 import { registerWhatsappRoutes } from './modules/whatsapp/http/whatsapp.routes.js';
+import type { MediaAccessService } from './modules/media/domain/media-access.js';
+import { registerMediaRoutes } from './modules/media/http/media.routes.js';
 
 interface AppOptions {
   readonly ingestionService?: MessageIngestionService;
@@ -26,6 +28,7 @@ interface AppOptions {
   readonly whatsappService?: WhatsappConnectionService;
   readonly conversationRepository?: ConversationRepository;
   readonly demoMessageService?: DemoMessageService;
+  readonly mediaAccessService?: MediaAccessService;
 }
 
 export function buildApp(options: AppOptions = {}): FastifyInstance {
@@ -114,6 +117,13 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
       repository: options.conversationRepository,
       sessionAuthenticator,
       demoMessageService: options.demoMessageService,
+    });
+  }
+
+  if (options.mediaAccessService && sessionAuthenticator) {
+    registerMediaRoutes(app, {
+      service: options.mediaAccessService,
+      sessionAuthenticator,
     });
   }
 

@@ -129,3 +129,9 @@ No aceite, decisão, atualização da negociação, união das tags do contato e
 Criação e edição manual de contato, mudança de etapa e decisões sobre sugestões geram um `AuditEvent` na mesma transação da mutação. O registro guarda workspace, usuário, ação, campos afetados, versões e transição de etapa quando aplicável. Eventos não são atualizados depois da criação.
 
 A trilha não duplica telefone, observações, conteúdo de mensagens, transcrições ou valores completos de tags. O detalhe da negociação reúne ações vinculadas à negociação e ao contato correspondente, limitado às 50 mais recentes e sempre filtrado pelo workspace autenticado. Exclusão futura por política de privacidade pode remover a referência ao contato ou à negociação sem apagar a identificação do ator e da ação enquanto o workspace existir.
+
+## ADR-021 — Mídia privada usa acesso curto e retenção idempotente
+
+O primeiro adapter de armazenamento grava apenas áudio fictício no filesystem local, fora dos arquivos públicos e com permissões restritas. A chave física nunca é exposta. O navegador obtém uma URL relativa HMAC válida por dois minutos, mas a leitura continua exigindo sessão ativa e revalidação do workspace e da retenção no PostgreSQL.
+
+Cada ativo nasce com prazo configurável. Um processo separado apaga o arquivo antes de minimizar a referência no banco; exclusão ausente é tratada como sucesso e a atualização condicionada torna a rotina repetível. O adapter local valida o contrato do domínio, mas produção deverá usar objeto privado criptografado e preservar a mesma porta, autorização e semântica de retenção.

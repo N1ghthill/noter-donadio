@@ -139,6 +139,7 @@ export class PrismaCrmRepository implements CrmRepository {
   }
 
   public async getNegotiation(workspaceId: string, negotiationId: string): Promise<NegotiationDetailView> {
+    const now = new Date();
     const negotiation = await this.prisma.negotiation.findFirst({
       where: { id: negotiationId, workspaceId },
       include: {
@@ -180,6 +181,11 @@ export class PrismaCrmRepository implements CrmRepository {
           transcriptionText: message.mediaAsset.transcriptionText,
           durationSeconds: message.mediaAsset.durationSeconds,
           mimeType: message.mediaAsset.mimeType,
+          playbackAvailable: Boolean(
+            message.mediaAsset.storageKey
+            && !message.mediaAsset.removedAt
+            && (!message.mediaAsset.retentionUntil || message.mediaAsset.retentionUntil > now),
+          ),
         } : null,
       })),
       analyses: negotiation.aiAnalyses.map((analysis) => ({

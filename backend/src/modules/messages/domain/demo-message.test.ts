@@ -8,6 +8,7 @@ import {
   DemoWhatsappNotConnectedError,
   type ConnectedWhatsappAccountRepository,
 } from './demo-message.js';
+import type { DemoAudioProvisioner } from '../../media/domain/media-storage.js';
 
 const WORKSPACE_ID = '0e723f84-ec81-441e-b816-f3f179f25fe2';
 const ACCOUNT_ID = '2f31a180-6127-48cd-82da-7b324e49a31d';
@@ -69,8 +70,19 @@ test('simulação de áudio cria mídia pendente sem conteúdo artificial', asyn
   const accounts: ConnectedWhatsappAccountRepository = {
     async findConnectedAccountId() { return ACCOUNT_ID; },
   };
+  const audio: DemoAudioProvisioner = {
+    async provision(workspaceId, clientMessageId, now) {
+      return {
+        storageKey: `${workspaceId}/${clientMessageId}.wav`,
+        fileSizeBytes: 16_044,
+        durationSeconds: 1,
+        mimeType: 'audio/wav',
+        retentionUntil: new Date(now.getTime() + 86_400_000),
+      };
+    },
+  };
 
-  await new DemoMessageService(accounts, new MessageIngestionService(repository)).simulateInbound({
+  await new DemoMessageService(accounts, new MessageIngestionService(repository), audio).simulateInbound({
     workspaceId: WORKSPACE_ID,
     clientMessageId: CLIENT_MESSAGE_ID,
     messageType: 'audio',
@@ -79,4 +91,6 @@ test('simulação de áudio cria mídia pendente sem conteúdo artificial', asyn
   assert.equal(persisted?.messageType, 'audio');
   assert.equal(persisted?.content, undefined);
   assert.equal(persisted?.contentHash, undefined);
+  assert.equal(persisted?.media?.mimeType, 'audio/wav');
+  assert.equal(persisted?.media?.storageKey, `${WORKSPACE_ID}/${CLIENT_MESSAGE_ID}.wav`);
 });

@@ -46,6 +46,7 @@ export interface NegotiationDetail extends Negotiation {
       transcriptionText: string | null;
       durationSeconds: number | null;
       mimeType: string | null;
+      playbackAvailable: boolean;
     } | null;
   }>;
   analyses: Array<{

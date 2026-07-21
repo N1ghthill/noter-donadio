@@ -70,7 +70,7 @@ Inicie a interface no segundo terminal:
 npm run dev -w @noter/frontend
 ```
 
-Para processar texto e áudio simulados de ponta a ponta, mantenha também `start:outbox`, `start:transcription`, `start:analysis` e `start:realtime` ativos, conforme a documentação da API.
+Para processar texto e áudio simulados de ponta a ponta, mantenha também `start:outbox`, `start:transcription`, `start:analysis`, `start:realtime` e `start:retention` ativos, conforme a documentação da API.
 
 Abra o endereço informado pelo Vite, normalmente `http://localhost:5173`, e use o workspace e administrador criados no bootstrap.
 
@@ -91,5 +91,5 @@ Os testes do frontend cobrem o envio do cookie, codificação de busca, erros HT
 - a análise usa apenas o adapter falso; etapa e tags só são aplicadas após confirmação explícita e auditada;
 - valor, produto, prazo, objeções e próximas ações ainda são apenas informativos e não possuem ação de aplicação;
 - a conexão atual é simulada; nenhum adapter real de WhatsApp está habilitado;
-- a transcrição falsa de áudio já atualiza a timeline; reprodução depende do adapter privado de armazenamento e de URLs assinadas, ainda não conectado;
+- áudio fictício pode ser carregado sob demanda por URL curta, assinada e autenticada; download real do WhatsApp e armazenamento de produção ainda não estão conectados;
 - a política de proteção CSRF para exposição pública ainda depende da validação de `Origin` prevista na documentação de autenticação.

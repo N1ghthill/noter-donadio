@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 
 import { ApiError, api } from '../api/client.js';
 import { EmptyState, ErrorState, LoadingState } from '../components/Feedback.js';
+import { AudioPlayer } from '../components/AudioPlayer.js';
 import {
   AUDIT_ACTION_LABELS,
   AUDIT_FIELD_LABELS,
@@ -184,12 +185,15 @@ export function NegotiationDetailPage() {
                 <small>{message.direction === 'inbound' ? detail.contact.displayName : 'Você'} · {formatDate(message.occurredAt)}</small>
                 <p>{message.content ?? (message.messageType === 'audio' ? 'Mensagem de áudio' : 'Conteúdo indisponível')}</p>
                 {message.media ? (
-                  <div className="transcription">
-                    <strong>Transcrição · {PROCESSING_LABELS[message.media.transcriptionState]}</strong>
-                    <p>{message.media.transcriptionText ?? (message.media.transcriptionState === 'failed'
-                      ? 'Não foi possível transcrever este áudio.'
-                      : 'Aguardando transcrição.')}</p>
-                  </div>
+                  <>
+                    <AudioPlayer messageId={message.id} playbackAvailable={message.media.playbackAvailable} />
+                    <div className="transcription">
+                      <strong>Transcrição · {PROCESSING_LABELS[message.media.transcriptionState]}</strong>
+                      <p>{message.media.transcriptionText ?? (message.media.transcriptionState === 'failed'
+                        ? 'Não foi possível transcrever este áudio.'
+                        : 'Aguardando transcrição.')}</p>
+                    </div>
+                  </>
                 ) : null}
               </article>
             ))}

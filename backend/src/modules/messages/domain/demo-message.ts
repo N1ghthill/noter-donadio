@@ -1,4 +1,5 @@
 import type { MessageIngestionResult, MessageIngestionService } from './message-ingestion.js';
+import type { DemoAudioProvisioner } from '../../media/domain/media-storage.js';
 
 export interface ConnectedWhatsappAccountRepository {
   findConnectedAccountId(workspaceId: string): Promise<string | null>;
@@ -23,6 +24,7 @@ export class DemoMessageService {
   public constructor(
     private readonly accounts: ConnectedWhatsappAccountRepository,
     private readonly ingestion: MessageIngestionService,
+    private readonly audioProvisioner?: DemoAudioProvisioner,
   ) {}
 
   public async simulateInbound(command: SimulateInboundMessageCommand): Promise<MessageIngestionResult> {
@@ -30,6 +32,10 @@ export class DemoMessageService {
     if (!whatsappAccountId) throw new DemoWhatsappNotConnectedError();
 
     const messageType = command.messageType ?? 'text';
+    const occurredAt = command.occurredAt ?? new Date();
+    const media = messageType === 'audio' && this.audioProvisioner
+      ? await this.audioProvisioner.provision(command.workspaceId, command.clientMessageId, occurredAt)
+      : undefined;
     return this.ingestion.execute({
       workspaceId: command.workspaceId,
       whatsappAccountId,
@@ -40,8 +46,9 @@ export class DemoMessageService {
       direction: 'inbound',
       messageType,
       content: messageType === 'text' ? command.content : undefined,
-      occurredAt: command.occurredAt ?? new Date(),
+      occurredAt,
       metadata: { source: 'local_demo' },
+      ...(media ? { media } : {}),
     });
   }
 }

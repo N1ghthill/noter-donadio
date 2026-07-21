@@ -49,6 +49,7 @@ O fluxo da interface e sua execução local estão em [`docs/frontend/mvp-ui.md`
 O fluxo Socket.IO, isolamento por workspace e contratos de eventos estão em [`docs/realtime/events.md`](docs/realtime/events.md).
 O setup simulado e a fronteira do adapter de WhatsApp estão em [`docs/integrations/whatsapp.md`](docs/integrations/whatsapp.md).
 O worker idempotente e o adapter falso de áudio estão em [`docs/integrations/transcription.md`](docs/integrations/transcription.md).
+O armazenamento privado local, acesso assinado, player e retenção estão em [`docs/integrations/media.md`](docs/integrations/media.md).
 O worker de análise assistiva, seu contrato estrito e seus limites estão em [`docs/integrations/analysis.md`](docs/integrations/analysis.md).
 
 Com o ambiente local iniciado, a rota `/conversas` apresenta a caixa de entrada persistida e permite simular uma mensagem recebida sem conectar ou enviar dados a um WhatsApp real.

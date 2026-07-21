@@ -2,7 +2,7 @@
 
 ## Estado implementado
 
-O MVP possui um worker BullMQ separado para transcrição, habilitado por `TRANSCRIPTION_ADAPTER=fake`. O adapter atual não lê mídia nem chama serviços externos: ele retorna um texto explicitamente fictício para validar orquestração, retries, persistência e interface.
+O MVP possui um worker BullMQ separado para transcrição, habilitado por `TRANSCRIPTION_ADAPTER=fake`. O adapter atual não lê os bytes armazenados nem chama serviços externos: ele retorna um texto explicitamente fictício para validar orquestração, retries, persistência e interface.
 
 ```text
 mensagem de áudio + mídia pending + outbox
@@ -37,5 +37,5 @@ Falhas persistem somente o código sanitizado `TRANSCRIPTION_PROCESSING_FAILED` 
 - a transcrição permanece como artefato da mensagem de áudio, sem duplicar a timeline;
 - somente uma transcrição concluída produz `message.audio.ready_for_analysis`, contendo IDs;
 - o formulário local de áudio ignora qualquer texto enviado pelo navegador;
-- não há download, armazenamento ou reprodução de áudio nesta fatia;
-- um adapter real exigirá armazenamento privado, URL curta assinada, limites de tamanho/duração e contrato com o provedor.
+- o áudio de demonstração é um WAV local fictício; o armazenamento privado, a URL curta assinada, o player e a retenção estão descritos em [`media.md`](media.md);
+- um adapter real ainda exigirá download autenticado, validação de formato/duração e contrato com o provedor.

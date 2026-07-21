@@ -296,6 +296,8 @@ model MediaAsset {
   transcriptionLanguage   String?         @map("transcription_language") @db.VarChar(10)
   transcriptionModel      String?         @map("transcription_model") @db.VarChar(100)
   failureCode             String?         @map("failure_code") @db.VarChar(100)
+  retentionUntil          DateTime?       @map("retention_until") @db.Timestamptz(6)
+  removedAt               DateTime?       @map("removed_at") @db.Timestamptz(6)
   transcribedAt           DateTime?       @map("transcribed_at") @db.Timestamptz(6)
   createdAt               DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt               DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -305,6 +307,7 @@ model MediaAsset {
   @@unique([workspaceId, messageId])
   @@index([workspaceId, transcriptionState])
   @@index([transcriptionState, processingStartedAt])
+  @@index([retentionUntil, removedAt])
   @@map("media_assets")
 }
 
