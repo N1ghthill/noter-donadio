@@ -94,3 +94,23 @@ test('evento de análise descarta resumo e sugestões', () => {
     state: 'completed',
   });
 });
+
+test('evento de decisão descarta valores aplicados e identidade do usuário', () => {
+  const event = parseRealtimeEvent('analysis.decision.changed', {
+    workspaceId: WORKSPACE_ID,
+    decisionId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    analysisId: '87507894-44d7-4127-a909-89358db1944a',
+    negotiationId: 'db71084e-5829-4a90-8346-5832998294ea',
+    decision: 'accepted',
+    appliedTags: ['restrito ao REST'],
+    userId: 'd86e2931-7552-41f6-831f-85dd34c8bf29',
+  });
+  assert.deepEqual(event, {
+    type: 'analysis.decision.changed',
+    workspaceId: WORKSPACE_ID,
+    decisionId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    analysisId: '87507894-44d7-4127-a909-89358db1944a',
+    negotiationId: 'db71084e-5829-4a90-8346-5832998294ea',
+    decision: 'accepted',
+  });
+});

@@ -25,7 +25,9 @@ A versão atual do prompt é `message-extraction-v1`. Cada análise é única po
 
 A saída aceita apenas resumo, entidades (`product`, `amount`, `deadline`), sentimento, objeções, próximas ações, tags e etapa sugerida, além dos metadados do modelo. Campos extras, valores fora das enumerações e escores inválidos fazem o processamento falhar com um código sanitizado.
 
-As sugestões permanecem separadas do CRM. O worker não altera contato, negociação, etapa ou tags. Aplicações futuras exigirão uma ação explícita do usuário e trilha de auditoria.
+As sugestões permanecem separadas do CRM. O worker não altera contato, negociação, etapa ou tags. Depois da conclusão, o usuário pode editar e aplicar a etapa e as tags selecionadas ou ignorar a sugestão. A decisão é explícita, imutável e registrada em `analysis_decisions` com usuário, instante, campos aplicados e versão resultante da negociação.
+
+O aceite, a alteração do CRM e os eventos da outbox pertencem à mesma transação serializável. A versão esperada impede uma tela desatualizada de sobrescrever trabalho manual, e o UUID da decisão torna uma reentrega de rede idempotente. Valor, produto e prazo continuam apenas informativos nesta fase.
 
 ## Idempotência
 

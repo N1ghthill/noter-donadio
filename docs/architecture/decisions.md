@@ -116,4 +116,10 @@ O job contém apenas IDs. O resultado do adapter é validado e permanece no `Med
 
 Cada mensagem recebe no máximo uma análise por tipo e versão do prompt. O worker usa somente o texto da mensagem corrente ou sua transcrição concluída, adquire um lease persistido por tentativa e valida a resposta contra uma lista fechada de campos, enumerações e limites antes de gravá-la.
 
-Jobs e eventos carregam apenas IDs e estado. Resultados permanecem no PostgreSQL e são reconciliados pela API autenticada. A análise não altera contato, tags, valor ou etapa da negociação: toda aplicação futura de uma sugestão dependerá de confirmação explícita e auditável do usuário.
+Jobs e eventos carregam apenas IDs e estado. Resultados permanecem no PostgreSQL e são reconciliados pela API autenticada. O worker de análise não altera contato, tags, valor ou etapa da negociação: toda aplicação de uma sugestão depende de confirmação explícita e auditável do usuário.
+
+## ADR-019 — Decisões de IA são explícitas, imutáveis e idempotentes
+
+O usuário pode aceitar uma seleção editável de etapa e tags ou ignorar uma análise concluída. Cada análise possui no máximo uma decisão, vinculada ao usuário autenticado. Um UUID fornecido pelo cliente permite reentrega idempotente; decisões diferentes para a mesma análise são recusadas.
+
+No aceite, decisão, atualização da negociação, união das tags do contato e eventos da outbox são gravados em uma transação serializável com controle otimista da versão da negociação. A decisão registra os valores efetivamente aplicados e a versão resultante. Entidades de valor, produto e prazo continuam apenas informativas até receberem contratos próprios de confirmação e precedência manual.

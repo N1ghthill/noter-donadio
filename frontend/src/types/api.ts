@@ -66,7 +66,17 @@ export interface NegotiationDetail extends Negotiation {
     promptVersion: string;
     modelUsed: string | null;
     createdAt: string;
+    decision: AnalysisDecision | null;
   }>;
+}
+
+export interface AnalysisDecision {
+  id: string;
+  decision: 'accepted' | 'ignored';
+  appliedStage: NegotiationStage | null;
+  appliedTags: string[];
+  resultingNegotiationVersion: number;
+  createdAt: string;
 }
 
 export interface WhatsappConnection {

@@ -53,6 +53,25 @@ describe('cliente HTTP', () => {
     }));
   });
 
+  it('registra decisão idempotente com a versão e seleção explícitas', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: 'decision-1' }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const input = {
+      decisionId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      decision: 'accepted' as const,
+      expectedVersion: 3,
+      stage: 'proposal_sent' as const,
+      tags: ['prioridade'],
+    };
+
+    await api.decideAnalysis('neg-1', 'analysis-1', input);
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/negotiations/neg-1/analyses/analysis-1/decision', expect.objectContaining({
+      method: 'POST',
+      body: JSON.stringify(input),
+    }));
+  });
+
   it('envia somente os campos escolhidos na edição do contato', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: 'contact-1' }), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);

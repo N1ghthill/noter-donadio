@@ -35,9 +35,12 @@ describe('reconciliação em tempo real', () => {
     act(() => socketState.handlers.get('crm.updated')?.({ type: 'analysis.changed' }));
     expect(screen.getByTestId('realtime')).toHaveTextContent('online:4');
 
+    act(() => socketState.handlers.get('crm.updated')?.({ type: 'analysis.decision.changed' }));
+    expect(screen.getByTestId('realtime')).toHaveTextContent('online:5');
+
     act(() => socketState.handlers.get('disconnect')?.());
     act(() => socketState.handlers.get('connect')?.());
-    expect(screen.getByTestId('realtime')).toHaveTextContent('online:5');
+    expect(screen.getByTestId('realtime')).toHaveTextContent('online:6');
   });
 
   it('ignora payload desconhecido', () => {

@@ -78,6 +78,17 @@ Todos são emitidos como `crm.updated`:
 
 ```json
 {
+  "type": "analysis.decision.changed",
+  "workspaceId": "uuid",
+  "decisionId": "uuid",
+  "analysisId": "uuid",
+  "negotiationId": "uuid",
+  "decision": "accepted"
+}
+```
+
+```json
+{
   "type": "negotiation.stage.changed",
   "workspaceId": "uuid",
   "negotiationId": "uuid",
@@ -107,3 +118,4 @@ O primeiro processo move eventos transacionais para BullMQ. O segundo consome `r
 - eventos perdidos são recuperados na reconexão por REST;
 - nesta fatia, edição de contato, mudança de etapa, estado da conexão, mensagem persistida, transcrição e análise geram notificações;
 - `analysis.changed` nunca transporta resumo, entidades, sentimento ou sugestões; esses dados são reconciliados pela API autenticada.
+- `analysis.decision.changed` não transporta tags, etapa aplicada nem identidade do usuário; a trilha completa permanece no PostgreSQL.

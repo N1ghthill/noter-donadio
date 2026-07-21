@@ -57,11 +57,23 @@ export interface NegotiationDetailView extends NegotiationView {
     readonly promptVersion: string;
     readonly modelUsed: string | null;
     readonly createdAt: string;
+    readonly decision: AnalysisDecisionView | null;
   }[];
+}
+
+export interface AnalysisDecisionView {
+  readonly id: string;
+  readonly decision: 'accepted' | 'ignored';
+  readonly appliedStage: NegotiationStage | null;
+  readonly appliedTags: readonly string[];
+  readonly resultingNegotiationVersion: number;
+  readonly createdAt: string;
 }
 
 export class CrmNotFoundError extends Error {}
 export class CrmConflictError extends Error {}
+export class CrmDecisionConflictError extends Error {}
+export class CrmTagLimitError extends Error {}
 
 export interface CrmRepository {
   listContacts(workspaceId: string, search: string | undefined, limit: number): Promise<ContactView[]>;
@@ -88,4 +100,15 @@ export interface CrmRepository {
     stage: NegotiationStage;
     expectedVersion: number;
   }): Promise<NegotiationView>;
+  decideAnalysis(input: {
+    workspaceId: string;
+    userId: string;
+    negotiationId: string;
+    analysisId: string;
+    decisionId: string;
+    decision: 'accepted' | 'ignored';
+    expectedVersion: number;
+    stage?: NegotiationStage | undefined;
+    tags?: readonly string[] | undefined;
+  }): Promise<AnalysisDecisionView>;
 }

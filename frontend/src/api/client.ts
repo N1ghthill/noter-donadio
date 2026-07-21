@@ -1,6 +1,7 @@
 import type { NegotiationStage } from '@noter/contracts';
 
 import type {
+  AnalysisDecision,
   Contact,
   ConversationSummary,
   Negotiation,
@@ -97,6 +98,23 @@ export const api = {
   ) {
     return request<Negotiation>(`/api/negotiations/${id}/stage`, {
       method: 'PATCH',
+      body: JSON.stringify(input),
+    });
+  },
+
+  async decideAnalysis(
+    negotiationId: string,
+    analysisId: string,
+    input: {
+      decisionId: string;
+      decision: 'accepted' | 'ignored';
+      expectedVersion: number;
+      stage?: NegotiationStage;
+      tags?: string[];
+    },
+  ) {
+    return request<AnalysisDecision>(`/api/negotiations/${negotiationId}/analyses/${analysisId}/decision`, {
+      method: 'POST',
       body: JSON.stringify(input),
     });
   },

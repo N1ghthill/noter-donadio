@@ -12,6 +12,10 @@ export function NegotiationDetailPage() {
   const { id } = useParams();
   const [detail, setDetail] = useState<NegotiationDetail>();
   const [error, setError] = useState<string>();
+  const [decisionBusy, setDecisionBusy] = useState(false);
+  const [decisionError, setDecisionError] = useState<string>();
+  const [suggestedStage, setSuggestedStage] = useState('');
+  const [suggestedTags, setSuggestedTags] = useState('');
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -27,10 +31,44 @@ export function NegotiationDetailPage() {
 
   useEffect(() => { void load(); }, [load, revision]);
 
+  const latestAnalysis = detail?.analyses[0];
+  useEffect(() => {
+    setSuggestedStage(latestAnalysis?.suggestedStage ?? '');
+    setSuggestedTags(latestAnalysis?.suggestedTags.join(', ') ?? '');
+    setDecisionError(undefined);
+  }, [latestAnalysis?.id]);
+
+  const decide = async (decision: 'accepted' | 'ignored') => {
+    if (!id || !detail || !latestAnalysis) return;
+    setDecisionBusy(true);
+    setDecisionError(undefined);
+    try {
+      const tags = suggestedTags.split(',').map((tag) => tag.trim()).filter(Boolean);
+      await api.decideAnalysis(id, latestAnalysis.id, {
+        decisionId: crypto.randomUUID(),
+        decision,
+        expectedVersion: detail.version,
+        ...(decision === 'accepted' && suggestedStage ? { stage: suggestedStage as typeof detail.stage } : {}),
+        ...(decision === 'accepted' && tags.length ? { tags } : {}),
+      });
+      await load();
+    } catch (caught: unknown) {
+      if (caught instanceof ApiError && (caught.code === 'version_conflict' || caught.code === 'decision_conflict')) {
+        setDecisionError('A negociação ou esta sugestão mudou. Os dados foram recarregados.');
+        await load();
+      } else if (caught instanceof ApiError && caught.code === 'contact_tag_limit') {
+        setDecisionError('O contato atingiria o limite de 20 tags. Edite a seleção e tente novamente.');
+      } else {
+        setDecisionError('Não foi possível registrar sua decisão. Tente novamente.');
+      }
+    } finally {
+      setDecisionBusy(false);
+    }
+  };
+
   if (error && !detail) return <ErrorState message={error} retry={() => void load()} />;
   if (!detail) return <LoadingState label="Carregando negociação…" />;
 
-  const latestAnalysis = detail.analyses[0];
   return (
     <div className="page-stack detail-page">
       <Link className="back-link" to="/pipeline">← Voltar ao pipeline</Link>
@@ -76,7 +114,33 @@ export function NegotiationDetailPage() {
                 {latestAnalysis.nextActions.length ? <div><strong>Próximas ações sugeridas</strong><ul>{latestAnalysis.nextActions.map((action) => <li key={action}>{action}</li>)}</ul></div> : null}
                 {latestAnalysis.suggestedTags.length ? <div><strong>Tags sugeridas</strong><div className="tag-list">{latestAnalysis.suggestedTags.map((tag) => <span key={tag}>{tag}</span>)}</div></div> : null}
               </>}
-              <small>Sugestões não são aplicadas automaticamente.</small>
+              {latestAnalysis.decision ? (
+                <div className="decision-status" role="status">
+                  {latestAnalysis.decision.decision === 'accepted'
+                    ? 'Sugestão aplicada por confirmação explícita.'
+                    : 'Sugestão ignorada por confirmação explícita.'}
+                </div>
+              ) : latestAnalysis.state === 'completed' ? (
+                <div className="decision-form">
+                  <label>Etapa a aplicar
+                    <select value={suggestedStage} onChange={(event) => setSuggestedStage(event.target.value)}>
+                      <option value="">Não alterar a etapa</option>
+                      {Object.entries(STAGE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                    </select>
+                  </label>
+                  <label>Tags a adicionar
+                    <input value={suggestedTags} maxLength={1_000} onChange={(event) => setSuggestedTags(event.target.value)} placeholder="Separe as tags por vírgulas" />
+                  </label>
+                  {decisionError ? <p className="inline-error" role="alert">{decisionError}</p> : null}
+                  <div className="decision-actions">
+                    <button className="button primary" type="button" disabled={decisionBusy || (!suggestedStage && !suggestedTags.trim())} onClick={() => void decide('accepted')}>
+                      {decisionBusy ? 'Registrando…' : 'Aplicar seleção'}
+                    </button>
+                    <button className="button secondary" type="button" disabled={decisionBusy} onClick={() => void decide('ignored')}>Ignorar sugestão</button>
+                  </div>
+                </div>
+              ) : null}
+              <small>A IA apenas sugere; toda aplicação exige confirmação e fica auditada.</small>
             </div>
           )}
         </article>

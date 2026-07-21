@@ -19,6 +19,7 @@ Nenhum token, telefone ou conteúdo deve aparecer em logs ou exemplos versionado
 - `GET /api/negotiations`: lista o pipeline, opcionalmente filtrado por `stage`;
 - `GET /api/negotiations/:id`: retorna contato, até 100 mensagens cronológicas, mídia/transcrição e até 20 análises recentes;
 - `PATCH /api/negotiations/:id/stage`: mudança manual com `expectedVersion` para controle de concorrência.
+- `POST /api/negotiations/:id/analyses/:analysisId/decision`: aceita uma seleção editável de etapa/tags ou ignora a sugestão, com UUID idempotente e `expectedVersion`.
 - `GET /api/conversations`: lista até 50 conversas, usando a mensagem mais recente de cada negociação;
 - `GET /api/whatsapp/connection`: consulta o estado da conta principal;
 - `POST /api/whatsapp/setup`: inicia setup e retorna QR efêmero no adapter falso;
@@ -26,6 +27,8 @@ Nenhum token, telefone ou conteúdo deve aparecer em logs ou exemplos versionado
 - `POST /api/whatsapp/demo/messages`: simula texto ou áudio recebido, somente no adapter falso e com conta conectada.
 
 Uma versão desatualizada na mudança de estágio retorna `409 version_conflict`. O cliente deve recarregar a negociação antes de tentar novamente.
+
+A decisão de análise usa `decisionId` UUID criado pelo cliente. `accepted` exige pelo menos `stage` ou `tags`; `ignored` não aceita campos aplicáveis. Uma análise possui uma única decisão imutável. Repetir o mesmo UUID e payload é idempotente; outra decisão para a mesma análise retorna `409 decision_conflict`. Aceites atualizam CRM, auditoria e outbox na mesma transação.
 
 O detalhe nunca recebe `workspaceId` do navegador: o isolamento é derivado exclusivamente da sessão. A edição de contato produz `contact.updated` na outbox contendo somente IDs e nomes dos campos alterados, sem telefone, notas ou conteúdo.
 

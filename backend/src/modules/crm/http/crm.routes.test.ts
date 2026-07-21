@@ -7,6 +7,8 @@ import { buildApp } from '../../../app.js';
 import type { SessionAuthenticator } from '../../auth/domain/auth.service.js';
 import {
   CrmConflictError,
+  CrmDecisionConflictError,
+  type AnalysisDecisionView,
   type ContactView,
   type CrmRepository,
   type NegotiationDetailView,
@@ -15,11 +17,14 @@ import {
 
 const WORKSPACE_ID = '0e723f84-ec81-441e-b816-f3f179f25fe2';
 const NEGOTIATION_ID = 'db71084e-5829-4a90-8346-5832998294ea';
+const ANALYSIS_ID = 'c7edac69-9eca-4763-9302-8363f2f91a72';
+const USER_ID = 'd86e2931-7552-41f6-831f-85dd34c8bf29';
 const SESSION_COOKIE = 'noter_session=valid-session-token-with-more-than-forty-characters';
 
 class FakeCrmRepository implements CrmRepository {
   public lastWorkspaceId?: string;
   public lastContactUpdate?: { workspaceId: string; contactId: string; displayName?: string };
+  public lastAnalysisDecision?: Parameters<CrmRepository['decideAnalysis']>[0];
   public async listContacts(workspaceId: string): Promise<ContactView[]> {
     this.lastWorkspaceId = workspaceId;
     return [];
@@ -80,13 +85,26 @@ class FakeCrmRepository implements CrmRepository {
       updatedAt: '2026-07-20T12:00:00.000Z',
     };
   }
+  public async decideAnalysis(input: Parameters<CrmRepository['decideAnalysis']>[0]): Promise<AnalysisDecisionView> {
+    this.lastAnalysisDecision = input;
+    if (input.expectedVersion !== 1) throw new CrmConflictError();
+    if (input.decisionId === 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') throw new CrmDecisionConflictError();
+    return {
+      id: input.decisionId,
+      decision: input.decision,
+      appliedStage: input.decision === 'accepted' ? input.stage ?? null : null,
+      appliedTags: input.decision === 'accepted' ? input.tags ?? [] : [],
+      resultingNegotiationVersion: input.decision === 'accepted' ? 2 : 1,
+      createdAt: '2026-07-21T06:00:00.000Z',
+    };
+  }
 }
 
 class FakeSessionAuthenticator implements SessionAuthenticator {
   public async authenticate(token: string | undefined) {
     return token === 'valid-session-token-with-more-than-forty-characters'
       ? {
-          userId: 'd86e2931-7552-41f6-831f-85dd34c8bf29',
+          userId: USER_ID,
           workspaceId: WORKSPACE_ID,
           email: 'admin@example.test',
           displayName: 'Admin',
@@ -203,4 +221,80 @@ test('cadastro recusa telefone sem dígitos suficientes na fronteira HTTP', asyn
   });
   assert.equal(response.statusCode, 400);
   assert.deepEqual(response.json(), { error: 'invalid_request' });
+});
+
+test('aceita sugestões editadas com identidade e workspace da sessão', async (context) => {
+  const repository = new FakeCrmRepository();
+  const app = buildApp({
+    crmRepository: repository,
+    sessionAuthenticator: new FakeSessionAuthenticator(),
+  });
+  context.after(async () => app.close());
+  const decisionId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+  const response = await app.inject({
+    method: 'POST',
+    url: `/api/negotiations/${NEGOTIATION_ID}/analyses/${ANALYSIS_ID}/decision`,
+    headers: { cookie: SESSION_COOKIE },
+    payload: {
+      decisionId,
+      decision: 'accepted',
+      expectedVersion: 1,
+      stage: 'proposal_sent',
+      tags: ['prioridade'],
+      workspaceId: 'f35cd133-89aa-4614-84c1-16392b68199e',
+    },
+  });
+  assert.equal(response.statusCode, 400);
+
+  const validResponse = await app.inject({
+    method: 'POST',
+    url: `/api/negotiations/${NEGOTIATION_ID}/analyses/${ANALYSIS_ID}/decision`,
+    headers: { cookie: SESSION_COOKIE },
+    payload: { decisionId, decision: 'accepted', expectedVersion: 1, stage: 'proposal_sent', tags: ['prioridade'] },
+  });
+  assert.equal(validResponse.statusCode, 200);
+  assert.deepEqual(repository.lastAnalysisDecision, {
+    workspaceId: WORKSPACE_ID,
+    userId: USER_ID,
+    negotiationId: NEGOTIATION_ID,
+    analysisId: ANALYSIS_ID,
+    decisionId,
+    decision: 'accepted',
+    expectedVersion: 1,
+    stage: 'proposal_sent',
+    tags: ['prioridade'],
+  });
+});
+
+test('ignorar sugestão recusa campos aplicáveis e conflito de versão', async (context) => {
+  const app = buildApp({
+    crmRepository: new FakeCrmRepository(),
+    sessionAuthenticator: new FakeSessionAuthenticator(),
+  });
+  context.after(async () => app.close());
+  const invalid = await app.inject({
+    method: 'POST',
+    url: `/api/negotiations/${NEGOTIATION_ID}/analyses/${ANALYSIS_ID}/decision`,
+    headers: { cookie: SESSION_COOKIE },
+    payload: {
+      decisionId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+      decision: 'ignored',
+      expectedVersion: 1,
+      tags: ['não permitido'],
+    },
+  });
+  assert.equal(invalid.statusCode, 400);
+
+  const conflict = await app.inject({
+    method: 'POST',
+    url: `/api/negotiations/${NEGOTIATION_ID}/analyses/${ANALYSIS_ID}/decision`,
+    headers: { cookie: SESSION_COOKIE },
+    payload: {
+      decisionId: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+      decision: 'ignored',
+      expectedVersion: 99,
+    },
+  });
+  assert.equal(conflict.statusCode, 409);
+  assert.deepEqual(conflict.json(), { error: 'version_conflict' });
 });

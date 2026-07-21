@@ -5,7 +5,9 @@ import type { SessionAuthenticator } from '../../auth/domain/auth.service.js';
 import { SESSION_COOKIE_NAME } from '../../auth/http/auth.routes.js';
 import {
   CrmConflictError,
+  CrmDecisionConflictError,
   CrmNotFoundError,
+  CrmTagLimitError,
   type CrmRepository,
 } from '../domain/crm.repository.js';
 
@@ -95,6 +97,42 @@ export function registerCrmRoutes(
       throw error;
     }
   });
+
+  app.post('/api/negotiations/:id/analyses/:analysisId/decision', async (request, reply) => {
+    const user = await authenticatedUser(request, options.sessionAuthenticator);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const params = z.object({ id: z.uuid(), analysisId: z.uuid() }).safeParse(request.params);
+    const body = z.discriminatedUnion('decision', [
+      z.object({
+        decisionId: z.uuid(),
+        decision: z.literal('accepted'),
+        expectedVersion: z.number().int().positive(),
+        stage: stageSchema.optional(),
+        tags: z.array(z.string().trim().min(1).max(50)).max(20).optional(),
+      }).strict().refine((value) => value.stage !== undefined || Boolean(value.tags?.length)),
+      z.object({
+        decisionId: z.uuid(),
+        decision: z.literal('ignored'),
+        expectedVersion: z.number().int().positive(),
+      }).strict(),
+    ]).safeParse(request.body);
+    if (!params.success || !body.success) return reply.code(400).send({ error: 'invalid_request' });
+    try {
+      return await options.repository.decideAnalysis({
+        workspaceId: user.workspaceId,
+        userId: user.userId,
+        negotiationId: params.data.id,
+        analysisId: params.data.analysisId,
+        ...body.data,
+      });
+    } catch (error: unknown) {
+      if (error instanceof CrmNotFoundError) return reply.code(404).send({ error: 'not_found' });
+      if (error instanceof CrmConflictError) return reply.code(409).send({ error: 'version_conflict' });
+      if (error instanceof CrmDecisionConflictError) return reply.code(409).send({ error: 'decision_conflict' });
+      if (error instanceof CrmTagLimitError) return reply.code(409).send({ error: 'contact_tag_limit' });
+      throw error;
+    }
+  });
 }
 
 async function authenticatedWorkspace(
@@ -103,4 +141,11 @@ async function authenticatedWorkspace(
 ): Promise<string | undefined> {
   const user = await authenticator.authenticate(request.cookies[SESSION_COOKIE_NAME]);
   return user?.workspaceId;
+}
+
+async function authenticatedUser(
+  request: FastifyRequest,
+  authenticator: SessionAuthenticator,
+) {
+  return authenticator.authenticate(request.cookies[SESSION_COOKIE_NAME]);
 }

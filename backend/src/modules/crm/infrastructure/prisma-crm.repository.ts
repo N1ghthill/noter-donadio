@@ -1,10 +1,13 @@
 import type { NegotiationStage } from '@noter/contracts';
 
-import type { PrismaClient } from '../../../generated/prisma/client.js';
+import { Prisma, type PrismaClient } from '../../../generated/prisma/client.js';
 import { normalizePhoneNumber } from '../../../shared/domain/phone.js';
 import {
   CrmConflictError,
+  CrmDecisionConflictError,
   CrmNotFoundError,
+  CrmTagLimitError,
+  type AnalysisDecisionView,
   type ContactView,
   type CrmRepository,
   type NegotiationDetailView,
@@ -120,6 +123,7 @@ export class PrismaCrmRepository implements CrmRepository {
         aiAnalyses: {
           orderBy: { createdAt: 'desc' },
           take: 20,
+          include: { decision: true },
         },
       },
     });
@@ -155,6 +159,7 @@ export class PrismaCrmRepository implements CrmRepository {
         promptVersion: analysis.promptVersion,
         modelUsed: analysis.modelUsed,
         createdAt: analysis.createdAt.toISOString(),
+        decision: analysis.decision ? toAnalysisDecisionView(analysis.decision) : null,
       })),
     };
   }
@@ -212,10 +217,171 @@ export class PrismaCrmRepository implements CrmRepository {
       throw error;
     }
   }
+
+  public async decideAnalysis(input: {
+    workspaceId: string;
+    userId: string;
+    negotiationId: string;
+    analysisId: string;
+    decisionId: string;
+    decision: 'accepted' | 'ignored';
+    expectedVersion: number;
+    stage?: NegotiationStage | undefined;
+    tags?: readonly string[] | undefined;
+  }): Promise<AnalysisDecisionView> {
+    const requestedTags = [...new Set(input.tags ?? [])];
+    if (input.decision === 'accepted' && input.stage === undefined && requestedTags.length === 0) {
+      throw new CrmDecisionConflictError();
+    }
+    try {
+      return await this.prisma.$transaction(async (transaction) => {
+        const existing = await transaction.analysisDecision.findFirst({
+          where: { id: input.decisionId, workspaceId: input.workspaceId },
+        });
+        if (existing) {
+          if (
+            existing.analysisId !== input.analysisId
+            || existing.negotiationId !== input.negotiationId
+            || existing.userId !== input.userId
+            || existing.decision !== input.decision
+            || existing.appliedStage !== (input.stage ?? null)
+            || !sameStrings(existing.appliedTags, requestedTags)
+          ) throw new CrmDecisionConflictError();
+          return toAnalysisDecisionView(existing);
+        }
+
+        const analysis = await transaction.aiAnalysis.findFirst({
+          where: {
+            id: input.analysisId,
+            workspaceId: input.workspaceId,
+            negotiationId: input.negotiationId,
+            state: 'completed',
+          },
+          include: {
+            decision: true,
+            negotiation: { select: { contactId: true, version: true } },
+          },
+        });
+        if (!analysis) throw new CrmNotFoundError();
+        if (analysis.decision) throw new CrmDecisionConflictError();
+        if (analysis.negotiation.version !== input.expectedVersion) throw new CrmConflictError();
+
+        let resultingVersion = analysis.negotiation.version;
+        const events: Prisma.OutboxEventCreateManyInput[] = [];
+        if (input.decision === 'accepted') {
+          const contact = await transaction.contact.findFirstOrThrow({
+            where: { id: analysis.negotiation.contactId, workspaceId: input.workspaceId },
+            select: { tags: true },
+          });
+          const mergedTags = [...new Set([...contact.tags, ...requestedTags])];
+          if (mergedTags.length > 20) throw new CrmTagLimitError();
+
+          const updated = await transaction.negotiation.updateMany({
+            where: {
+              id: input.negotiationId,
+              workspaceId: input.workspaceId,
+              version: input.expectedVersion,
+            },
+            data: {
+              ...(input.stage !== undefined ? {
+                stage: input.stage,
+                closedAt: input.stage === 'closed_won' || input.stage === 'closed_lost' ? new Date() : null,
+              } : {}),
+              version: { increment: 1 },
+            },
+          });
+          if (updated.count !== 1) throw new CrmConflictError();
+          resultingVersion += 1;
+
+          if (requestedTags.length) {
+            await transaction.contact.update({
+              where: { id: analysis.negotiation.contactId },
+              data: { tags: mergedTags },
+            });
+            events.push({
+              workspaceId: input.workspaceId,
+              aggregateType: 'contact',
+              aggregateId: analysis.negotiation.contactId,
+              eventType: 'contact.updated',
+              payload: { workspaceId: input.workspaceId, contactId: analysis.negotiation.contactId, changedFields: ['tags'] },
+            });
+          }
+          if (input.stage !== undefined) {
+            events.push({
+              workspaceId: input.workspaceId,
+              aggregateType: 'negotiation',
+              aggregateId: input.negotiationId,
+              eventType: 'negotiation.stage.changed',
+              payload: { workspaceId: input.workspaceId, negotiationId: input.negotiationId, stage: input.stage },
+            });
+          }
+        }
+
+        const decision = await transaction.analysisDecision.create({
+          data: {
+            id: input.decisionId,
+            workspaceId: input.workspaceId,
+            analysisId: input.analysisId,
+            negotiationId: input.negotiationId,
+            userId: input.userId,
+            decision: input.decision,
+            appliedStage: input.decision === 'accepted' ? input.stage ?? null : null,
+            appliedTags: input.decision === 'accepted' ? requestedTags : [],
+            resultingNegotiationVersion: resultingVersion,
+          },
+        });
+        events.push({
+          workspaceId: input.workspaceId,
+          aggregateType: 'analysis_decision',
+          aggregateId: decision.id,
+          eventType: 'analysis.decision.changed',
+          payload: {
+            workspaceId: input.workspaceId,
+            decisionId: decision.id,
+            analysisId: input.analysisId,
+            negotiationId: input.negotiationId,
+            decision: input.decision,
+          },
+        });
+        await transaction.outboxEvent.createMany({ data: events });
+        return toAnalysisDecisionView(decision);
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    } catch (error: unknown) {
+      if (isPrismaError(error, 'P2002')) throw new CrmDecisionConflictError();
+      if (isPrismaError(error, 'P2034')) throw new CrmConflictError();
+      throw error;
+    }
+  }
 }
 
 function isUniqueConstraintError(error: unknown): boolean {
-  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002';
+  return isPrismaError(error, 'P2002');
+}
+
+function isPrismaError(error: unknown, code: string): boolean {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === code;
+}
+
+function sameStrings(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function toAnalysisDecisionView(decision: {
+  id: string;
+  decision: 'accepted' | 'ignored';
+  appliedStage: NegotiationStage | null;
+  appliedTags: string[];
+  resultingNegotiationVersion: number;
+  createdAt: Date;
+}): AnalysisDecisionView {
+  return {
+    id: decision.id,
+    decision: decision.decision,
+    appliedStage: decision.appliedStage,
+    appliedTags: decision.appliedTags,
+    resultingNegotiationVersion: decision.resultingNegotiationVersion,
+    createdAt: decision.createdAt.toISOString(),
+  };
 }
 
 function normalizeSearchPhone(search: string): string {
