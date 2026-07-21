@@ -7,6 +7,7 @@ import { PrismaCrmRepository } from './modules/crm/infrastructure/prisma-crm.rep
 import { AuthService } from './modules/auth/domain/auth.service.js';
 import { ScryptPasswordHasher } from './modules/auth/domain/password-hasher.js';
 import { PrismaAuthRepository } from './modules/auth/infrastructure/prisma-auth.repository.js';
+import { attachRealtimeServer } from './modules/realtime/http/realtime.server.js';
 
 const environment = readEnvironment();
 const prisma = createPrismaClient(environment.DATABASE_URL);
@@ -20,6 +21,7 @@ const app = buildApp({
   authService,
   secureCookie: environment.NODE_ENV === 'production',
 });
+attachRealtimeServer(app, { sessionAuthenticator: authService, redisUrl: environment.REDIS_URL });
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => {

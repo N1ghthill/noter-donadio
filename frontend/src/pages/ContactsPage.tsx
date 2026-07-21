@@ -4,8 +4,10 @@ import { api } from '../api/client.js';
 import { EmptyState, ErrorState, LoadingState } from '../components/Feedback.js';
 import { formatDate } from '../lib/format.js';
 import type { Contact } from '../types/api.js';
+import { useRealtime } from '../realtime/RealtimeContext.js';
 
 export function ContactsPage() {
+  const { revision } = useRealtime();
   const [contacts, setContacts] = useState<Contact[]>();
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -23,6 +25,7 @@ export function ContactsPage() {
   }, [search]);
 
   useEffect(() => { void load(''); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (revision > 1) void load(); }, [revision]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

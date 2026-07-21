@@ -28,6 +28,9 @@ a { color: inherit; }
 .sidebar-user small { margin-top: .15rem; color: #91a59a; font-size: .7rem; }
 .button-link { grid-column: 2; justify-self: start; padding: 0; border: 0; color: #a9b9b0; background: none; font-size: .75rem; cursor: pointer; }
 .button-link:hover { color: #fff; }
+.realtime-status { grid-column: 1 / -1; display: flex; align-items: center; gap: .4rem; color: #8fa097; font-size: .68rem; }
+.realtime-status > span { width: .45rem; height: .45rem; border-radius: 50%; background: #a96e68; }
+.realtime-status.online > span { background: #c9f065; box-shadow: 0 0 .55rem rgb(201 240 101 / 55%); }
 
 .app-content { min-width: 0; padding: clamp(1.5rem, 4vw, 3.5rem); }
 .page-stack { display: grid; gap: 1.5rem; width: min(100%, 88rem); margin-inline: auto; }

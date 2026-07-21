@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom';
 
 import { useAuth } from '../auth/AuthContext.js';
+import { useRealtime } from '../realtime/RealtimeContext.js';
 
 const navigation: Array<{ to: string; label: string; end: boolean }> = [
   { to: '/', label: 'Visão geral', end: true },
@@ -10,6 +11,7 @@ const navigation: Array<{ to: string; label: string; end: boolean }> = [
 
 export function AppShell() {
   const auth = useAuth();
+  const realtime = useRealtime();
 
   return (
     <div className="app-frame">
@@ -39,6 +41,9 @@ export function AppShell() {
           <button className="button-link" type="button" onClick={() => void auth.logout()}>
             Sair
           </button>
+          <span className={`realtime-status${realtime.connected ? ' online' : ''}`}>
+            <span aria-hidden="true" />{realtime.connected ? 'Tempo real ativo' : 'Reconectando…'}
+          </span>
         </div>
       </aside>
       <main className="app-content">

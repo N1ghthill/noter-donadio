@@ -6,8 +6,10 @@ import { ApiError, api } from '../api/client.js';
 import { ErrorState, LoadingState } from '../components/Feedback.js';
 import { formatMoney, STAGE_LABELS } from '../lib/format.js';
 import type { Negotiation } from '../types/api.js';
+import { useRealtime } from '../realtime/RealtimeContext.js';
 
 export function PipelinePage() {
+  const { revision } = useRealtime();
   const [items, setItems] = useState<Negotiation[]>();
   const [draggedId, setDraggedId] = useState<string>();
   const [updatingId, setUpdatingId] = useState<string>();
@@ -19,7 +21,7 @@ export function PipelinePage() {
     catch { setError('Não foi possível carregar o pipeline.'); }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void load(); }, [load, revision]);
 
   async function move(id: string, stage: NegotiationStage) {
     const currentItems = items;

@@ -29,6 +29,9 @@ O detalhe nunca recebe `workspaceId` do navegador: o isolamento é derivado excl
 ```bash
 npm run start -w @noter/backend
 npm run start:outbox -w @noter/backend
+npm run start:realtime -w @noter/backend
 ```
 
 O processo da outbox publica `message.text.ingested`, `message.audio.ingested` e eventos de atualização do CRM nas filas correspondentes. Os jobs contêm IDs e metadados de roteamento, nunca o conteúdo integral da conversa.
+
+O protocolo de atualização e seus contratos sanitizados estão documentados em [`docs/realtime/events.md`](../realtime/events.md).

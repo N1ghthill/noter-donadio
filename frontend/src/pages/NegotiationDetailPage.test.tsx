@@ -3,6 +3,16 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { NegotiationDetailPage } from './NegotiationDetailPage.js';
+import { RealtimeProvider } from '../realtime/RealtimeContext.js';
+
+vi.mock('socket.io-client', () => ({
+  io: () => ({
+    on: vi.fn(),
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    removeAllListeners: vi.fn(),
+  }),
+}));
 
 describe('detalhe da negociação', () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -30,9 +40,11 @@ describe('detalhe da negociação', () => {
     }), { status: 200 })));
 
     render(
-      <MemoryRouter initialEntries={['/pipeline/neg-1']}>
-        <Routes><Route path="/pipeline/:id" element={<NegotiationDetailPage />} /></Routes>
-      </MemoryRouter>,
+      <RealtimeProvider>
+        <MemoryRouter initialEntries={['/pipeline/neg-1']}>
+          <Routes><Route path="/pipeline/:id" element={<NegotiationDetailPage />} /></Routes>
+        </MemoryRouter>
+      </RealtimeProvider>,
     );
 
     expect(await screen.findByRole('heading', { name: 'Projeto fictício' })).toBeInTheDocument();

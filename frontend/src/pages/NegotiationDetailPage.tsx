@@ -5,8 +5,10 @@ import { ApiError, api } from '../api/client.js';
 import { EmptyState, ErrorState, LoadingState } from '../components/Feedback.js';
 import { formatDate, formatMoney, STAGE_LABELS } from '../lib/format.js';
 import type { NegotiationDetail } from '../types/api.js';
+import { useRealtime } from '../realtime/RealtimeContext.js';
 
 export function NegotiationDetailPage() {
+  const { revision } = useRealtime();
   const { id } = useParams();
   const [detail, setDetail] = useState<NegotiationDetail>();
   const [error, setError] = useState<string>();
@@ -23,7 +25,7 @@ export function NegotiationDetailPage() {
     }
   }, [id]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void load(); }, [load, revision]);
 
   if (error && !detail) return <ErrorState message={error} retry={() => void load()} />;
   if (!detail) return <LoadingState label="Carregando negociação…" />;

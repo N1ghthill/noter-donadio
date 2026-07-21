@@ -4,8 +4,10 @@ import { api } from '../api/client.js';
 import { ErrorState, LoadingState } from '../components/Feedback.js';
 import { formatDate, formatMoney, STAGE_LABELS } from '../lib/format.js';
 import type { Contact, Negotiation } from '../types/api.js';
+import { useRealtime } from '../realtime/RealtimeContext.js';
 
 export function DashboardPage() {
+  const { revision } = useRealtime();
   const [data, setData] = useState<{ contacts: Contact[]; negotiations: Negotiation[] }>();
   const [error, setError] = useState(false);
 
@@ -19,7 +21,7 @@ export function DashboardPage() {
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void load(); }, [load, revision]);
 
   if (error) return <ErrorState message="Não foi possível carregar a visão geral." retry={() => void load()} />;
   if (!data) return <LoadingState label="Carregando visão geral…" />;

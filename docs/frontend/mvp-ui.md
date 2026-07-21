@@ -13,6 +13,7 @@ A aplicação React é uma interface autenticada para o CRM e contém:
 - movimentação de negociação por arrastar e soltar;
 - movimentação alternativa por seletor de etapa, acessível via teclado;
 - detalhe da negociação com contato, histórico, transcrições e sugestões de IA;
+- indicador de conexão em tempo real e reconciliação REST automática;
 - atualização otimista com reversão em erro e reconciliação em conflito de versão.
 
 As telas tratam separadamente carregamento, falha e ausência de dados. A interface não guarda token no navegador e não executa ações autônomas de IA.
@@ -79,6 +80,6 @@ Os testes do frontend cobrem o envio do cookie, codificação de busca, erros HT
 ## Limites conhecidos desta fatia
 
 - o MVP ainda não cria negociações pela interface; elas surgem pelo fluxo de ingestão;
-- atualizações em tempo real ainda serão conectadas, portanto a tela reconcilia dados ao abrir e após conflito;
+- notificações em tempo real cobrem edição de contato e mudança de etapa; ingestão e processamento serão conectados nas próximas fatias;
 - o player de áudio depende do adapter privado de armazenamento e de URLs assinadas, ainda não conectado;
 - a política de proteção CSRF para exposição pública ainda depende da validação de `Origin` prevista na documentação de autenticação.
