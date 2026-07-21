@@ -36,17 +36,21 @@ export class BullMqEventPublisher implements EventPublisher {
 
   private queueFor(eventType: string): Queue {
     if (eventType === 'message.audio.ingested') return this.audioQueue;
-    if (eventType === 'message.text.ingested') return this.textQueue;
+    if (eventType === 'message.text.ingested' || eventType === 'message.audio.ready_for_analysis') {
+      return this.textQueue;
+    }
     return this.realtimeQueue;
   }
 }
 
 export function eventJobOptions(eventType: string, eventId: string): JobsOptions {
-  const audio = eventType === 'message.audio.ingested';
+  const longRunning = eventType === 'message.audio.ingested'
+    || eventType === 'message.text.ingested'
+    || eventType === 'message.audio.ready_for_analysis';
   return {
     jobId: eventId,
-    attempts: audio ? 12 : 3,
-    backoff: audio
+    attempts: longRunning ? 12 : 3,
+    backoff: longRunning
       ? { type: 'fixed', delay: 30_000 }
       : { type: 'exponential', delay: 1_000 },
     removeOnComplete: { age: 86_400, count: 10_000 },

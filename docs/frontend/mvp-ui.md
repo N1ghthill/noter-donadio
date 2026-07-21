@@ -12,7 +12,7 @@ A aplicação React é uma interface autenticada para o CRM e contém:
 - pipeline Kanban com as sete etapas do domínio;
 - movimentação de negociação por arrastar e soltar;
 - movimentação alternativa por seletor de etapa, acessível via teclado;
-- detalhe da negociação com contato, histórico, transcrições e sugestões de IA;
+- detalhe da negociação com contato, histórico, transcrições e sugestões estruturadas de IA;
 - caixa de conversas ordenada pela mensagem mais recente, com histórico reconciliado via REST;
 - formulário local para simular recebimento idempotente de texto ou áudio sem enviar mensagens;
 - indicador de conexão em tempo real e reconciliação REST automática;
@@ -68,6 +68,8 @@ Inicie a interface no segundo terminal:
 npm run dev -w @noter/frontend
 ```
 
+Para processar texto e áudio simulados de ponta a ponta, mantenha também `start:outbox`, `start:transcription`, `start:analysis` e `start:realtime` ativos, conforme a documentação da API.
+
 Abra o endereço informado pelo Vite, normalmente `http://localhost:5173`, e use o workspace e administrador criados no bootstrap.
 
 ## Validação
@@ -83,7 +85,8 @@ Os testes do frontend cobrem o envio do cookie, codificação de busca, erros HT
 ## Limites conhecidos desta fatia
 
 - o MVP ainda não cria negociações pela interface; elas surgem pelo fluxo de ingestão;
-- notificações em tempo real cobrem edição de contato, mudança de etapa, conexão, persistência de mensagem e transcrição; análise será conectada na próxima fatia;
+- notificações em tempo real cobrem edição de contato, mudança de etapa, conexão, persistência de mensagem, transcrição e análise;
+- a análise usa apenas o adapter falso e suas sugestões são exibidas, mas nunca aplicadas automaticamente ao CRM;
 - a conexão atual é simulada; nenhum adapter real de WhatsApp está habilitado;
 - a transcrição falsa de áudio já atualiza a timeline; reprodução depende do adapter privado de armazenamento e de URLs assinadas, ainda não conectado;
 - a política de proteção CSRF para exposição pública ainda depende da validação de `Origin` prevista na documentação de autenticação.

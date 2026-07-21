@@ -55,5 +55,6 @@ function isRealtimeEvent(event: unknown): boolean {
     || event.type === 'negotiation.stage.changed'
     || event.type === 'whatsapp.connection.changed'
     || event.type === 'message.persisted'
-    || event.type === 'message.transcription.changed';
+    || event.type === 'message.transcription.changed'
+    || event.type === 'analysis.changed';
 }

@@ -1,4 +1,4 @@
-import type { NegotiationStage } from '@noter/contracts';
+import type { NegotiationStage, ProcessingState } from '@noter/contracts';
 
 export interface ContactView {
   readonly id: string;
@@ -41,14 +41,21 @@ export interface NegotiationDetailView extends NegotiationView {
   }[];
   readonly analyses: readonly {
     readonly id: string;
-    readonly state: string;
+    readonly state: ProcessingState;
     readonly summary: string | null;
+    readonly entities: {
+      readonly product: string | null;
+      readonly amount: string | null;
+      readonly deadline: string | null;
+    } | null;
     readonly sentiment: string | null;
     readonly objections: readonly string[];
     readonly nextActions: readonly string[];
     readonly suggestedTags: readonly string[];
     readonly suggestedStage: NegotiationStage | null;
     readonly confidenceScore: string | null;
+    readonly promptVersion: string;
+    readonly modelUsed: string | null;
     readonly createdAt: string;
   }[];
 }

@@ -34,8 +34,10 @@ describe('detalhe da negociação', () => {
       }],
       analyses: [{
         id: 'analysis-1', state: 'completed', summary: 'Contato interessado.', sentiment: 'positive',
+        entities: { product: 'Produto fictício', amount: null, deadline: null },
         objections: [], nextActions: ['Agendar demonstração'], suggestedTags: ['demonstração'],
-        suggestedStage: 'proposal_sent', confidenceScore: '0.91', createdAt: '2026-07-20T18:31:00.000Z',
+        suggestedStage: 'proposal_sent', confidenceScore: '0.91', promptVersion: 'demo-v1',
+        modelUsed: 'demo-local', createdAt: '2026-07-20T18:31:00.000Z',
       }],
     }), { status: 200 })));
 
@@ -51,6 +53,8 @@ describe('detalhe da negociação', () => {
     expect(screen.getByText('Podemos agendar uma apresentação?')).toBeInTheDocument();
     expect(screen.getByText('Transcrição · concluída')).toBeInTheDocument();
     expect(screen.getByText('Agendar demonstração')).toBeInTheDocument();
+    expect(screen.getByText('Produto fictício')).toBeInTheDocument();
+    expect(screen.getByText('demonstração')).toBeInTheDocument();
     expect(screen.getByText('Sugestões não são aplicadas automaticamente.')).toBeInTheDocument();
   });
 });

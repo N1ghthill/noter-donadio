@@ -102,19 +102,32 @@ export class PrismaAudioTranscriptionRepository implements AudioTranscriptionRep
         select: { negotiationId: true },
       });
       if (!message.negotiationId) throw new Error('Mensagem de áudio sem negociação');
-      await transaction.outboxEvent.create({
-        data: {
-          workspaceId: input.workspaceId,
-          aggregateType: 'message',
-          aggregateId: input.messageId,
-          eventType: 'message.transcription.changed',
-          payload: {
+      await transaction.outboxEvent.createMany({
+        data: [
+          {
             workspaceId: input.workspaceId,
-            messageId: input.messageId,
-            negotiationId: message.negotiationId,
-            state: 'completed',
+            aggregateType: 'message',
+            aggregateId: input.messageId,
+            eventType: 'message.transcription.changed',
+            payload: {
+              workspaceId: input.workspaceId,
+              messageId: input.messageId,
+              negotiationId: message.negotiationId,
+              state: 'completed',
+            },
           },
-        },
+          {
+            workspaceId: input.workspaceId,
+            aggregateType: 'message',
+            aggregateId: input.messageId,
+            eventType: 'message.audio.ready_for_analysis',
+            payload: {
+              workspaceId: input.workspaceId,
+              messageId: input.messageId,
+              negotiationId: message.negotiationId,
+            },
+          },
+        ],
       });
       return true;
     });

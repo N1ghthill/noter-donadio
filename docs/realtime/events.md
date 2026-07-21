@@ -67,6 +67,17 @@ Todos são emitidos como `crm.updated`:
 
 ```json
 {
+  "type": "analysis.changed",
+  "workspaceId": "uuid",
+  "analysisId": "uuid",
+  "messageId": "uuid",
+  "negotiationId": "uuid",
+  "state": "completed"
+}
+```
+
+```json
+{
   "type": "negotiation.stage.changed",
   "workspaceId": "uuid",
   "negotiationId": "uuid",
@@ -84,6 +95,7 @@ Além da API e do frontend, execute:
 npm run start:outbox -w @noter/backend
 npm run start:realtime -w @noter/backend
 npm run start:transcription -w @noter/backend
+npm run start:analysis -w @noter/backend
 ```
 
 O primeiro processo move eventos transacionais para BullMQ. O segundo consome `realtime-events` e publica nas salas Socket.IO via Redis.
@@ -93,5 +105,5 @@ O primeiro processo move eventos transacionais para BullMQ. O segundo consome `r
 - Redis e Socket.IO são transporte descartável; PostgreSQL continua sendo a fonte de verdade;
 - eventos repetidos são seguros porque apenas invalidam consultas;
 - eventos perdidos são recuperados na reconexão por REST;
-- nesta fatia, edição de contato, mudança de etapa, estado da conexão, mensagem persistida e mudança da transcrição geram notificações;
-- análise assistiva deverá publicar eventos próprios quando seu worker for implementado.
+- nesta fatia, edição de contato, mudança de etapa, estado da conexão, mensagem persistida, transcrição e análise geram notificações;
+- `analysis.changed` nunca transporta resumo, entidades, sentimento ou sugestões; esses dados são reconciliados pela API autenticada.

@@ -50,14 +50,21 @@ export interface NegotiationDetail extends Negotiation {
   }>;
   analyses: Array<{
     id: string;
-    state: string;
+    state: ProcessingState;
     summary: string | null;
-    sentiment: string | null;
+    entities: {
+      product: string | null;
+      amount: string | null;
+      deadline: string | null;
+    } | null;
+    sentiment: 'positive' | 'neutral' | 'negative' | 'urgent' | null;
     objections: string[];
     nextActions: string[];
     suggestedTags: string[];
     suggestedStage: NegotiationStage | null;
     confidenceScore: string | null;
+    promptVersion: string;
+    modelUsed: string | null;
     createdAt: string;
   }>;
 }

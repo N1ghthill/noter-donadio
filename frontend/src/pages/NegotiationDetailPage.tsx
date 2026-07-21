@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 
 import { ApiError, api } from '../api/client.js';
 import { EmptyState, ErrorState, LoadingState } from '../components/Feedback.js';
-import { formatDate, formatMoney, PROCESSING_LABELS, STAGE_LABELS } from '../lib/format.js';
+import { formatDate, formatMoney, PROCESSING_LABELS, SENTIMENT_LABELS, STAGE_LABELS } from '../lib/format.js';
 import type { NegotiationDetail } from '../types/api.js';
 import { useRealtime } from '../realtime/RealtimeContext.js';
 
@@ -60,9 +60,22 @@ export function NegotiationDetailPage() {
           <div className="panel-heading"><div><p className="eyebrow">Assistivo</p><h2>Análise mais recente</h2></div></div>
           {!latestAnalysis ? <EmptyState title="Ainda sem análise" description="As sugestões aparecerão após o processamento das mensagens." /> : (
             <div className="analysis-content">
-              <p>{latestAnalysis.summary ?? 'Resumo ainda não disponível.'}</p>
-              {latestAnalysis.suggestedStage ? <p><strong>Etapa sugerida:</strong> {STAGE_LABELS[latestAnalysis.suggestedStage]}</p> : null}
-              {latestAnalysis.nextActions.length ? <div><strong>Próximas ações sugeridas</strong><ul>{latestAnalysis.nextActions.map((action) => <li key={action}>{action}</li>)}</ul></div> : null}
+              <small>Análise {PROCESSING_LABELS[latestAnalysis.state]} · {latestAnalysis.modelUsed ?? latestAnalysis.promptVersion}</small>
+              {latestAnalysis.state === 'failed' ? <p>Não foi possível analisar esta mensagem. O conteúdo original continua disponível.</p> : <>
+                <p>{latestAnalysis.summary ?? 'Resumo ainda não disponível.'}</p>
+                {latestAnalysis.sentiment ? <p><strong>Sentimento:</strong> {SENTIMENT_LABELS[latestAnalysis.sentiment]}</p> : null}
+                {latestAnalysis.entities && Object.values(latestAnalysis.entities).some(Boolean) ? (
+                  <dl className="analysis-entities">
+                    {latestAnalysis.entities.product ? <div><dt>Produto</dt><dd>{latestAnalysis.entities.product}</dd></div> : null}
+                    {latestAnalysis.entities.amount ? <div><dt>Valor citado</dt><dd>{latestAnalysis.entities.amount}</dd></div> : null}
+                    {latestAnalysis.entities.deadline ? <div><dt>Prazo citado</dt><dd>{latestAnalysis.entities.deadline}</dd></div> : null}
+                  </dl>
+                ) : null}
+                {latestAnalysis.suggestedStage ? <p><strong>Etapa sugerida:</strong> {STAGE_LABELS[latestAnalysis.suggestedStage]}</p> : null}
+                {latestAnalysis.objections.length ? <div><strong>Objeções identificadas</strong><ul>{latestAnalysis.objections.map((objection) => <li key={objection}>{objection}</li>)}</ul></div> : null}
+                {latestAnalysis.nextActions.length ? <div><strong>Próximas ações sugeridas</strong><ul>{latestAnalysis.nextActions.map((action) => <li key={action}>{action}</li>)}</ul></div> : null}
+                {latestAnalysis.suggestedTags.length ? <div><strong>Tags sugeridas</strong><div className="tag-list">{latestAnalysis.suggestedTags.map((tag) => <span key={tag}>{tag}</span>)}</div></div> : null}
+              </>}
               <small>Sugestões não são aplicadas automaticamente.</small>
             </div>
           )}

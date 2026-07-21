@@ -145,12 +145,15 @@ export class PrismaCrmRepository implements CrmRepository {
         id: analysis.id,
         state: analysis.state,
         summary: analysis.summary,
+        entities: toAnalysisEntities(analysis.entities),
         sentiment: analysis.sentiment,
         objections: analysis.objections,
         nextActions: analysis.nextActions,
         suggestedTags: analysis.suggestedTags,
         suggestedStage: analysis.suggestedStage,
         confidenceScore: analysis.confidenceScore?.toString() ?? null,
+        promptVersion: analysis.promptVersion,
+        modelUsed: analysis.modelUsed,
         createdAt: analysis.createdAt.toISOString(),
       })),
     };
@@ -252,4 +255,15 @@ function toNegotiationView(negotiation: {
     version: negotiation.version,
     updatedAt: negotiation.updatedAt.toISOString(),
   };
+}
+
+function toAnalysisEntities(value: unknown): {
+  product: string | null;
+  amount: string | null;
+  deadline: string | null;
+} | null {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return null;
+  const entities = value as Record<string, unknown>;
+  const field = (name: string) => typeof entities[name] === 'string' ? entities[name] : null;
+  return { product: field('product'), amount: field('amount'), deadline: field('deadline') };
 }

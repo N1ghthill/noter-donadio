@@ -36,11 +36,13 @@ npm run start -w @noter/backend
 npm run start:outbox -w @noter/backend
 npm run start:realtime -w @noter/backend
 npm run start:transcription -w @noter/backend
+npm run start:analysis -w @noter/backend
 ```
 
-O processo da outbox publica `message.text.ingested`, `message.audio.ingested`, `message.persisted` e eventos de atualização do CRM nas filas correspondentes. Os jobs e notificações contêm IDs e metadados de roteamento, nunca o conteúdo integral da conversa.
+O processo da outbox publica `message.text.ingested`, `message.audio.ingested`, `message.audio.ready_for_analysis`, `message.persisted` e eventos de atualização do CRM nas filas correspondentes. Os jobs e notificações contêm IDs e metadados de roteamento, nunca o conteúdo integral da conversa.
 
 A simulação exige `clientMessageId` UUID e aceita `messageType` igual a `text` ou `audio`. Texto exige `content`; no áudio, qualquer conteúdo é ignorado e a transcrição é produzida apenas pelo adapter falso. O identificador fornecido pelo navegador compõe a chave idempotente; `workspaceId`, conta, direção, contato fictício e horário são definidos no servidor. Não existe endpoint de envio de mensagem nesta fase.
 
 O protocolo de atualização e seus contratos sanitizados estão documentados em [`docs/realtime/events.md`](../realtime/events.md).
 O fluxo de setup e os limites do adapter falso estão em [`docs/integrations/whatsapp.md`](../integrations/whatsapp.md).
+O contrato da análise e sua execução local estão em [`docs/integrations/analysis.md`](../integrations/analysis.md).

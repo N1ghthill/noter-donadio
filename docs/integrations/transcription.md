@@ -12,6 +12,7 @@ mensagem de áudio + mídia pending + outbox
   → lease PostgreSQL processing
   → adapter de transcrição
   → mídia completed/failed + outbox
+  → job de análise da transcrição concluída
   → evento realtime sanitizado
   → reconciliação REST
 ```
@@ -34,6 +35,7 @@ Falhas persistem somente o código sanitizado `TRANSCRIPTION_PROCESSING_FAILED` 
 - conteúdo, bytes de áudio e transcrição não trafegam no BullMQ ou Socket.IO;
 - o resultado do adapter é validado antes da persistência;
 - a transcrição permanece como artefato da mensagem de áudio, sem duplicar a timeline;
+- somente uma transcrição concluída produz `message.audio.ready_for_analysis`, contendo IDs;
 - o formulário local de áudio ignora qualquer texto enviado pelo navegador;
 - não há download, armazenamento ou reprodução de áudio nesta fatia;
 - um adapter real exigirá armazenamento privado, URL curta assinada, limites de tamanho/duração e contrato com o provedor.

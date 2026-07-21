@@ -295,6 +295,8 @@ model AiAnalysis {
   negotiationId       String            @map("negotiation_id") @db.Uuid
   analysisType        String            @default("message_extraction") @map("analysis_type") @db.VarChar(50)
   state               ProcessingState   @default(pending)
+  analysisAttemptId   String?           @map("analysis_attempt_id") @db.Uuid
+  processingStartedAt DateTime?         @map("processing_started_at") @db.Timestamptz(6)
   summary             String?
   entities            Json?
   sentiment           Sentiment?
@@ -318,6 +320,7 @@ model AiAnalysis {
 
   @@unique([messageId, analysisType, promptVersion])
   @@index([workspaceId, state])
+  @@index([state, processingStartedAt])
   @@index([negotiationId, createdAt])
   @@map("ai_analyses")
 }

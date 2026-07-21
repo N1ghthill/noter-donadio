@@ -74,3 +74,23 @@ test('evento de transcrição descarta o texto produzido', () => {
     state: 'completed',
   });
 });
+
+test('evento de análise descarta resumo e sugestões', () => {
+  const event = parseRealtimeEvent('analysis.changed', {
+    workspaceId: WORKSPACE_ID,
+    analysisId: '87507894-44d7-4127-a909-89358db1944a',
+    messageId: 'fbdff1c4-5a25-4e24-b694-d5dc6c21f227',
+    negotiationId: 'db71084e-5829-4a90-8346-5832998294ea',
+    state: 'completed',
+    summary: 'dado restrito ao REST',
+    suggestedStage: 'qualified',
+  });
+  assert.deepEqual(event, {
+    type: 'analysis.changed',
+    workspaceId: WORKSPACE_ID,
+    analysisId: '87507894-44d7-4127-a909-89358db1944a',
+    messageId: 'fbdff1c4-5a25-4e24-b694-d5dc6c21f227',
+    negotiationId: 'db71084e-5829-4a90-8346-5832998294ea',
+    state: 'completed',
+  });
+});

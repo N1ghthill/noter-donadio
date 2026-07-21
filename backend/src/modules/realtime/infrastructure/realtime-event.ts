@@ -30,6 +30,13 @@ const eventSchemas = {
     negotiationId: z.uuid(),
     state: z.enum(['completed', 'failed']),
   }),
+  'analysis.changed': z.object({
+    workspaceId,
+    analysisId: z.uuid(),
+    messageId: z.uuid(),
+    negotiationId: z.uuid(),
+    state: z.enum(['completed', 'failed']),
+  }),
 } as const;
 
 export type RealtimeEvent =
@@ -37,7 +44,8 @@ export type RealtimeEvent =
   | { type: 'negotiation.stage.changed'; workspaceId: string; negotiationId: string; stage: string }
   | { type: 'whatsapp.connection.changed'; workspaceId: string; accountId: string; status: string }
   | { type: 'message.persisted'; workspaceId: string; messageId: string; contactId: string; negotiationId: string }
-  | { type: 'message.transcription.changed'; workspaceId: string; messageId: string; negotiationId: string; state: string };
+  | { type: 'message.transcription.changed'; workspaceId: string; messageId: string; negotiationId: string; state: string }
+  | { type: 'analysis.changed'; workspaceId: string; analysisId: string; messageId: string; negotiationId: string; state: string };
 
 export function parseRealtimeEvent(name: string, data: unknown): RealtimeEvent {
   if (name === 'contact.updated') {
@@ -53,6 +61,9 @@ export function parseRealtimeEvent(name: string, data: unknown): RealtimeEvent {
     return { type: name, ...eventSchemas[name].parse(data) };
   }
   if (name === 'message.transcription.changed') {
+    return { type: name, ...eventSchemas[name].parse(data) };
+  }
+  if (name === 'analysis.changed') {
     return { type: name, ...eventSchemas[name].parse(data) };
   }
   throw new Error('unsupported_realtime_event');

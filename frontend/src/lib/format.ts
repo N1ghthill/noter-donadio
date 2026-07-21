@@ -17,6 +17,13 @@ export const PROCESSING_LABELS: Record<ProcessingState, string> = {
   failed: 'falhou',
 };
 
+export const SENTIMENT_LABELS = {
+  positive: 'positivo',
+  neutral: 'neutro',
+  negative: 'negativo',
+  urgent: 'urgente',
+} as const;
+
 export function formatMoney(value: string | null, currency = 'BRL'): string {
   if (value === null) return 'Valor não informado';
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency }).format(Number(value));

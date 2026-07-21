@@ -111,3 +111,9 @@ Uma nova mensagem produz `message.persisted` na mesma transação da mensagem e 
 O worker de áudio adquire no PostgreSQL um lease identificado por UUID e instante de início. Somente a tentativa atual pode gravar sucesso ou falha; entregas repetidas de uma mídia concluída não chamam o adapter, e leases abandonados podem ser retomados depois de cinco minutos.
 
 O job contém apenas IDs. O resultado do adapter é validado e permanece no `MediaAsset` da mensagem original. Sucesso ou falha cria `message.transcription.changed` com IDs e estado, nunca com o texto transcrito. O adapter falso valida esse contrato sem obter mídia ou acessar um provedor externo.
+
+## ADR-018 — Análise é versionada, estrita e apenas sugestiva
+
+Cada mensagem recebe no máximo uma análise por tipo e versão do prompt. O worker usa somente o texto da mensagem corrente ou sua transcrição concluída, adquire um lease persistido por tentativa e valida a resposta contra uma lista fechada de campos, enumerações e limites antes de gravá-la.
+
+Jobs e eventos carregam apenas IDs e estado. Resultados permanecem no PostgreSQL e são reconciliados pela API autenticada. A análise não altera contato, tags, valor ou etapa da negociação: toda aplicação futura de uma sugestão dependerá de confirmação explícita e auditável do usuário.

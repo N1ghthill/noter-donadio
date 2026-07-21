@@ -9,6 +9,7 @@ const environmentSchema = z.object({
   INTERNAL_INGESTION_TOKEN: z.string().min(32),
   WHATSAPP_ADAPTER: z.enum(['disabled', 'fake']).default('disabled'),
   TRANSCRIPTION_ADAPTER: z.enum(['disabled', 'fake']).default('disabled'),
+  AI_ADAPTER: z.enum(['disabled', 'fake']).default('disabled'),
 });
 
 export type Environment = z.infer<typeof environmentSchema>;

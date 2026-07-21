@@ -10,6 +10,7 @@
     "start:outbox": "node dist/outbox.main.js",
     "start:realtime": "node dist/realtime.main.js",
     "start:transcription": "node dist/transcription.main.js",
+    "start:analysis": "node dist/analysis.main.js",
     "bootstrap:admin": "node dist/bootstrap-admin.js",
     "seed:demo": "node dist/seed-demo.js",
     "pretypecheck": "npm run build -w @noter/contracts",
