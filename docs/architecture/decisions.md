@@ -87,3 +87,9 @@ O produto deve possuir política configurável de retenção de mídia, exclusã
 O frontend autentica por cookie `HttpOnly`, `SameSite=Strict` e `Secure` em produção. O valor da sessão possui 256 bits aleatórios; apenas seu SHA-256 é persistido. Sessões expiram em oito horas, podem ser revogadas no servidor e nunca são guardadas em `localStorage` ou `sessionStorage`.
 
 Senhas usam `scrypt` com salt individual e parâmetros versionados. O token interno continua existindo somente para ingestão entre processos e não autoriza rotas do CRM.
+
+## ADR-014 — Migrations são validadas em PostgreSQL vazio no CI
+
+Toda alteração de schema deve incluir uma migration versionada e aplicável em um banco PostgreSQL vazio. O CI inicia PostgreSQL 16 e executa `prisma migrate deploy` antes de typecheck, testes e build.
+
+A migration inicial publicada em 20 de julho de 2026 continha acidentalmente uma linha de saída do CLI antes do SQL. Ela foi corrigida no dia seguinte, antes de qualquer aplicação bem-sucedida ou uso compartilhado do banco. Essa é a única exceção à regra de não editar migrations publicadas; migrations futuras devem receber correções incrementais.
