@@ -1,5 +1,6 @@
 import { NEGOTIATION_STAGES, type NegotiationStage } from '@noter/contracts';
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { ApiError, api } from '../api/client.js';
 import { ErrorState, LoadingState } from '../components/Feedback.js';
@@ -65,6 +66,13 @@ export function PipelinePage() {
                     <h3>{item.title ?? 'Negociação sem título'}</h3>
                     <strong>{formatMoney(item.value, item.currency)}</strong>
                     {item.sentiment ? <span className="sentiment">{item.sentiment}</span> : null}
+                    <label className="stage-select">
+                      <span>Etapa</span>
+                      <select value={item.stage} disabled={updatingId === item.id} onChange={(event) => void move(item.id, event.target.value as NegotiationStage)}>
+                        {NEGOTIATION_STAGES.map((option) => <option key={option} value={option}>{STAGE_LABELS[option]}</option>)}
+                      </select>
+                    </label>
+                    <Link className="card-link" to={`/pipeline/${item.id}`}>Abrir detalhes</Link>
                   </article>
                 ))}
                 {stageItems.length === 0 ? <p className="column-empty">Solte uma negociação aqui</p> : null}

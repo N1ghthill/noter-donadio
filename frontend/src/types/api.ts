@@ -15,6 +15,7 @@ export interface Contact {
   tags: string[];
   source: string;
   status: string;
+  notes: string | null;
   lastInteractionAt: string | null;
 }
 
@@ -29,4 +30,33 @@ export interface Negotiation {
   sentiment: string | null;
   version: number;
   updatedAt: string;
+}
+
+export interface NegotiationDetail extends Negotiation {
+  contact: Contact;
+  messages: Array<{
+    id: string;
+    direction: 'inbound' | 'outbound';
+    messageType: string;
+    content: string | null;
+    occurredAt: string;
+    media: {
+      transcriptionState: string;
+      transcriptionText: string | null;
+      durationSeconds: number | null;
+      mimeType: string | null;
+    } | null;
+  }>;
+  analyses: Array<{
+    id: string;
+    state: string;
+    summary: string | null;
+    sentiment: string | null;
+    objections: string[];
+    nextActions: string[];
+    suggestedTags: string[];
+    suggestedStage: NegotiationStage | null;
+    confidenceScore: string | null;
+    createdAt: string;
+  }>;
 }

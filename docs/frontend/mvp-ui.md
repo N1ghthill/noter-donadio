@@ -8,8 +8,11 @@ A aplicação React é uma interface autenticada para o CRM e contém:
 - visão geral com totais de contatos, negociações abertas e valor do pipeline;
 - listagem e busca de contatos;
 - cadastro manual de contato, com telefone, tags e observações;
+- edição manual de nome, telefone, tags e observações do contato;
 - pipeline Kanban com as sete etapas do domínio;
 - movimentação de negociação por arrastar e soltar;
+- movimentação alternativa por seletor de etapa, acessível via teclado;
+- detalhe da negociação com contato, histórico, transcrições e sugestões de IA;
 - atualização otimista com reversão em erro e reconciliação em conflito de versão.
 
 As telas tratam separadamente carregamento, falha e ausência de dados. A interface não guarda token no navegador e não executa ações autônomas de IA.
@@ -42,9 +45,12 @@ npm install
 npm exec -w @noter/backend -- prisma migrate dev
 npm run build -w @noter/backend
 npm run bootstrap:admin -w @noter/backend
+npm run seed:demo -w @noter/backend
 ```
 
 Defina uma senha temporária de pelo menos 12 caracteres em `ADMIN_PASSWORD` apenas para o comando de bootstrap e remova-a do `.env` em seguida.
+
+`seed:demo` é idempotente e cria somente dados fictícios: um contato, uma negociação, três mensagens, uma transcrição e uma análise assistiva. Ele permite validar todas as telas sem conectar WhatsApp ou chamar serviços pagos.
 
 Inicie a API no primeiro terminal:
 
@@ -74,5 +80,5 @@ Os testes do frontend cobrem o envio do cookie, codificação de busca, erros HT
 
 - o MVP ainda não cria negociações pela interface; elas surgem pelo fluxo de ingestão;
 - atualizações em tempo real ainda serão conectadas, portanto a tela reconcilia dados ao abrir e após conflito;
-- arrastar e soltar atende ponteiro/mouse; um seletor explícito de etapa deve ser adicionado para equivalência completa via teclado;
+- o player de áudio depende do adapter privado de armazenamento e de URLs assinadas, ainda não conectado;
 - a política de proteção CSRF para exposição pública ainda depende da validação de `Origin` prevista na documentação de autenticação.

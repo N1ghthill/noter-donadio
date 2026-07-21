@@ -7,6 +7,7 @@ import { ContactsPage } from './pages/ContactsPage.js';
 import { DashboardPage } from './pages/DashboardPage.js';
 import { LoginPage } from './pages/LoginPage.js';
 import { PipelinePage } from './pages/PipelinePage.js';
+import { NegotiationDetailPage } from './pages/NegotiationDetailPage.js';
 
 export function App() {
   const auth = useAuth();
@@ -20,6 +21,7 @@ export function App() {
         <Route index element={<DashboardPage />} />
         <Route path="contatos" element={<ContactsPage />} />
         <Route path="pipeline" element={<PipelinePage />} />
+        <Route path="pipeline/:id" element={<NegotiationDetailPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

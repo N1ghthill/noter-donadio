@@ -1,6 +1,6 @@
 import type { NegotiationStage } from '@noter/contracts';
 
-import type { Contact, Negotiation, SessionUser } from '../types/api.js';
+import type { Contact, Negotiation, NegotiationDetail, SessionUser } from '../types/api.js';
 
 export class ApiError extends Error {
   public constructor(
@@ -63,9 +63,25 @@ export const api = {
     });
   },
 
+  async updateContact(id: string, input: {
+    displayName?: string;
+    phoneNumber?: string;
+    tags?: string[];
+    notes?: string | null;
+  }) {
+    return request<Contact>(`/api/contacts/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    });
+  },
+
   async negotiations(stage?: NegotiationStage) {
     const query = stage ? `?stage=${stage}` : '';
     return request<{ data: Negotiation[] }>(`/api/negotiations${query}`);
+  },
+
+  async negotiation(id: string) {
+    return request<NegotiationDetail>(`/api/negotiations/${id}`);
   },
 
   async updateNegotiationStage(

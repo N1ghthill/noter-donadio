@@ -7,6 +7,7 @@ export interface ContactView {
   readonly tags: readonly string[];
   readonly source: string;
   readonly status: string;
+  readonly notes: string | null;
   readonly lastInteractionAt: string | null;
 }
 
@@ -23,6 +24,35 @@ export interface NegotiationView {
   readonly updatedAt: string;
 }
 
+export interface NegotiationDetailView extends NegotiationView {
+  readonly contact: ContactView;
+  readonly messages: readonly {
+    readonly id: string;
+    readonly direction: 'inbound' | 'outbound';
+    readonly messageType: string;
+    readonly content: string | null;
+    readonly occurredAt: string;
+    readonly media: {
+      readonly transcriptionState: string;
+      readonly transcriptionText: string | null;
+      readonly durationSeconds: number | null;
+      readonly mimeType: string | null;
+    } | null;
+  }[];
+  readonly analyses: readonly {
+    readonly id: string;
+    readonly state: string;
+    readonly summary: string | null;
+    readonly sentiment: string | null;
+    readonly objections: readonly string[];
+    readonly nextActions: readonly string[];
+    readonly suggestedTags: readonly string[];
+    readonly suggestedStage: NegotiationStage | null;
+    readonly confidenceScore: string | null;
+    readonly createdAt: string;
+  }[];
+}
+
 export class CrmNotFoundError extends Error {}
 export class CrmConflictError extends Error {}
 
@@ -35,7 +65,16 @@ export interface CrmRepository {
     tags: readonly string[];
     notes?: string | undefined;
   }): Promise<ContactView>;
+  updateContact(input: {
+    workspaceId: string;
+    contactId: string;
+    displayName?: string | undefined;
+    phoneNumber?: string | undefined;
+    tags?: readonly string[] | undefined;
+    notes?: string | null | undefined;
+  }): Promise<ContactView>;
   listNegotiations(workspaceId: string, stage: NegotiationStage | undefined): Promise<NegotiationView[]>;
+  getNegotiation(workspaceId: string, negotiationId: string): Promise<NegotiationDetailView>;
   updateNegotiationStage(input: {
     workspaceId: string;
     negotiationId: string;

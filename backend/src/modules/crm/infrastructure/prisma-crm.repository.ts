@@ -7,6 +7,7 @@ import {
   CrmNotFoundError,
   type ContactView,
   type CrmRepository,
+  type NegotiationDetailView,
   type NegotiationView,
 } from '../domain/crm.repository.js';
 
@@ -53,6 +54,50 @@ export class PrismaCrmRepository implements CrmRepository {
     return toContactView(contact);
   }
 
+  public async updateContact(input: {
+    workspaceId: string;
+    contactId: string;
+    displayName?: string | undefined;
+    phoneNumber?: string | undefined;
+    tags?: readonly string[] | undefined;
+    notes?: string | null | undefined;
+  }) {
+    return this.prisma.$transaction(async (transaction) => {
+      const current = await transaction.contact.findFirst({
+        where: { id: input.contactId, workspaceId: input.workspaceId },
+        select: { id: true },
+      });
+      if (!current) throw new CrmNotFoundError();
+
+      const changedFields = [
+        input.displayName !== undefined ? 'displayName' : undefined,
+        input.phoneNumber !== undefined ? 'phoneNumber' : undefined,
+        input.tags !== undefined ? 'tags' : undefined,
+        input.notes !== undefined ? 'notes' : undefined,
+      ].filter((field): field is string => field !== undefined);
+
+      const contact = await transaction.contact.update({
+        where: { id: input.contactId },
+        data: {
+          ...(input.displayName !== undefined ? { displayName: input.displayName } : {}),
+          ...(input.phoneNumber !== undefined ? { phoneNumber: normalizePhoneNumber(input.phoneNumber) } : {}),
+          ...(input.tags !== undefined ? { tags: [...input.tags] } : {}),
+          ...(input.notes !== undefined ? { notes: input.notes } : {}),
+        },
+      });
+      await transaction.outboxEvent.create({
+        data: {
+          workspaceId: input.workspaceId,
+          aggregateType: 'contact',
+          aggregateId: input.contactId,
+          eventType: 'contact.updated',
+          payload: { contactId: input.contactId, workspaceId: input.workspaceId, changedFields },
+        },
+      });
+      return toContactView(contact);
+    });
+  }
+
   public async listNegotiations(workspaceId: string, stage: NegotiationStage | undefined) {
     const negotiations = await this.prisma.negotiation.findMany({
       where: { workspaceId, ...(stage ? { stage } : {}) },
@@ -60,6 +105,55 @@ export class PrismaCrmRepository implements CrmRepository {
       orderBy: [{ stage: 'asc' }, { priority: 'desc' }, { updatedAt: 'desc' }],
     });
     return negotiations.map(toNegotiationView);
+  }
+
+  public async getNegotiation(workspaceId: string, negotiationId: string): Promise<NegotiationDetailView> {
+    const negotiation = await this.prisma.negotiation.findFirst({
+      where: { id: negotiationId, workspaceId },
+      include: {
+        contact: true,
+        messages: {
+          orderBy: { occurredAt: 'desc' },
+          take: 100,
+          include: { mediaAsset: true },
+        },
+        aiAnalyses: {
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+        },
+      },
+    });
+    if (!negotiation) throw new CrmNotFoundError();
+
+    return {
+      ...toNegotiationView(negotiation),
+      contact: toContactView(negotiation.contact),
+      messages: negotiation.messages.toReversed().map((message) => ({
+        id: message.id,
+        direction: message.direction,
+        messageType: message.messageType,
+        content: message.content,
+        occurredAt: message.occurredAt.toISOString(),
+        media: message.mediaAsset ? {
+          transcriptionState: message.mediaAsset.transcriptionState,
+          transcriptionText: message.mediaAsset.transcriptionText,
+          durationSeconds: message.mediaAsset.durationSeconds,
+          mimeType: message.mediaAsset.mimeType,
+        } : null,
+      })),
+      analyses: negotiation.aiAnalyses.map((analysis) => ({
+        id: analysis.id,
+        state: analysis.state,
+        summary: analysis.summary,
+        sentiment: analysis.sentiment,
+        objections: analysis.objections,
+        nextActions: analysis.nextActions,
+        suggestedTags: analysis.suggestedTags,
+        suggestedStage: analysis.suggestedStage,
+        confidenceScore: analysis.confidenceScore?.toString() ?? null,
+        createdAt: analysis.createdAt.toISOString(),
+      })),
+    };
   }
 
   public async updateNegotiationStage(input: {
@@ -127,7 +221,7 @@ function normalizeSearchPhone(search: string): string {
 
 function toContactView(contact: {
   id: string; displayName: string; phoneNumber: string; tags: string[]; source: string;
-  status: string; lastInteractionAt: Date | null;
+  status: string; notes: string | null; lastInteractionAt: Date | null;
 }): ContactView {
   return {
     id: contact.id,
@@ -136,6 +230,7 @@ function toContactView(contact: {
     tags: contact.tags,
     source: contact.source,
     status: contact.status,
+    notes: contact.notes,
     lastInteractionAt: contact.lastInteractionAt?.toISOString() ?? null,
   };
 }

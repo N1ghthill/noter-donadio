@@ -15,10 +15,14 @@ Nenhum token, telefone ou conteúdo deve aparecer em logs ou exemplos versionado
 - `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout`: ciclo da sessão;
 - `GET /api/contacts`: lista e busca contatos do workspace;
 - `POST /api/contacts`: cria contato manual;
+- `PATCH /api/contacts/:id`: edita nome, telefone, tags e observações do contato;
 - `GET /api/negotiations`: lista o pipeline, opcionalmente filtrado por `stage`;
+- `GET /api/negotiations/:id`: retorna contato, até 100 mensagens cronológicas, mídia/transcrição e até 20 análises recentes;
 - `PATCH /api/negotiations/:id/stage`: mudança manual com `expectedVersion` para controle de concorrência.
 
 Uma versão desatualizada na mudança de estágio retorna `409 version_conflict`. O cliente deve recarregar a negociação antes de tentar novamente.
+
+O detalhe nunca recebe `workspaceId` do navegador: o isolamento é derivado exclusivamente da sessão. A edição de contato produz `contact.updated` na outbox contendo somente IDs e nomes dos campos alterados, sem telefone, notas ou conteúdo.
 
 ## Processos do backend
 

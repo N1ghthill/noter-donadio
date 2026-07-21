@@ -27,8 +27,18 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
         'req.headers.authorization',
         'req.headers.cookie',
         'body.content',
+        'body.notes',
+        'body.password',
         'body.phoneNumber',
       ],
+      serializers: {
+        req(request) {
+          return {
+            method: request.method,
+            url: request.url.split('?', 1)[0] ?? request.url,
+          };
+        },
+      },
     },
   });
 

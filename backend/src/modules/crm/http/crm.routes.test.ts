@@ -9,6 +9,7 @@ import {
   CrmConflictError,
   type ContactView,
   type CrmRepository,
+  type NegotiationDetailView,
   type NegotiationView,
 } from '../domain/crm.repository.js';
 
@@ -18,12 +19,50 @@ const SESSION_COOKIE = 'noter_session=valid-session-token-with-more-than-forty-c
 
 class FakeCrmRepository implements CrmRepository {
   public lastWorkspaceId?: string;
+  public lastContactUpdate?: { workspaceId: string; contactId: string; displayName?: string };
   public async listContacts(workspaceId: string): Promise<ContactView[]> {
     this.lastWorkspaceId = workspaceId;
     return [];
   }
   public async createContact(): Promise<ContactView> { throw new Error('not used'); }
+  public async updateContact(input: {
+    workspaceId: string; contactId: string; displayName?: string;
+  }): Promise<ContactView> {
+    this.lastContactUpdate = input;
+    return {
+      id: input.contactId,
+      displayName: input.displayName ?? 'Contato',
+      phoneNumber: '5571999999999',
+      tags: [],
+      source: 'manual',
+      status: 'active',
+      notes: null,
+      lastInteractionAt: null,
+    };
+  }
   public async listNegotiations(): Promise<NegotiationView[]> { return []; }
+  public async getNegotiation(workspaceId: string, negotiationId: string): Promise<NegotiationDetailView> {
+    this.lastWorkspaceId = workspaceId;
+    return {
+      id: negotiationId,
+      contactId: '3a3db76b-c51a-4584-ab4b-6d3e70952e44',
+      contactName: 'Contato',
+      title: 'Proposta',
+      stage: 'lead',
+      value: null,
+      currency: 'BRL',
+      sentiment: null,
+      version: 1,
+      updatedAt: '2026-07-20T12:00:00.000Z',
+      contact: {
+        id: '3a3db76b-c51a-4584-ab4b-6d3e70952e44', displayName: 'Contato',
+        phoneNumber: '5571999999999', tags: [], source: 'manual', status: 'active',
+        notes: null, lastInteractionAt: null,
+      },
+      messages: [],
+      analyses: [],
+    };
+  }
   public async updateNegotiationStage(input: {
     workspaceId: string; negotiationId: string; stage: NegotiationStage; expectedVersion: number;
   }): Promise<NegotiationView> {
@@ -95,4 +134,73 @@ test('conflito otimista de estágio retorna 409', async (context) => {
   });
   assert.equal(response.statusCode, 409);
   assert.deepEqual(response.json(), { error: 'version_conflict' });
+});
+
+test('detalhe da negociação usa o workspace autenticado', async (context) => {
+  const repository = new FakeCrmRepository();
+  const app = buildApp({
+    crmRepository: repository,
+    sessionAuthenticator: new FakeSessionAuthenticator(),
+  });
+  context.after(async () => app.close());
+  const response = await app.inject({
+    method: 'GET',
+    url: `/api/negotiations/${NEGOTIATION_ID}`,
+    headers: { cookie: SESSION_COOKIE },
+  });
+  assert.equal(response.statusCode, 200);
+  assert.equal(repository.lastWorkspaceId, WORKSPACE_ID);
+  assert.equal(response.json().id, NEGOTIATION_ID);
+});
+
+test('edição de contato valida sessão e encaminha apenas dados aceitos', async (context) => {
+  const repository = new FakeCrmRepository();
+  const app = buildApp({
+    crmRepository: repository,
+    sessionAuthenticator: new FakeSessionAuthenticator(),
+  });
+  context.after(async () => app.close());
+  const contactId = '3a3db76b-c51a-4584-ab4b-6d3e70952e44';
+  const response = await app.inject({
+    method: 'PATCH',
+    url: `/api/contacts/${contactId}`,
+    headers: { cookie: SESSION_COOKIE },
+    payload: { displayName: 'Nome atualizado' },
+  });
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(repository.lastContactUpdate, {
+    workspaceId: WORKSPACE_ID,
+    contactId,
+    displayName: 'Nome atualizado',
+  });
+});
+
+test('mudança de estágio sem sessão retorna 401', async (context) => {
+  const app = buildApp({
+    crmRepository: new FakeCrmRepository(),
+    sessionAuthenticator: new FakeSessionAuthenticator(),
+  });
+  context.after(async () => app.close());
+  const response = await app.inject({
+    method: 'PATCH',
+    url: `/api/negotiations/${NEGOTIATION_ID}/stage`,
+    payload: { stage: 'qualified', expectedVersion: 1 },
+  });
+  assert.equal(response.statusCode, 401);
+});
+
+test('cadastro recusa telefone sem dígitos suficientes na fronteira HTTP', async (context) => {
+  const app = buildApp({
+    crmRepository: new FakeCrmRepository(),
+    sessionAuthenticator: new FakeSessionAuthenticator(),
+  });
+  context.after(async () => app.close());
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/contacts',
+    headers: { cookie: SESSION_COOKIE },
+    payload: { displayName: 'Contato', phoneNumber: 'telefone inválido' },
+  });
+  assert.equal(response.statusCode, 400);
+  assert.deepEqual(response.json(), { error: 'invalid_request' });
 });

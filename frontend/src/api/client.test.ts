@@ -41,4 +41,27 @@ describe('cliente HTTP', () => {
       body: JSON.stringify({ stage: 'qualified', expectedVersion: 3 }),
     }));
   });
+
+  it('consulta o detalhe de uma negociação pelo identificador', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: 'neg-1' }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await api.negotiation('neg-1');
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/negotiations/neg-1', expect.objectContaining({
+      credentials: 'include',
+    }));
+  });
+
+  it('envia somente os campos escolhidos na edição do contato', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: 'contact-1' }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await api.updateContact('contact-1', { displayName: 'Nome atualizado' });
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/contacts/contact-1', expect.objectContaining({
+      method: 'PATCH',
+      body: JSON.stringify({ displayName: 'Nome atualizado' }),
+    }));
+  });
 });

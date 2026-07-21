@@ -9,6 +9,7 @@
     "start": "node dist/main.js",
     "start:outbox": "node dist/outbox.main.js",
     "bootstrap:admin": "node dist/bootstrap-admin.js",
+    "seed:demo": "node dist/seed-demo.js",
     "pretypecheck": "npm run build -w @noter/contracts",
     "typecheck": "npm run prisma:generate && tsc -p tsconfig.json --noEmit",
     "prisma:generate": "prisma generate",
