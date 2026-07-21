@@ -138,19 +138,33 @@ export class PrismaMessageIngestionRepository implements MessageIngestionReposit
           });
         }
 
-        await transaction.outboxEvent.create({
-          data: {
-            workspaceId: command.workspaceId,
-            aggregateType: 'message',
-            aggregateId: message.id,
-            eventType:
-              command.messageType === 'audio' ? 'message.audio.ingested' : 'message.text.ingested',
-            payload: {
-              messageId: message.id,
+        await transaction.outboxEvent.createMany({
+          data: [
+            {
               workspaceId: command.workspaceId,
-              negotiationId: negotiation.id,
+              aggregateType: 'message',
+              aggregateId: message.id,
+              eventType:
+                command.messageType === 'audio' ? 'message.audio.ingested' : 'message.text.ingested',
+              payload: {
+                messageId: message.id,
+                workspaceId: command.workspaceId,
+                negotiationId: negotiation.id,
+              },
             },
-          },
+            {
+              workspaceId: command.workspaceId,
+              aggregateType: 'message',
+              aggregateId: message.id,
+              eventType: 'message.persisted',
+              payload: {
+                messageId: message.id,
+                workspaceId: command.workspaceId,
+                contactId: contact.id,
+                negotiationId: negotiation.id,
+              },
+            },
+          ],
         });
 
         return {

@@ -39,3 +39,21 @@ test('evento de conexão nunca transporta QR', () => {
     status: 'qr_generated',
   });
 });
+
+test('evento de mensagem transporta somente identificadores para reconciliação', () => {
+  const event = parseRealtimeEvent('message.persisted', {
+    workspaceId: WORKSPACE_ID,
+    messageId: 'fbdff1c4-5a25-4e24-b694-d5dc6c21f227',
+    contactId: '3a3db76b-c51a-4584-ab4b-6d3e70952e44',
+    negotiationId: 'db71084e-5829-4a90-8346-5832998294ea',
+    content: 'conteúdo que não pode atravessar o evento',
+    phoneNumber: '5571999999999',
+  });
+  assert.deepEqual(event, {
+    type: 'message.persisted',
+    workspaceId: WORKSPACE_ID,
+    messageId: 'fbdff1c4-5a25-4e24-b694-d5dc6c21f227',
+    contactId: '3a3db76b-c51a-4584-ab4b-6d3e70952e44',
+    negotiationId: 'db71084e-5829-4a90-8346-5832998294ea',
+  });
+});

@@ -47,6 +47,16 @@ Todos são emitidos como `crm.updated`:
 
 ```json
 {
+  "type": "message.persisted",
+  "workspaceId": "uuid",
+  "messageId": "uuid",
+  "contactId": "uuid",
+  "negotiationId": "uuid"
+}
+```
+
+```json
+{
   "type": "negotiation.stage.changed",
   "workspaceId": "uuid",
   "negotiationId": "uuid",
@@ -72,5 +82,5 @@ O primeiro processo move eventos transacionais para BullMQ. O segundo consome `r
 - Redis e Socket.IO são transporte descartável; PostgreSQL continua sendo a fonte de verdade;
 - eventos repetidos são seguros porque apenas invalidam consultas;
 - eventos perdidos são recuperados na reconexão por REST;
-- nesta fatia, edição de contato, mudança de etapa e estado da conexão geram notificações;
-- ingestão, transcrição e análise deverão publicar eventos próprios quando seus workers forem implementados.
+- nesta fatia, edição de contato, mudança de etapa, estado da conexão e mensagem persistida geram notificações;
+- transcrição e análise deverão publicar eventos próprios quando seus workers forem implementados.

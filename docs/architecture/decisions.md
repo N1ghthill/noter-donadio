@@ -99,3 +99,9 @@ A migration inicial publicada em 20 de julho de 2026 continha acidentalmente uma
 Setup, QR e estados de conexão são desenvolvidos contra a porta `WhatsappGateway`. O primeiro adapter é um simulador em memória habilitado somente por `WHATSAPP_ADAPTER=fake`; ausência da configuração mantém as rotas desabilitadas.
 
 O QR é efêmero e nunca é persistido ou propagado por eventos. Essa etapa valida domínio, autenticação, frontend e tempo real antes de introduzir uma biblioteca não oficial ou uma conta real.
+
+## ADR-016 — Caixa de conversas é uma projeção das mensagens persistidas
+
+No MVP, uma conversa corresponde ao histórico de uma negociação e não recebe tabela ou estado independente. A caixa de entrada consulta a mensagem mais recente de cada negociação diretamente no PostgreSQL, com limite explícito, e abre o histórico já oferecido pelo detalhe da negociação.
+
+Uma nova mensagem produz `message.persisted` na mesma transação da mensagem e do evento de processamento. A notificação contém somente IDs e invalida as consultas React; conteúdo e telefone continuam disponíveis apenas nas rotas REST autenticadas. A simulação local percorre o serviço de ingestão normal e usa um UUID do cliente na chave de idempotência.

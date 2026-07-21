@@ -75,4 +75,25 @@ describe('cliente HTTP', () => {
     expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/whatsapp/setup', expect.objectContaining({ method: 'POST' }));
     expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/whatsapp/demo/connect', expect.objectContaining({ method: 'POST' }));
   });
+
+  it('consulta conversas e simula entrada com chave idempotente', async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => new Response(
+      JSON.stringify({ data: [] }),
+      { status: 200 },
+    ));
+    vi.stubGlobal('fetch', fetchMock);
+    const input = {
+      clientMessageId: '11b3f58b-4f89-47f2-93bc-89be57028a48',
+      content: 'Mensagem fictícia.',
+    };
+
+    await api.conversations();
+    await api.simulateInboundMessage(input);
+
+    expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/conversations', expect.objectContaining({ credentials: 'include' }));
+    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/whatsapp/demo/messages', expect.objectContaining({
+      method: 'POST',
+      body: JSON.stringify(input),
+    }));
+  });
 });

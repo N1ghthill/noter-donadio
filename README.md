@@ -48,3 +48,5 @@ O modelo de login, cookies, sessões e bootstrap está em [`docs/security/authen
 O fluxo da interface e sua execução local estão em [`docs/frontend/mvp-ui.md`](docs/frontend/mvp-ui.md).
 O fluxo Socket.IO, isolamento por workspace e contratos de eventos estão em [`docs/realtime/events.md`](docs/realtime/events.md).
 O setup simulado e a fronteira do adapter de WhatsApp estão em [`docs/integrations/whatsapp.md`](docs/integrations/whatsapp.md).
+
+Com o ambiente local iniciado, a rota `/conversas` apresenta a caixa de entrada persistida e permite simular uma mensagem recebida sem conectar ou enviar dados a um WhatsApp real.

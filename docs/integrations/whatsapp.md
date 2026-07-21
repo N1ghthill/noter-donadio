@@ -22,6 +22,12 @@ Com `disabled`, que é o padrão quando a variável está ausente, as rotas de s
 6. A outbox publica apenas conta, workspace e estado.
 7. O frontend recebe a invalidação via Socket.IO e reconcilia pela API.
 
+## Caixa de entrada simulada
+
+Com a conta falsa conectada, `/conversas` permite registrar uma mensagem fictícia recebida. O navegador cria um `clientMessageId` UUID; o servidor deriva workspace e conta da sessão, acrescenta uma identidade fictícia fixa e executa o mesmo serviço de ingestão usado pelos eventos internos.
+
+A transação resolve contato e negociação, persiste a mensagem antes de qualquer processamento e cria dois eventos de outbox: um para processamento e `message.persisted` para reconciliação da interface. Repetir o mesmo UUID não duplica a mensagem. O formulário não envia dados a uma conta ou provedor externo.
+
 ## Segurança
 
 - workspace sempre deriva da sessão, nunca do corpo da requisição;
@@ -29,7 +35,7 @@ Com `disabled`, que é o padrão quando a variável está ausente, as rotas de s
 - respostas com QR não podem ser armazenadas em cache;
 - payloads de tempo real descartam qualquer campo adicional;
 - somente dados fictícios são usados nos testes;
-- não existe endpoint para enviar mensagens;
+- não existe endpoint para enviar mensagens; a única mutação de conversa simula uma entrada local;
 - o adapter falso não deve ser habilitado em produção.
 
 ## Porta para integração futura

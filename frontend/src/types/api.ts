@@ -71,3 +71,17 @@ export interface WhatsappConnection {
   adapter: 'fake';
   canSimulate: true;
 }
+
+export interface ConversationSummary {
+  negotiationId: string;
+  contactId: string;
+  contactName: string;
+  stage: NegotiationStage;
+  lastMessage: {
+    id: string;
+    direction: 'inbound' | 'outbound';
+    messageType: string;
+    content: string | null;
+    occurredAt: string;
+  };
+}

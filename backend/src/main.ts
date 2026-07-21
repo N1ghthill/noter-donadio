@@ -2,7 +2,10 @@ import { readEnvironment } from './config/env.js';
 import { createPrismaClient } from './config/database.js';
 import { buildApp } from './app.js';
 import { MessageIngestionService } from './modules/messages/domain/message-ingestion.js';
+import { DemoMessageService } from './modules/messages/domain/demo-message.js';
 import { PrismaMessageIngestionRepository } from './modules/messages/infrastructure/prisma-message-ingestion.repository.js';
+import { PrismaConversationRepository } from './modules/messages/infrastructure/prisma-conversation.repository.js';
+import { PrismaConnectedWhatsappAccountRepository } from './modules/messages/infrastructure/prisma-connected-whatsapp-account.repository.js';
 import { PrismaCrmRepository } from './modules/crm/infrastructure/prisma-crm.repository.js';
 import { AuthService } from './modules/auth/domain/auth.service.js';
 import { ScryptPasswordHasher } from './modules/auth/domain/password-hasher.js';
@@ -16,6 +19,10 @@ const environment = readEnvironment();
 const prisma = createPrismaClient(environment.DATABASE_URL);
 const ingestionRepository = new PrismaMessageIngestionRepository(prisma);
 const ingestionService = new MessageIngestionService(ingestionRepository);
+const conversationRepository = new PrismaConversationRepository(prisma);
+const demoMessageService = environment.WHATSAPP_ADAPTER === 'fake'
+  ? new DemoMessageService(new PrismaConnectedWhatsappAccountRepository(prisma), ingestionService)
+  : undefined;
 const authService = new AuthService(new PrismaAuthRepository(prisma), new ScryptPasswordHasher());
 const whatsappService = environment.WHATSAPP_ADAPTER === 'fake'
   ? new WhatsappConnectionService(
@@ -29,6 +36,8 @@ const app = buildApp({
   crmRepository: new PrismaCrmRepository(prisma),
   authService,
   secureCookie: environment.NODE_ENV === 'production',
+  conversationRepository,
+  ...(demoMessageService ? { demoMessageService } : {}),
   ...(whatsappService ? { whatsappService } : {}),
 });
 attachRealtimeServer(app, { sessionAuthenticator: authService, redisUrl: environment.REDIS_URL });

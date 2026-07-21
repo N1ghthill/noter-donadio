@@ -1,6 +1,13 @@
 import type { NegotiationStage } from '@noter/contracts';
 
-import type { Contact, Negotiation, NegotiationDetail, SessionUser, WhatsappConnection } from '../types/api.js';
+import type {
+  Contact,
+  ConversationSummary,
+  Negotiation,
+  NegotiationDetail,
+  SessionUser,
+  WhatsappConnection,
+} from '../types/api.js';
 
 export class ApiError extends Error {
   public constructor(
@@ -104,5 +111,16 @@ export const api = {
 
   async simulateWhatsappConnection() {
     return request<WhatsappConnection>('/api/whatsapp/demo/connect', { method: 'POST' });
+  },
+
+  async conversations() {
+    return request<{ data: ConversationSummary[] }>('/api/conversations');
+  },
+
+  async simulateInboundMessage(input: { clientMessageId: string; content: string }) {
+    return request<{ messageId: string; contactId: string; negotiationId: string; duplicate: boolean }>(
+      '/api/whatsapp/demo/messages',
+      { method: 'POST', body: JSON.stringify(input) },
+    );
   },
 };

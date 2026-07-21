@@ -26,9 +26,12 @@ describe('reconciliação em tempo real', () => {
     act(() => socketState.handlers.get('crm.updated')?.({ type: 'contact.updated' }));
     expect(screen.getByTestId('realtime')).toHaveTextContent('online:1');
 
+    act(() => socketState.handlers.get('crm.updated')?.({ type: 'message.persisted' }));
+    expect(screen.getByTestId('realtime')).toHaveTextContent('online:2');
+
     act(() => socketState.handlers.get('disconnect')?.());
     act(() => socketState.handlers.get('connect')?.());
-    expect(screen.getByTestId('realtime')).toHaveTextContent('online:2');
+    expect(screen.getByTestId('realtime')).toHaveTextContent('online:3');
   });
 
   it('ignora payload desconhecido', () => {

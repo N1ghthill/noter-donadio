@@ -127,6 +127,25 @@ label { display: grid; gap: .4rem; color: #4c5b53; font-size: .8rem; font-weight
 .transcription { margin-top: .75rem; padding-top: .65rem; border-top: 1px solid rgb(77 99 86 / 15%); color: #57665d; font-size: .78rem; }
 .transcription p { margin: .3rem 0 0; }
 
+.demo-message-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .8rem; align-items: end; margin: .9rem 0 .55rem; }
+.demo-message-form label { color: #675e43; }
+.demo-message-form textarea { resize: vertical; }
+.conversation-layout { display: grid; grid-template-columns: minmax(18rem, .75fr) minmax(24rem, 1.25fr); gap: 1rem; min-height: 34rem; }
+.conversation-list { align-content: start; padding: .7rem; }
+.conversation-list .panel-heading { padding: .65rem; }
+.conversation-list .panel-heading > span { display: grid; place-items: center; min-width: 1.6rem; height: 1.6rem; border-radius: 50%; color: #53655b; background: #edf0ed; font-size: .72rem; font-weight: 800; }
+.conversation-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .65rem; width: 100%; padding: .85rem .65rem; border: 0; border-top: 1px solid #eceeea; color: #334139; background: transparent; text-align: left; cursor: pointer; }
+.conversation-item:hover, .conversation-item.active { border-radius: .65rem; background: #f0f4ec; }
+.conversation-copy { min-width: 0; }
+.conversation-copy strong, .conversation-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conversation-copy small { margin-top: .3rem; color: #7b8580; }
+.conversation-item time { color: #858e89; font-size: .68rem; }
+.conversation-item .stage-badge { grid-column: 2 / -1; }
+.conversation-detail { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 34rem; }
+.conversation-heading { padding-bottom: 1rem; border-bottom: 1px solid #eceeea; }
+.conversation-heading .card-link { margin: 0; }
+.conversation-timeline { align-content: start; max-height: 40rem; overflow-y: auto; padding: .5rem .2rem; }
+
 .connection-grid { display: grid; grid-template-columns: minmax(18rem, .8fr) minmax(22rem, 1.2fr); gap: 1rem; }
 .connection-status-card { display: grid; align-content: start; gap: 1.2rem; }
 .connection-status-card .panel-heading { margin: 0; }
@@ -183,6 +202,7 @@ label { display: grid; gap: .4rem; color: #4c5b53; font-size: .8rem; font-weight
   .metric-grid { grid-template-columns: 1fr; }
   .detail-grid { grid-template-columns: 1fr; }
   .connection-grid { grid-template-columns: 1fr; }
+  .conversation-layout { grid-template-columns: 1fr; }
   .login-page { grid-template-columns: 1fr; }
   .login-copy h1 { font-size: clamp(2.7rem, 12vw, 5rem); }
 }
@@ -197,6 +217,7 @@ label { display: grid; gap: .4rem; color: #4c5b53; font-size: .8rem; font-weight
   .contact-form { grid-template-columns: 1fr; }
   .detail-summary { justify-items: start; }
   .message { width: 92%; }
+  .demo-message-form { grid-template-columns: 1fr; }
   .full-width { grid-column: auto; }
   .login-page { align-content: center; padding: 1.5rem; }
   .login-copy > p:last-child { display: none; }

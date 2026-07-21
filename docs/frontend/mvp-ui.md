@@ -13,6 +13,8 @@ A aplicação React é uma interface autenticada para o CRM e contém:
 - movimentação de negociação por arrastar e soltar;
 - movimentação alternativa por seletor de etapa, acessível via teclado;
 - detalhe da negociação com contato, histórico, transcrições e sugestões de IA;
+- caixa de conversas ordenada pela mensagem mais recente, com histórico reconciliado via REST;
+- formulário local para simular recebimento idempotente sem enviar mensagens;
 - indicador de conexão em tempo real e reconciliação REST automática;
 - configuração simulada do WhatsApp com QR efêmero e estado persistido;
 - atualização otimista com reversão em erro e reconciliação em conflito de versão.
@@ -27,7 +29,7 @@ src/
 ├── auth/         estado e bootstrap da sessão
 ├── components/   shell e estados reutilizáveis
 ├── lib/          rótulos e formatação local
-├── pages/        dashboard, contatos, login e pipeline
+├── pages/        dashboard, contatos, conversas, login, pipeline e WhatsApp
 └── types/        representações das respostas REST
 ```
 
@@ -76,12 +78,12 @@ npm test
 npm run build
 ```
 
-Os testes do frontend cobrem o envio do cookie, codificação de busca, erros HTTP, controle otimista de versão e formatação da interface. Testes integrados com PostgreSQL e Redis requerem os serviços locais ativos.
+Os testes do frontend cobrem o envio do cookie, codificação de busca, erros HTTP, controle otimista de versão, caixa de conversas, simulação de entrada e formatação da interface. Testes integrados com PostgreSQL e Redis requerem os serviços locais ativos.
 
 ## Limites conhecidos desta fatia
 
 - o MVP ainda não cria negociações pela interface; elas surgem pelo fluxo de ingestão;
-- notificações em tempo real cobrem edição de contato e mudança de etapa; ingestão e processamento serão conectados nas próximas fatias;
+- notificações em tempo real cobrem edição de contato, mudança de etapa, conexão e persistência de mensagem; transcrição e análise serão conectadas nas próximas fatias;
 - a conexão atual é simulada; nenhum adapter real de WhatsApp está habilitado;
 - o player de áudio depende do adapter privado de armazenamento e de URLs assinadas, ainda não conectado;
 - a política de proteção CSRF para exposição pública ainda depende da validação de `Origin` prevista na documentação de autenticação.

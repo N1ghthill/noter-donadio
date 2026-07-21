@@ -18,12 +18,19 @@ const eventSchemas = {
     accountId: z.uuid(),
     status: z.enum(['disconnected', 'qr_generated', 'connecting', 'connected', 'timeout']),
   }),
+  'message.persisted': z.object({
+    workspaceId,
+    messageId: z.uuid(),
+    contactId: z.uuid(),
+    negotiationId: z.uuid(),
+  }),
 } as const;
 
 export type RealtimeEvent =
   | { type: 'contact.updated'; workspaceId: string; contactId: string; changedFields: string[] }
   | { type: 'negotiation.stage.changed'; workspaceId: string; negotiationId: string; stage: string }
-  | { type: 'whatsapp.connection.changed'; workspaceId: string; accountId: string; status: string };
+  | { type: 'whatsapp.connection.changed'; workspaceId: string; accountId: string; status: string }
+  | { type: 'message.persisted'; workspaceId: string; messageId: string; contactId: string; negotiationId: string };
 
 export function parseRealtimeEvent(name: string, data: unknown): RealtimeEvent {
   if (name === 'contact.updated') {
@@ -33,6 +40,9 @@ export function parseRealtimeEvent(name: string, data: unknown): RealtimeEvent {
     return { type: name, ...eventSchemas[name].parse(data) };
   }
   if (name === 'whatsapp.connection.changed') {
+    return { type: name, ...eventSchemas[name].parse(data) };
+  }
+  if (name === 'message.persisted') {
     return { type: name, ...eventSchemas[name].parse(data) };
   }
   throw new Error('unsupported_realtime_event');

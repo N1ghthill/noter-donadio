@@ -6,6 +6,9 @@ import { NEGOTIATION_STAGES } from '@noter/contracts';
 
 import type { MessageIngestionService } from './modules/messages/domain/message-ingestion.js';
 import { registerMessageIngestionRoute } from './modules/messages/http/message-ingestion.route.js';
+import type { ConversationRepository } from './modules/messages/domain/conversation.repository.js';
+import type { DemoMessageService } from './modules/messages/domain/demo-message.js';
+import { registerConversationRoutes } from './modules/messages/http/conversation.routes.js';
 import type { CrmRepository } from './modules/crm/domain/crm.repository.js';
 import { registerCrmRoutes } from './modules/crm/http/crm.routes.js';
 import type { AuthService, SessionAuthenticator } from './modules/auth/domain/auth.service.js';
@@ -21,6 +24,8 @@ interface AppOptions {
   readonly sessionAuthenticator?: SessionAuthenticator;
   readonly secureCookie?: boolean;
   readonly whatsappService?: WhatsappConnectionService;
+  readonly conversationRepository?: ConversationRepository;
+  readonly demoMessageService?: DemoMessageService;
 }
 
 export function buildApp(options: AppOptions = {}): FastifyInstance {
@@ -101,6 +106,14 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
     registerWhatsappRoutes(app, {
       service: options.whatsappService,
       sessionAuthenticator,
+    });
+  }
+
+  if (options.conversationRepository && sessionAuthenticator) {
+    registerConversationRoutes(app, {
+      repository: options.conversationRepository,
+      sessionAuthenticator,
+      demoMessageService: options.demoMessageService,
     });
   }
 
