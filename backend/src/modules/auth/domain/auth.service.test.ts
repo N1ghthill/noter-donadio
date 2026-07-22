@@ -23,6 +23,18 @@ class MemoryAuthRepository implements AuthRepository {
   public async revokeSession(tokenHash: string) {
     if (this.session?.tokenHash === tokenHash) this.session.revoked = true;
   }
+  public async listActiveSessions(_userId: string, _workspaceId: string, now: Date) {
+    if (!this.session || this.session.revoked || this.session.expiresAt <= now) return [];
+    return [{
+      id: '54eb359b-6fb4-4d51-8c07-8c55ac7efd65', tokenHash: this.session.tokenHash,
+      createdAt: now, lastSeenAt: now, expiresAt: this.session.expiresAt,
+    }];
+  }
+  public async revokeSessionById(sessionId: string) {
+    if (sessionId !== '54eb359b-6fb4-4d51-8c07-8c55ac7efd65' || !this.session) return false;
+    this.session.revoked = true;
+    return true;
+  }
 }
 
 test('login cria sessão revogável sem expor o hash da senha', async () => {
@@ -42,7 +54,11 @@ test('login cria sessão revogável sem expor o hash da senha', async () => {
   const login = await service.login('noter-donadio', ' ADMIN@example.test ', 'uma-senha-de-teste-comprida');
   assert.equal('passwordHash' in login.user, false);
   assert.deepEqual(await service.authenticate(login.token), login.user);
+  const sessions = await service.listSessions(login.token);
+  assert.equal(sessions?.length, 1);
+  assert.equal(sessions?.[0]?.current, true);
 
-  await service.logout(login.token);
+  const revoked = await service.revokeManagedSession(login.token, '54eb359b-6fb4-4d51-8c07-8c55ac7efd65');
+  assert.deepEqual(revoked, { revoked: true, current: true });
   assert.equal(await service.authenticate(login.token), null);
 });

@@ -51,6 +51,14 @@ describe('pipeline', () => {
           updatedAt: '2026-07-21T12:00:00.000Z',
         }), { status: 201 });
       }
+      if (path === '/api/negotiations/278b2fa9-b1bf-49a4-8beb-d8fa7020d5bb/stage' && init?.method === 'PATCH') {
+        return new Response(JSON.stringify({
+          id: '278b2fa9-b1bf-49a4-8beb-d8fa7020d5bb', contactId, contactName: 'Contato fictício',
+          title: 'Projeto acompanhado', stage: 'closed_won', value: null, currency: 'BRL',
+          sentiment: null, nextAction: 'Retornar ao contato', nextActionDueDate: '2020-01-01',
+          version: 2, updatedAt: '2026-07-21T12:00:00.000Z',
+        }), { status: 200 });
+      }
       if (path === '/api/negotiations') {
         return new Response(JSON.stringify({
           data: [{
@@ -72,6 +80,7 @@ describe('pipeline', () => {
       return new Response(JSON.stringify({ data: [] }), { status: 200 });
     });
     vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal('prompt', vi.fn().mockReturnValue('Contrato confirmado pelo cliente'));
 
     render(
       <MemoryRouter>
@@ -80,7 +89,19 @@ describe('pipeline', () => {
     );
 
     expect(await screen.findByText('Retornar ao contato')).toBeInTheDocument();
-    expect(screen.getByText(/Vencida/)).toBeInTheDocument();
+    const card = screen.getByText('Projeto acompanhado').closest('article');
+    expect(card).not.toBeNull();
+    expect(within(card as HTMLElement).getByText(/Vencida/)).toBeInTheDocument();
+    fireEvent.change(within(card as HTMLElement).getByLabelText('Etapa'), { target: { value: 'closed_won' } });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      '/api/negotiations/278b2fa9-b1bf-49a4-8beb-d8fa7020d5bb/stage',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({
+          stage: 'closed_won', expectedVersion: 1, closeReason: 'Contrato confirmado pelo cliente',
+        }),
+      }),
+    ));
     fireEvent.click(await screen.findByRole('button', { name: 'Nova negociação' }));
     const creationPanel = screen.getByRole('heading', { name: 'Criar negociação' }).closest('section');
     expect(creationPanel).not.toBeNull();
@@ -112,5 +133,10 @@ describe('pipeline', () => {
       }),
     ));
     expect(screen.queryByRole('heading', { name: 'Criar negociação' })).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Acompanhamento'), { target: { value: 'overdue' } });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      '/api/negotiations?followUp=overdue', expect.objectContaining({ credentials: 'include' }),
+    ));
   });
 });

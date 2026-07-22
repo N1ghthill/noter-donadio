@@ -9,6 +9,7 @@ const navigation: Array<{ to: string; label: string; end: boolean }> = [
   { to: '/pipeline', label: 'Pipeline', end: false },
   { to: '/conversas', label: 'Conversas', end: false },
   { to: '/whatsapp', label: 'WhatsApp', end: false },
+  { to: '/administracao', label: 'Administração', end: false },
 ];
 
 export function AppShell() {

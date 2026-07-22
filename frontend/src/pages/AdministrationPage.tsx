@@ -1,0 +1,59 @@
+import { useCallback, useEffect, useState } from 'react';
+
+import { api, ApiError } from '../api/client.js';
+import { useAuth } from '../auth/AuthContext.js';
+import { ErrorState, LoadingState } from '../components/Feedback.js';
+import { formatDateTime } from '../lib/format.js';
+import type { SessionInfo } from '../types/api.js';
+
+export function AdministrationPage() {
+  const auth = useAuth();
+  const [sessions, setSessions] = useState<SessionInfo[]>();
+  const [error, setError] = useState(false);
+  const [busyId, setBusyId] = useState<string>();
+
+  const load = useCallback(async () => {
+    setError(false);
+    try { setSessions((await api.sessions()).data); } catch { setError(true); }
+  }, []);
+  useEffect(() => { void load(); }, [load]);
+
+  const revoke = async (session: SessionInfo) => {
+    if (!window.confirm(`Encerrar ${session.current ? 'esta sessão' : 'a sessão selecionada'}?`)) return;
+    setBusyId(session.id);
+    try {
+      await api.revokeSession(session.id);
+      if (session.current) await auth.logout();
+      else await load();
+    } catch (requestError: unknown) {
+      setError(!(requestError instanceof ApiError && requestError.status === 404));
+      await load();
+    } finally { setBusyId(undefined); }
+  };
+
+  if (error && !sessions) return <ErrorState message="Não foi possível carregar a administração." retry={() => void load()} />;
+  if (!sessions) return <LoadingState label="Carregando administração…" />;
+
+  return <div className="page-stack">
+    <header className="page-header"><div><p className="eyebrow">Conta e privacidade</p><h1>Administração</h1></div>
+      <p>Controle acessos ativos e consulte as proteções disponíveis para os dados do workspace.</p>
+    </header>
+    <section className="panel">
+      <div className="panel-heading"><div><p className="eyebrow">Segurança</p><h2>Sessões ativas</h2></div><small>{sessions.length} ativa(s)</small></div>
+      <div className="session-list">{sessions.map((session) => <article key={session.id}>
+        <div><strong>{session.current ? 'Sessão atual' : 'Outra sessão'}</strong>
+          <small>Visto por último em {formatDateTime(session.lastSeenAt)} · expira em {formatDateTime(session.expiresAt)}</small></div>
+        <button className="button secondary" type="button" disabled={busyId === session.id} onClick={() => void revoke(session)}>
+          {busyId === session.id ? 'Encerrando…' : 'Encerrar sessão'}
+        </button>
+      </article>)}</div>
+    </section>
+    <section className="panel privacy-summary">
+      <div className="panel-heading"><div><p className="eyebrow">Privacidade</p><h2>Controles implementados</h2></div></div>
+      <ul><li>Exclusão de contatos exige confirmação explícita e remove mídias associadas.</li>
+        <li>Mídias usam acesso temporário assinado e retenção configurável.</li>
+        <li>Auditoria preserva somente metadados necessários, sem conteúdo de mensagens.</li></ul>
+      <p className="muted">A exclusão integral do workspace permanece restrita ao procedimento operacional autenticado para evitar remoções acidentais.</p>
+    </section>
+  </div>;
+}

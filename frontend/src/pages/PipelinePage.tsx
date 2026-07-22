@@ -13,6 +13,10 @@ export function PipelinePage() {
   const [items, setItems] = useState<Negotiation[]>();
   const [contacts, setContacts] = useState<Contact[]>();
   const [showForm, setShowForm] = useState(false);
+  const [search, setSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
+  const [stageFilter, setStageFilter] = useState<NegotiationStage | ''>('');
+  const [followUpFilter, setFollowUpFilter] = useState<'overdue' | 'today' | 'upcoming' | 'missing' | ''>('');
   const [saving, setSaving] = useState(false);
   const [draggedId, setDraggedId] = useState<string>();
   const [updatingId, setUpdatingId] = useState<string>();
@@ -21,12 +25,19 @@ export function PipelinePage() {
   const load = useCallback(async () => {
     setError(undefined);
     try {
-      const [negotiations, contactList] = await Promise.all([api.negotiations(), api.contacts()]);
+      const [negotiations, contactList] = await Promise.all([
+        api.negotiations({
+          ...(stageFilter ? { stage: stageFilter } : {}),
+          ...(followUpFilter ? { followUp: followUpFilter } : {}),
+          ...(appliedSearch ? { search: appliedSearch } : {}),
+        }),
+        api.contacts(),
+      ]);
       setItems(negotiations.data);
       setContacts(contactList.data);
     }
     catch { setError('Não foi possível carregar o pipeline.'); }
-  }, []);
+  }, [appliedSearch, followUpFilter, stageFilter]);
 
   useEffect(() => { void load(); }, [load, revision]);
 
@@ -68,12 +79,27 @@ export function PipelinePage() {
     const currentItems = items;
     const current = currentItems?.find((item) => item.id === id);
     if (!currentItems || !current || current.stage === stage || updatingId) return;
+    const closing = stage === 'closed_won' || stage === 'closed_lost';
+    let closeReason: string | undefined;
+    if (closing) {
+      const answer = window.prompt(`Informe o motivo para marcar como ${STAGE_LABELS[stage].toLowerCase()}:`);
+      if (answer === null) return;
+      closeReason = answer.trim();
+      if (!closeReason) {
+        setError('O motivo do fechamento é obrigatório.');
+        return;
+      }
+    }
     const snapshot = currentItems;
     setItems(currentItems.map((item) => item.id === id ? { ...item, stage, version: item.version + 1 } : item));
     setUpdatingId(id);
     setError(undefined);
     try {
-      const updated = await api.updateNegotiationStage(id, { stage, expectedVersion: current.version });
+      const updated = await api.updateNegotiationStage(id, {
+        stage,
+        expectedVersion: current.version,
+        ...(closeReason ? { closeReason } : {}),
+      });
       setItems((list) => list?.map((item) => item.id === id ? updated : item));
     } catch (caught: unknown) {
       setItems(snapshot);
@@ -125,9 +151,33 @@ export function PipelinePage() {
           </form>
         </section>
       ) : null}
+      <section className="panel pipeline-filters" aria-label="Filtros do pipeline">
+        <form onSubmit={(event) => { event.preventDefault(); setAppliedSearch(search.trim()); }}>
+          <label>Buscar<input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Contato, título, produto ou próxima ação" /></label>
+          <label>Etapa
+            <select value={stageFilter} onChange={(event) => setStageFilter(event.target.value as NegotiationStage | '')}>
+              <option value="">Todas</option>
+              {NEGOTIATION_STAGES.map((stage) => <option key={stage} value={stage}>{STAGE_LABELS[stage]}</option>)}
+            </select>
+          </label>
+          <label>Acompanhamento
+            <select value={followUpFilter} onChange={(event) => setFollowUpFilter(event.target.value as typeof followUpFilter)}>
+              <option value="">Todos</option>
+              <option value="overdue">Vencidas</option>
+              <option value="today">Vencem hoje</option>
+              <option value="upcoming">Futuras</option>
+              <option value="missing">Sem próxima ação</option>
+            </select>
+          </label>
+          <div className="filter-actions">
+            <button className="button secondary" type="submit">Aplicar</button>
+            <button className="button-link" type="button" onClick={() => { setSearch(''); setAppliedSearch(''); setStageFilter(''); setFollowUpFilter(''); }}>Limpar</button>
+          </div>
+        </form>
+      </section>
       {error ? <ErrorState message={error} /> : null}
       <section className="kanban" aria-label="Pipeline de negociações">
-        {NEGOTIATION_STAGES.map((stage) => {
+        {NEGOTIATION_STAGES.filter((stage) => !stageFilter || stage === stageFilter).map((stage) => {
           const stageItems = items.filter((item) => item.stage === stage);
           return (
             <div className="kanban-column" key={stage} onDragOver={(event) => event.preventDefault()} onDrop={() => { if (draggedId) void move(draggedId, stage); setDraggedId(undefined); }}>

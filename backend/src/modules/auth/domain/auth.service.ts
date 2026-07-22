@@ -23,12 +23,22 @@ export interface StoredSession extends AuthenticatedUser {
   readonly lastSeenAt: Date;
 }
 
+export interface ManagedSession {
+  readonly id: string;
+  readonly createdAt: Date;
+  readonly lastSeenAt: Date;
+  readonly expiresAt: Date;
+  readonly tokenHash: string;
+}
+
 export interface AuthRepository {
   findUser(workspaceSlug: string, email: string): Promise<StoredUser | null>;
   createSession(input: { userId: string; workspaceId: string; tokenHash: string; expiresAt: Date }): Promise<void>;
   findActiveSession(tokenHash: string, now: Date): Promise<StoredSession | null>;
   touchSession(sessionId: string, now: Date): Promise<void>;
   revokeSession(tokenHash: string, now: Date): Promise<void>;
+  listActiveSessions(userId: string, workspaceId: string, now: Date): Promise<readonly ManagedSession[]>;
+  revokeSessionById(sessionId: string, userId: string, workspaceId: string, now: Date): Promise<boolean>;
 }
 
 export interface SessionAuthenticator {
@@ -72,6 +82,33 @@ export class AuthService implements SessionAuthenticator {
 
   public async logout(token: string | undefined): Promise<void> {
     if (token) await this.repository.revokeSession(hashSessionToken(token), new Date());
+  }
+
+  public async listSessions(token: string | undefined) {
+    const tokenHash = token ? hashSessionToken(token) : '';
+    const active = await this.repository.findActiveSession(tokenHash, new Date());
+    if (!active) return null;
+    const sessions = await this.repository.listActiveSessions(active.userId, active.workspaceId, new Date());
+    return sessions.map((session) => ({
+      id: session.id,
+      createdAt: session.createdAt.toISOString(),
+      lastSeenAt: session.lastSeenAt.toISOString(),
+      expiresAt: session.expiresAt.toISOString(),
+      current: session.tokenHash === tokenHash,
+    }));
+  }
+
+  public async revokeManagedSession(token: string | undefined, sessionId: string) {
+    const tokenHash = token ? hashSessionToken(token) : '';
+    const active = await this.repository.findActiveSession(tokenHash, new Date());
+    if (!active) return null;
+    const sessions = await this.repository.listActiveSessions(active.userId, active.workspaceId, new Date());
+    const selected = sessions.find((session) => session.id === sessionId);
+    if (!selected) return { revoked: false, current: false };
+    const revoked = await this.repository.revokeSessionById(
+      sessionId, active.userId, active.workspaceId, new Date(),
+    );
+    return { revoked, current: selected.tokenHash === tokenHash };
   }
 }
 

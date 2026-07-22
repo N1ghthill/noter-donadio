@@ -11,6 +11,7 @@ import {
   type AnalysisDecisionView,
   type ContactView,
   type CrmRepository,
+  type DashboardView,
   type NegotiationDetailView,
   type NegotiationView,
 } from '../domain/crm.repository.js';
@@ -29,7 +30,18 @@ class FakeCrmRepository implements CrmRepository {
   public lastNegotiationCreate?: Parameters<CrmRepository['createNegotiation']>[0];
   public lastNegotiationUpdate?: Parameters<CrmRepository['updateNegotiation']>[0];
   public lastStageUpdate?: Parameters<CrmRepository['updateNegotiationStage']>[0];
+  public lastNextActionCompletion?: Parameters<CrmRepository['completeNextAction']>[0];
+  public lastNegotiationFilters?: Parameters<CrmRepository['listNegotiations']>[1];
   public lastAnalysisDecision?: Parameters<CrmRepository['decideAnalysis']>[0];
+  public lastDashboard?: { workspaceId: string; periodDays: 30 | 90 | 365 };
+  public async getDashboard(workspaceId: string, periodDays: 30 | 90 | 365): Promise<DashboardView> {
+    this.lastDashboard = { workspaceId, periodDays };
+    return {
+      periodDays, contactsCount: 3, activeNegotiationsCount: 2, pipelineValue: '1250.5',
+      overdueFollowUpsCount: 1, todayFollowUpsCount: 0, missingFollowUpsCount: 1,
+      wonCount: 1, lostCount: 1, winRatePercent: '50.00', stages: [], recentNegotiations: [],
+    };
+  }
   public async listContacts(workspaceId: string): Promise<ContactView[]> {
     this.lastWorkspaceId = workspaceId;
     return [];
@@ -62,7 +74,10 @@ class FakeCrmRepository implements CrmRepository {
       lastInteractionAt: null,
     };
   }
-  public async listNegotiations(): Promise<NegotiationView[]> { return []; }
+  public async listNegotiations(_workspaceId: string, filters: Parameters<CrmRepository['listNegotiations']>[1]): Promise<NegotiationView[]> {
+    this.lastNegotiationFilters = filters;
+    return [];
+  }
   public async createNegotiation(
     input: Parameters<CrmRepository['createNegotiation']>[0],
   ): Promise<NegotiationView> {
@@ -95,6 +110,7 @@ class FakeCrmRepository implements CrmRepository {
       sentiment: null,
       version: 1,
       updatedAt: '2026-07-20T12:00:00.000Z',
+      closeReason: null,
       valueConfirmedAt: null,
       expectedCloseDate: null,
       expectedCloseDateConfirmedAt: null,
@@ -112,6 +128,7 @@ class FakeCrmRepository implements CrmRepository {
       messages: [],
       analyses: [],
       auditTrail: [],
+      followUpHistory: [],
     };
   }
   public async updateNegotiation(
@@ -136,6 +153,7 @@ class FakeCrmRepository implements CrmRepository {
   }
   public async updateNegotiationStage(input: {
     workspaceId: string; userId: string; negotiationId: string; stage: NegotiationStage; expectedVersion: number;
+    closeReason?: string;
   }): Promise<NegotiationView> {
     this.lastStageUpdate = input;
     if (input.expectedVersion !== 1) throw new CrmConflictError();
@@ -152,6 +170,26 @@ class FakeCrmRepository implements CrmRepository {
       nextActionDueDate: null,
       version: 2,
       updatedAt: '2026-07-20T12:00:00.000Z',
+    };
+  }
+  public async completeNextAction(
+    input: Parameters<CrmRepository['completeNextAction']>[0],
+  ): Promise<NegotiationView> {
+    this.lastNextActionCompletion = input;
+    if (input.expectedVersion !== 1) throw new CrmConflictError();
+    return {
+      id: input.negotiationId,
+      contactId: CONTACT_ID,
+      contactName: 'Contato',
+      title: 'Proposta',
+      stage: 'lead',
+      value: null,
+      currency: 'BRL',
+      sentiment: null,
+      nextAction: null,
+      nextActionDueDate: null,
+      version: 2,
+      updatedAt: '2026-07-21T12:00:00.000Z',
     };
   }
   public async decideAnalysis(input: Parameters<CrmRepository['decideAnalysis']>[0]): Promise<AnalysisDecisionView> {
@@ -210,6 +248,46 @@ test('workspace do CRM vem da sessão autenticada', async (context) => {
   });
   assert.equal(response.statusCode, 200);
   assert.equal(repository.lastWorkspaceId, WORKSPACE_ID);
+});
+
+test('dashboard valida o período e agrega somente o workspace autenticado', async (context) => {
+  const repository = new FakeCrmRepository();
+  const app = buildApp({
+    crmRepository: repository,
+    sessionAuthenticator: new FakeSessionAuthenticator(),
+  });
+  context.after(async () => app.close());
+  const response = await app.inject({
+    method: 'GET', url: '/api/dashboard?periodDays=90', headers: { cookie: SESSION_COOKIE },
+  });
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(repository.lastDashboard, { workspaceId: WORKSPACE_ID, periodDays: 90 });
+  assert.equal(response.json().pipelineValue, '1250.5');
+  const invalid = await app.inject({
+    method: 'GET', url: '/api/dashboard?periodDays=31', headers: { cookie: SESSION_COOKIE },
+  });
+  assert.equal(invalid.statusCode, 400);
+});
+
+test('filtros do pipeline são validados e limitados na fronteira HTTP', async (context) => {
+  const repository = new FakeCrmRepository();
+  const app = buildApp({
+    crmRepository: repository,
+    sessionAuthenticator: new FakeSessionAuthenticator(),
+  });
+  context.after(async () => app.close());
+  const response = await app.inject({
+    method: 'GET',
+    url: '/api/negotiations?stage=qualified&followUp=overdue&search=Projeto&limit=25',
+    headers: { cookie: SESSION_COOKIE },
+  });
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(repository.lastNegotiationFilters, {
+    stage: 'qualified',
+    followUp: 'overdue',
+    search: 'Projeto',
+    limit: 25,
+  });
 });
 
 test('conflito otimista de estágio retorna 409', async (context) => {
@@ -280,6 +358,46 @@ test('mudança de estágio sem sessão retorna 401', async (context) => {
     payload: { stage: 'qualified', expectedVersion: 1 },
   });
   assert.equal(response.statusCode, 401);
+});
+
+test('fechamento exige motivo e conclusão de ação usa versão e identidade da sessão', async (context) => {
+  const repository = new FakeCrmRepository();
+  const app = buildApp({
+    crmRepository: repository,
+    sessionAuthenticator: new FakeSessionAuthenticator(),
+  });
+  context.after(async () => app.close());
+  const missingReason = await app.inject({
+    method: 'PATCH',
+    url: `/api/negotiations/${NEGOTIATION_ID}/stage`,
+    headers: { cookie: SESSION_COOKIE },
+    payload: { stage: 'closed_won', expectedVersion: 1 },
+  });
+  assert.equal(missingReason.statusCode, 400);
+  assert.deepEqual(missingReason.json(), { error: 'close_reason_required' });
+
+  const closed = await app.inject({
+    method: 'PATCH',
+    url: `/api/negotiations/${NEGOTIATION_ID}/stage`,
+    headers: { cookie: SESSION_COOKIE },
+    payload: { stage: 'closed_won', expectedVersion: 1, closeReason: 'Contrato confirmado' },
+  });
+  assert.equal(closed.statusCode, 200);
+  assert.equal(repository.lastStageUpdate?.closeReason, 'Contrato confirmado');
+
+  const completed = await app.inject({
+    method: 'POST',
+    url: `/api/negotiations/${NEGOTIATION_ID}/next-action/complete`,
+    headers: { cookie: SESSION_COOKIE },
+    payload: { expectedVersion: 1 },
+  });
+  assert.equal(completed.statusCode, 200);
+  assert.deepEqual(repository.lastNextActionCompletion, {
+    workspaceId: WORKSPACE_ID,
+    userId: USER_ID,
+    negotiationId: NEGOTIATION_ID,
+    expectedVersion: 1,
+  });
 });
 
 test('cadastro recusa telefone sem dígitos suficientes na fronteira HTTP', async (context) => {

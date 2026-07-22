@@ -9,6 +9,14 @@ export interface SessionUser {
   role: 'admin';
 }
 
+export interface SessionInfo {
+  id: string;
+  createdAt: string;
+  lastSeenAt: string;
+  expiresAt: string;
+  current: boolean;
+}
+
 export interface Contact {
   id: string;
   displayName: string;
@@ -36,6 +44,7 @@ export interface Negotiation {
 }
 
 export interface NegotiationDetail extends Negotiation {
+  closeReason: string | null;
   valueConfirmedAt: string | null;
   expectedCloseDate: string | null;
   expectedCloseDateConfirmedAt: string | null;
@@ -79,11 +88,33 @@ export interface NegotiationDetail extends Negotiation {
     decision: AnalysisDecision | null;
   }>;
   auditTrail: AuditEvent[];
+  followUpHistory: Array<{
+    id: string;
+    description: string;
+    dueDate: string | null;
+    completedAt: string;
+    completedByDisplayName: string;
+  }>;
+}
+
+export interface Dashboard {
+  periodDays: 30 | 90 | 365;
+  contactsCount: number;
+  activeNegotiationsCount: number;
+  pipelineValue: string;
+  overdueFollowUpsCount: number;
+  todayFollowUpsCount: number;
+  missingFollowUpsCount: number;
+  wonCount: number;
+  lostCount: number;
+  winRatePercent: string | null;
+  stages: Array<{ stage: NegotiationStage; count: number; value: string }>;
+  recentNegotiations: Negotiation[];
 }
 
 export interface AuditEvent {
   id: string;
-  action: 'contact_created' | 'contact_updated' | 'contact_deleted' | 'negotiation_created' | 'negotiation_updated' | 'negotiation_stage_changed' | 'analysis_accepted' | 'analysis_ignored';
+  action: 'contact_created' | 'contact_updated' | 'contact_deleted' | 'negotiation_created' | 'negotiation_updated' | 'negotiation_stage_changed' | 'negotiation_follow_up_completed' | 'analysis_accepted' | 'analysis_ignored';
   actorDisplayName: string;
   changedFields: string[];
   previousVersion: number | null;

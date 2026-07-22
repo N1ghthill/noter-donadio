@@ -115,7 +115,7 @@ test('criação manual de negociação é atômica, auditável e isolada por wor
     expectedCloseDate: null,
     productInterest: 'Serviço revisado confidencial',
     nextAction: 'Ligar para o contato',
-    nextActionDueDate: null,
+    nextActionDueDate: '2020-01-01',
   });
   const revised = await prisma.negotiation.findUniqueOrThrow({ where: { id: created.id } });
   assert.equal(revised.version, 2);
@@ -125,7 +125,7 @@ test('criação manual de negociação é atômica, auditável e isolada por wor
   assert.ok(revised.expectedCloseDateConfirmedAt);
   assert.ok(revised.productInterestConfirmedAt);
   assert.equal(revised.nextAction, 'Ligar para o contato');
-  assert.equal(revised.nextActionDueDate, null);
+  assert.equal(revised.nextActionDueDate?.toISOString(), '2020-01-01T00:00:00.000Z');
   assert.ok(revised.nextActionConfirmedAt);
   assert.ok(revised.nextActionDueDateConfirmedAt);
   const updateAudit = await prisma.auditEvent.findFirstOrThrow({
@@ -140,6 +140,63 @@ test('criação manual de negociação é atômica, auditável e isolada por wor
   const serializedUpdate = JSON.stringify(updateEvent.payload);
   assert.equal(serializedUpdate.includes('9800'), false);
   assert.equal(serializedUpdate.includes('confidencial'), false);
+
+  const overdue = await repository.listNegotiations(workspaceId, {
+    followUp: 'overdue',
+    search: 'Ligar',
+    limit: 10,
+  });
+  assert.deepEqual(overdue.map((item) => item.id), [created.id]);
+  const dashboard = await repository.getDashboard(workspaceId, 30);
+  assert.equal(dashboard.contactsCount, 1);
+  assert.equal(dashboard.activeNegotiationsCount, 1);
+  assert.equal(dashboard.pipelineValue, '9800.75');
+  assert.equal(dashboard.overdueFollowUpsCount, 1);
+  assert.equal(dashboard.missingFollowUpsCount, 0);
+  assert.deepEqual(dashboard.stages, [{ stage: 'qualified', count: 1, value: '9800.75' }]);
+
+  const completed = await repository.completeNextAction({
+    workspaceId,
+    userId,
+    negotiationId: created.id,
+    expectedVersion: 2,
+  });
+  assert.equal(completed.version, 3);
+  assert.equal(completed.nextAction, null);
+  assert.equal(completed.nextActionDueDate, null);
+  const followUp = await prisma.negotiationFollowUpHistory.findFirstOrThrow({
+    where: { negotiationId: created.id },
+  });
+  assert.equal(followUp.description, 'Ligar para o contato');
+  assert.equal(followUp.dueDate?.toISOString(), '2020-01-01T00:00:00.000Z');
+  assert.equal(followUp.completedByUserId, userId);
+  const completionAudit = await prisma.auditEvent.findFirstOrThrow({
+    where: { negotiationId: created.id, action: 'negotiation_follow_up_completed' },
+  });
+  assert.deepEqual(completionAudit.changedFields, ['nextAction', 'nextActionDueDate']);
+  assert.equal(JSON.stringify(completionAudit).includes('Ligar para o contato'), false);
+
+  const closed = await repository.updateNegotiationStage({
+    workspaceId,
+    userId,
+    negotiationId: created.id,
+    stage: 'closed_won',
+    closeReason: 'Contrato fictício aprovado em teste',
+    expectedVersion: 3,
+  });
+  assert.equal(closed.version, 4);
+  const closedRecord = await prisma.negotiation.findUniqueOrThrow({ where: { id: created.id } });
+  assert.equal(closedRecord.closeReason, 'Contrato fictício aprovado em teste');
+  assert.ok(closedRecord.closedAt);
+  const stageAudit = await prisma.auditEvent.findFirstOrThrow({
+    where: { negotiationId: created.id, action: 'negotiation_stage_changed' },
+  });
+  assert.deepEqual(stageAudit.changedFields, ['stage', 'closeReason']);
+  assert.equal(JSON.stringify(stageAudit).includes('Contrato fictício'), false);
+  const stageEvent = await prisma.outboxEvent.findFirstOrThrow({
+    where: { aggregateId: created.id, eventType: 'negotiation.stage.changed' },
+  });
+  assert.equal(JSON.stringify(stageEvent.payload).includes('Contrato fictício'), false);
 });
 
 test('aceite é atômico, auditável e idempotente no PostgreSQL', async (context) => {

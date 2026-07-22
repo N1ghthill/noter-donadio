@@ -76,4 +76,22 @@ export class PrismaAuthRepository implements AuthRepository {
       data: { revokedAt: now },
     });
   }
+
+  public async listActiveSessions(userId: string, workspaceId: string, now: Date) {
+    return this.prisma.session.findMany({
+      where: { userId, workspaceId, revokedAt: null, expiresAt: { gt: now } },
+      select: { id: true, tokenHash: true, createdAt: true, lastSeenAt: true, expiresAt: true },
+      orderBy: { lastSeenAt: 'desc' },
+    });
+  }
+
+  public async revokeSessionById(
+    sessionId: string, userId: string, workspaceId: string, now: Date,
+  ): Promise<boolean> {
+    const result = await this.prisma.session.updateMany({
+      where: { id: sessionId, userId, workspaceId, revokedAt: null },
+      data: { revokedAt: now },
+    });
+    return result.count === 1;
+  }
 }

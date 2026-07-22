@@ -35,6 +35,8 @@ export function NegotiationDetailPage() {
   const [showCommercialForm, setShowCommercialForm] = useState(false);
   const [commercialBusy, setCommercialBusy] = useState(false);
   const [commercialError, setCommercialError] = useState<string>();
+  const [followUpBusy, setFollowUpBusy] = useState(false);
+  const [followUpError, setFollowUpError] = useState<string>();
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -144,6 +146,26 @@ export function NegotiationDetailPage() {
     }
   };
 
+  const completeNextAction = async () => {
+    if (!id || !detail?.nextAction) return;
+    if (!window.confirm(`Concluir a próxima ação "${detail.nextAction}"?`)) return;
+    setFollowUpBusy(true);
+    setFollowUpError(undefined);
+    try {
+      await api.completeNextAction(id, detail.version);
+      await load();
+    } catch (caught: unknown) {
+      if (caught instanceof ApiError && caught.code === 'version_conflict') {
+        setFollowUpError('A negociação mudou em outra sessão. Os dados foram recarregados.');
+        await load();
+      } else {
+        setFollowUpError('Não foi possível concluir a próxima ação.');
+      }
+    } finally {
+      setFollowUpBusy(false);
+    }
+  };
+
   if (error && !detail) return <ErrorState message={error} retry={() => void load()} />;
   if (!detail) return <LoadingState label="Carregando negociação…" />;
 
@@ -185,8 +207,14 @@ export function NegotiationDetailPage() {
         <div>
           <strong>{detail.nextAction ?? 'Nenhuma próxima ação definida'}</strong>
           <small>{detail.nextActionDueDate ? `Prazo: ${formatDateOnly(detail.nextActionDueDate)}` : 'Sem prazo definido'}</small>
+          {detail.nextAction ? <button className="button primary" type="button" disabled={followUpBusy} onClick={() => void completeNextAction()}>{followUpBusy ? 'Concluindo…' : 'Concluir ação'}</button> : null}
+          {followUpError ? <span className="inline-error" role="alert">{followUpError}</span> : null}
         </div>
       </section>
+
+      {detail.closeReason ? (
+        <section className="panel close-reason"><strong>Motivo do fechamento</strong><p>{detail.closeReason}</p></section>
+      ) : null}
 
       <section className="detail-grid">
         <article className="panel">
@@ -280,6 +308,20 @@ export function NegotiationDetailPage() {
                 ) : event.changedFields.length ? (
                   <span>Campos: {event.changedFields.map((field) => AUDIT_FIELD_LABELS[field] ?? field).join(', ')}</span>
                 ) : null}
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
+
+      <section className="panel follow-up-history-panel">
+        <div className="panel-heading"><div><p className="eyebrow">Acompanhamento</p><h2>Ações concluídas</h2></div><small>Até 50 ações recentes</small></div>
+        {detail.followUpHistory.length === 0 ? <EmptyState title="Nenhuma ação concluída" description="As ações concluídas aparecerão aqui sem perder descrição ou prazo." /> : (
+          <ol className="follow-up-history">
+            {detail.followUpHistory.map((followUp) => (
+              <li key={followUp.id}>
+                <div><strong>{followUp.description}</strong><small>{followUp.completedByDisplayName} · {formatDateTime(followUp.completedAt)}</small></div>
+                <span>{followUp.dueDate ? `Prazo original: ${formatDateOnly(followUp.dueDate)}` : 'Sem prazo original'}</span>
               </li>
             ))}
           </ol>

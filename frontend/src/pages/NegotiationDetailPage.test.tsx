@@ -26,6 +26,11 @@ describe('detalhe da negociação', () => {
       productInterest: 'Produto atual', productInterestConfirmedAt: null,
       nextAction: 'Retornar ao contato', nextActionDueDate: '2026-08-20',
       nextActionConfirmedAt: null, nextActionDueDateConfirmedAt: null,
+      closeReason: null,
+      followUpHistory: [{
+        id: 'follow-up-1', description: 'Enviar apresentação anterior', dueDate: '2026-07-18',
+        completedAt: '2026-07-18T18:30:00.000Z', completedByDisplayName: 'Admin fictício',
+      }],
       contact: {
         id: 'contact-1', displayName: 'Contato fictício', phoneNumber: '5571000000000',
         tags: ['demonstração'], source: 'manual', status: 'active', notes: null,
@@ -51,6 +56,7 @@ describe('detalhe da negociação', () => {
       }],
     }), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal('confirm', vi.fn().mockReturnValue(true));
 
     render(
       <RealtimeProvider>
@@ -67,6 +73,12 @@ describe('detalhe da negociação', () => {
     expect(screen.getByText('Agendar demonstração')).toBeInTheDocument();
     expect(screen.getByText('Retornar ao contato')).toBeInTheDocument();
     expect(screen.getByText(/Prazo: 20 de ago/)).toBeInTheDocument();
+    expect(screen.getByText('Enviar apresentação anterior')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Concluir ação' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      '/api/negotiations/neg-1/next-action/complete',
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ expectedVersion: 1 }) }),
+    ));
     expect(screen.getByText('Produto fictício')).toBeInTheDocument();
     expect(screen.getByText('demonstração')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Aplicar seleção' })).toBeInTheDocument();
@@ -74,7 +86,7 @@ describe('detalhe da negociação', () => {
     expect(screen.getByText('A IA apenas sugere; toda aplicação exige confirmação e fica auditada.')).toBeInTheDocument();
     expect(screen.getByText('Etapa alterada manualmente')).toBeInTheDocument();
     expect(screen.getByText('Lead → Qualificado')).toBeInTheDocument();
-    expect(screen.getByText(/Admin fictício/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Admin fictício/)).toHaveLength(2);
 
     fireEvent.click(screen.getByRole('button', { name: 'Editar dados' }));
     const commercialPanel = screen.getByRole('heading', { name: 'Dados comerciais confirmados' }).closest('section');
@@ -111,7 +123,7 @@ describe('detalhe da negociação', () => {
       '/api/negotiations/neg-1/analyses/analysis-1/decision',
       expect.objectContaining({ method: 'POST' }),
     ));
-    const decisionCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST');
+    const decisionCall = fetchMock.mock.calls.find(([path, init]) => String(path).includes('/analyses/') && init?.method === 'POST');
     expect(JSON.parse(String(decisionCall?.[1]?.body))).toEqual(expect.objectContaining({
       decision: 'accepted',
       expectedVersion: 1,

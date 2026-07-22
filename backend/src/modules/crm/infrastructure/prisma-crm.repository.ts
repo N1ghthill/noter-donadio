@@ -4,19 +4,90 @@ import { Prisma, type PrismaClient } from '../../../generated/prisma/client.js';
 import { normalizePhoneNumber } from '../../../shared/domain/phone.js';
 import {
   CrmConflictError,
+  CrmCloseReasonRequiredError,
   CrmDecisionConflictError,
   CrmNotFoundError,
+  CrmNoNextActionError,
   CrmTagLimitError,
   type AnalysisDecisionView,
   type AuditEventView,
   type ContactView,
   type CrmRepository,
+  type DashboardView,
   type NegotiationDetailView,
+  type NegotiationListFilters,
   type NegotiationView,
 } from '../domain/crm.repository.js';
 
 export class PrismaCrmRepository implements CrmRepository {
   public constructor(private readonly prisma: PrismaClient) {}
+
+  public async getDashboard(workspaceId: string, periodDays: 30 | 90 | 365): Promise<DashboardView> {
+    const today = utcDateOnly(new Date());
+    const tomorrow = new Date(today);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    const periodStart = new Date(today);
+    periodStart.setUTCDate(periodStart.getUTCDate() - periodDays);
+    const activeStages: NegotiationStage[] = ['lead', 'qualified', 'proposal_sent', 'in_negotiation', 'on_hold'];
+    const activeWhere = { workspaceId, stage: { in: activeStages } };
+    const [
+      contactsCount,
+      activeNegotiationsCount,
+      pipeline,
+      overdueFollowUpsCount,
+      todayFollowUpsCount,
+      missingFollowUpsCount,
+      wonCount,
+      lostCount,
+      groupedStages,
+      recent,
+    ] = await Promise.all([
+      this.prisma.contact.count({ where: { workspaceId } }),
+      this.prisma.negotiation.count({ where: activeWhere }),
+      this.prisma.negotiation.aggregate({ where: activeWhere, _sum: { value: true } }),
+      this.prisma.negotiation.count({
+        where: { ...activeWhere, nextAction: { not: null }, nextActionDueDate: { lt: today } },
+      }),
+      this.prisma.negotiation.count({
+        where: { ...activeWhere, nextAction: { not: null }, nextActionDueDate: { gte: today, lt: tomorrow } },
+      }),
+      this.prisma.negotiation.count({ where: { ...activeWhere, nextAction: null } }),
+      this.prisma.negotiation.count({
+        where: { workspaceId, stage: 'closed_won', closedAt: { gte: periodStart } },
+      }),
+      this.prisma.negotiation.count({
+        where: { workspaceId, stage: 'closed_lost', closedAt: { gte: periodStart } },
+      }),
+      this.prisma.negotiation.groupBy({
+        by: ['stage'], where: { workspaceId }, _count: { _all: true }, _sum: { value: true },
+      }),
+      this.prisma.negotiation.findMany({
+        where: { workspaceId },
+        include: { contact: { select: { displayName: true } } },
+        orderBy: { updatedAt: 'desc' },
+        take: 5,
+      }),
+    ]);
+    const closedCount = wonCount + lostCount;
+    return {
+      periodDays,
+      contactsCount,
+      activeNegotiationsCount,
+      pipelineValue: pipeline._sum.value?.toString() ?? '0',
+      overdueFollowUpsCount,
+      todayFollowUpsCount,
+      missingFollowUpsCount,
+      wonCount,
+      lostCount,
+      winRatePercent: closedCount === 0 ? null : ((wonCount * 100) / closedCount).toFixed(2),
+      stages: groupedStages.map((item) => ({
+        stage: item.stage,
+        count: item._count._all,
+        value: item._sum.value?.toString() ?? '0',
+      })),
+      recentNegotiations: recent.map(toNegotiationView),
+    };
+  }
 
   public async listContacts(workspaceId: string, search: string | undefined, limit: number) {
     const phoneSearch = search ? normalizeSearchPhone(search) : '';
@@ -129,11 +200,28 @@ export class PrismaCrmRepository implements CrmRepository {
     });
   }
 
-  public async listNegotiations(workspaceId: string, stage: NegotiationStage | undefined) {
+  public async listNegotiations(workspaceId: string, filters: NegotiationListFilters) {
+    const today = utcDateOnly(new Date());
     const negotiations = await this.prisma.negotiation.findMany({
-      where: { workspaceId, ...(stage ? { stage } : {}) },
+      where: {
+        workspaceId,
+        ...(filters.stage ? { stage: filters.stage } : {}),
+        ...(filters.search ? {
+          OR: [
+            { title: { contains: filters.search, mode: 'insensitive' as const } },
+            { productInterest: { contains: filters.search, mode: 'insensitive' as const } },
+            { nextAction: { contains: filters.search, mode: 'insensitive' as const } },
+            { contact: { displayName: { contains: filters.search, mode: 'insensitive' as const } } },
+          ],
+        } : {}),
+        ...(filters.followUp === 'overdue' ? { nextAction: { not: null }, nextActionDueDate: { lt: today } } : {}),
+        ...(filters.followUp === 'today' ? { nextAction: { not: null }, nextActionDueDate: today } : {}),
+        ...(filters.followUp === 'upcoming' ? { nextAction: { not: null }, nextActionDueDate: { gt: today } } : {}),
+        ...(filters.followUp === 'missing' ? { nextAction: null } : {}),
+      },
       include: { contact: { select: { displayName: true } } },
       orderBy: [{ stage: 'asc' }, { priority: 'desc' }, { updatedAt: 'desc' }],
+      take: filters.limit,
     });
     return negotiations.map(toNegotiationView);
   }
@@ -239,6 +327,11 @@ export class PrismaCrmRepository implements CrmRepository {
           take: 20,
           include: { decision: true },
         },
+        followUpHistory: {
+          orderBy: { completedAt: 'desc' },
+          take: 50,
+          include: { completedByUser: { select: { displayName: true } } },
+        },
       },
     });
     if (!negotiation) throw new CrmNotFoundError();
@@ -254,6 +347,7 @@ export class PrismaCrmRepository implements CrmRepository {
 
     return {
       ...toNegotiationView(negotiation),
+      closeReason: negotiation.closeReason,
       valueConfirmedAt: negotiation.valueConfirmedAt?.toISOString() ?? null,
       expectedCloseDate: negotiation.expectedCloseDate?.toISOString().slice(0, 10) ?? null,
       expectedCloseDateConfirmedAt: negotiation.expectedCloseDateConfirmedAt?.toISOString() ?? null,
@@ -297,6 +391,13 @@ export class PrismaCrmRepository implements CrmRepository {
         decision: analysis.decision ? toAnalysisDecisionView(analysis.decision) : null,
       })),
       auditTrail: auditTrail.map(toAuditEventView),
+      followUpHistory: negotiation.followUpHistory.map((followUp) => ({
+        id: followUp.id,
+        description: followUp.description,
+        dueDate: followUp.dueDate?.toISOString().slice(0, 10) ?? null,
+        completedAt: followUp.completedAt.toISOString(),
+        completedByDisplayName: followUp.completedByUser.displayName,
+      })),
     };
   }
 
@@ -399,12 +500,16 @@ export class PrismaCrmRepository implements CrmRepository {
     negotiationId: string;
     stage: NegotiationStage;
     expectedVersion: number;
+    closeReason?: string | undefined;
   }) {
+    const closing = input.stage === 'closed_won' || input.stage === 'closed_lost';
+    if (closing && !input.closeReason) throw new CrmCloseReasonRequiredError();
+    if (!closing && input.closeReason !== undefined) throw new CrmCloseReasonRequiredError();
     try {
       return await this.prisma.$transaction(async (transaction) => {
       const current = await transaction.negotiation.findFirst({
         where: { id: input.negotiationId, workspaceId: input.workspaceId },
-        select: { id: true, contactId: true, stage: true, version: true },
+        select: { id: true, contactId: true, stage: true, closeReason: true, version: true },
       });
       if (!current) throw new CrmNotFoundError();
 
@@ -417,7 +522,8 @@ export class PrismaCrmRepository implements CrmRepository {
         data: {
           stage: input.stage,
           version: { increment: 1 },
-          closedAt: input.stage === 'closed_won' || input.stage === 'closed_lost' ? new Date() : null,
+          closedAt: closing ? new Date() : null,
+          closeReason: closing ? input.closeReason! : null,
         },
       });
       if (result.count !== 1) throw new CrmConflictError();
@@ -442,7 +548,7 @@ export class PrismaCrmRepository implements CrmRepository {
           contactId: current.contactId,
           negotiationId: input.negotiationId,
           action: 'negotiation_stage_changed',
-          changedFields: ['stage'],
+          changedFields: ['stage', ...((closing || current.closeReason !== null) ? ['closeReason'] : [])],
           previousVersion: current.version,
           resultingVersion: current.version + 1,
           details: { previousStage: current.stage, resultingStage: input.stage },
@@ -459,6 +565,83 @@ export class PrismaCrmRepository implements CrmRepository {
       if (isUniqueConstraintError(error)) throw new CrmConflictError();
       throw error;
     }
+  }
+
+  public async completeNextAction(input: {
+    workspaceId: string;
+    userId: string;
+    negotiationId: string;
+    expectedVersion: number;
+  }): Promise<NegotiationView> {
+    return this.prisma.$transaction(async (transaction) => {
+      const current = await transaction.negotiation.findFirst({
+        where: { id: input.negotiationId, workspaceId: input.workspaceId },
+        select: {
+          contactId: true,
+          version: true,
+          nextAction: true,
+          nextActionDueDate: true,
+        },
+      });
+      if (!current) throw new CrmNotFoundError();
+      if (!current.nextAction) throw new CrmNoNextActionError();
+      if (current.version !== input.expectedVersion) throw new CrmConflictError();
+
+      const updated = await transaction.negotiation.updateMany({
+        where: {
+          id: input.negotiationId,
+          workspaceId: input.workspaceId,
+          version: input.expectedVersion,
+        },
+        data: {
+          nextAction: null,
+          nextActionDueDate: null,
+          nextActionConfirmedAt: new Date(),
+          nextActionDueDateConfirmedAt: new Date(),
+          version: { increment: 1 },
+        },
+      });
+      if (updated.count !== 1) throw new CrmConflictError();
+      await transaction.negotiationFollowUpHistory.create({
+        data: {
+          workspaceId: input.workspaceId,
+          negotiationId: input.negotiationId,
+          completedByUserId: input.userId,
+          description: current.nextAction,
+          dueDate: current.nextActionDueDate,
+        },
+      });
+      await transaction.auditEvent.create({
+        data: {
+          workspaceId: input.workspaceId,
+          userId: input.userId,
+          contactId: current.contactId,
+          negotiationId: input.negotiationId,
+          action: 'negotiation_follow_up_completed',
+          changedFields: ['nextAction', 'nextActionDueDate'],
+          previousVersion: current.version,
+          resultingVersion: current.version + 1,
+        },
+      });
+      await transaction.outboxEvent.create({
+        data: {
+          workspaceId: input.workspaceId,
+          aggregateType: 'negotiation',
+          aggregateId: input.negotiationId,
+          eventType: 'negotiation.updated',
+          payload: {
+            workspaceId: input.workspaceId,
+            negotiationId: input.negotiationId,
+            changedFields: ['nextAction', 'nextActionDueDate'],
+          },
+        },
+      });
+      const result = await transaction.negotiation.findUniqueOrThrow({
+        where: { id: input.negotiationId },
+        include: { contact: { select: { displayName: true } } },
+      });
+      return toNegotiationView(result);
+    });
   }
 
   public async decideAnalysis(input: {
@@ -695,6 +878,10 @@ function isPrismaError(error: unknown, code: string): boolean {
 
 function sameStrings(left: readonly string[], right: readonly string[]): boolean {
   return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function utcDateOnly(value: Date): Date {
+  return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
 }
 
 function toAnalysisDecisionView(decision: {

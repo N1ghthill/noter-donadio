@@ -4,9 +4,11 @@ import type {
   AnalysisDecision,
   Contact,
   ConversationSummary,
+  Dashboard,
   Negotiation,
   NegotiationDetail,
   SessionUser,
+  SessionInfo,
   WhatsappConnection,
 } from '../types/api.js';
 
@@ -54,6 +56,20 @@ export const api = {
     return request<void>('/api/auth/logout', { method: 'POST' });
   },
 
+  async sessions() {
+    return request<{ data: SessionInfo[] }>('/api/auth/sessions');
+  },
+
+  async revokeSession(id: string) {
+    return request<void>(`/api/auth/sessions/${id}`, {
+      method: 'DELETE', body: JSON.stringify({ confirmation: id }),
+    });
+  },
+
+  async dashboard(periodDays: 30 | 90 | 365 = 30) {
+    return request<Dashboard>(`/api/dashboard?periodDays=${periodDays}`);
+  },
+
   async contacts(search?: string) {
     const query = search ? `?search=${encodeURIComponent(search)}` : '';
     return request<{ data: Contact[] }>(`/api/contacts${query}`);
@@ -90,8 +106,16 @@ export const api = {
     });
   },
 
-  async negotiations(stage?: NegotiationStage) {
-    const query = stage ? `?stage=${stage}` : '';
+  async negotiations(filters?: {
+    stage?: NegotiationStage;
+    followUp?: 'overdue' | 'today' | 'upcoming' | 'missing';
+    search?: string;
+  }) {
+    const params = new URLSearchParams();
+    if (filters?.stage) params.set('stage', filters.stage);
+    if (filters?.followUp) params.set('followUp', filters.followUp);
+    if (filters?.search) params.set('search', filters.search);
+    const query = params.size ? `?${params.toString()}` : '';
     return request<{ data: Negotiation[] }>(`/api/negotiations${query}`);
   },
 
@@ -141,11 +165,18 @@ export const api = {
 
   async updateNegotiationStage(
     id: string,
-    input: { stage: NegotiationStage; expectedVersion: number },
+    input: { stage: NegotiationStage; expectedVersion: number; closeReason?: string },
   ) {
     return request<Negotiation>(`/api/negotiations/${id}/stage`, {
       method: 'PATCH',
       body: JSON.stringify(input),
+    });
+  },
+
+  async completeNextAction(id: string, expectedVersion: number) {
+    return request<Negotiation>(`/api/negotiations/${id}/next-action/complete`, {
+      method: 'POST',
+      body: JSON.stringify({ expectedVersion }),
     });
   },
 

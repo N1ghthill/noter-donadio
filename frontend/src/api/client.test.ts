@@ -19,6 +19,35 @@ describe('cliente HTTP', () => {
     }));
   });
 
+  it('consulta agregados do dashboard com período explícito', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ periodDays: 90 }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await api.dashboard(90);
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/dashboard?periodDays=90', expect.objectContaining({
+      credentials: 'include',
+    }));
+  });
+
+  it('lista e revoga sessões com confirmação do identificador', async () => {
+    const sessionId = '54eb359b-6fb4-4d51-8c07-8c55ac7efd65';
+    const fetchMock = vi.fn().mockImplementation(async (_path: string, init?: RequestInit) => (
+      init?.method === 'DELETE'
+        ? new Response(null, { status: 204 })
+        : new Response(JSON.stringify({ data: [] }), { status: 200 })
+    ));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await api.sessions();
+    await api.revokeSession(sessionId);
+
+    expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/auth/sessions', expect.objectContaining({ credentials: 'include' }));
+    expect(fetchMock).toHaveBeenNthCalledWith(2, `/api/auth/sessions/${sessionId}`, expect.objectContaining({
+      method: 'DELETE', body: JSON.stringify({ confirmation: sessionId }),
+    }));
+  });
+
   it('transforma respostas de erro em ApiError', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: 'invalid_credentials' }), {
       status: 401,
@@ -40,6 +69,38 @@ describe('cliente HTTP', () => {
       method: 'PATCH',
       body: JSON.stringify({ stage: 'qualified', expectedVersion: 3 }),
     }));
+  });
+
+  it('envia motivo de encerramento e conclui a próxima ação com versão', async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => new Response(
+      JSON.stringify({ id: 'neg-1' }), { status: 200 },
+    ));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await api.updateNegotiationStage('neg-1', {
+      stage: 'closed_lost', expectedVersion: 4, closeReason: 'Orçamento adiado',
+    });
+    await api.completeNextAction('neg-1', 5);
+
+    expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/negotiations/neg-1/stage', expect.objectContaining({
+      method: 'PATCH',
+      body: JSON.stringify({ stage: 'closed_lost', expectedVersion: 4, closeReason: 'Orçamento adiado' }),
+    }));
+    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/negotiations/neg-1/next-action/complete', expect.objectContaining({
+      method: 'POST', body: JSON.stringify({ expectedVersion: 5 }),
+    }));
+  });
+
+  it('codifica filtros comerciais no servidor', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await api.negotiations({ stage: 'qualified', followUp: 'overdue', search: 'Ana & Cia' });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/negotiations?stage=qualified&followUp=overdue&search=Ana+%26+Cia',
+      expect.objectContaining({ credentials: 'include' }),
+    );
   });
 
   it('cria negociação manual sem enviar workspace ou valores numéricos flutuantes', async () => {

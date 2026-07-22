@@ -24,6 +24,18 @@ class RouteAuthRepository implements AuthRepository {
   public async revokeSession(tokenHash: string) {
     if (this.session?.tokenHash === tokenHash) this.session.revoked = true;
   }
+  public async listActiveSessions(_userId: string, _workspaceId: string, now: Date) {
+    if (!this.session || this.session.revoked || this.session.expiresAt <= now) return [];
+    return [{
+      id: '54eb359b-6fb4-4d51-8c07-8c55ac7efd65', tokenHash: this.session.tokenHash,
+      createdAt: now, lastSeenAt: now, expiresAt: this.session.expiresAt,
+    }];
+  }
+  public async revokeSessionById(sessionId: string) {
+    if (sessionId !== '54eb359b-6fb4-4d51-8c07-8c55ac7efd65' || !this.session) return false;
+    this.session.revoked = true;
+    return true;
+  }
 }
 
 test('login, consulta e logout usam cookie HttpOnly revogável', async (context) => {
@@ -60,6 +72,16 @@ test('login, consulta e logout usam cookie HttpOnly revogável', async (context)
   const me = await app.inject({ method: 'GET', url: '/api/auth/me', headers: { cookie } });
   assert.equal(me.statusCode, 200);
   assert.equal(me.json().user.email, 'admin@example.test');
+
+  const sessions = await app.inject({ method: 'GET', url: '/api/auth/sessions', headers: { cookie } });
+  assert.equal(sessions.statusCode, 200);
+  assert.equal(sessions.json().data[0].current, true);
+
+  const invalidRevocation = await app.inject({
+    method: 'DELETE', url: '/api/auth/sessions/54eb359b-6fb4-4d51-8c07-8c55ac7efd65',
+    headers: { cookie }, payload: { confirmation: 'outro-id' },
+  });
+  assert.equal(invalidRevocation.statusCode, 400);
 
   const logout = await app.inject({ method: 'POST', url: '/api/auth/logout', headers: { cookie } });
   assert.equal(logout.statusCode, 204);

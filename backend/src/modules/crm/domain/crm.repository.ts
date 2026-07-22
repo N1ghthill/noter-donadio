@@ -27,6 +27,7 @@ export interface NegotiationView {
 }
 
 export interface NegotiationDetailView extends NegotiationView {
+  readonly closeReason: string | null;
   readonly valueConfirmedAt: string | null;
   readonly expectedCloseDate: string | null;
   readonly expectedCloseDateConfirmedAt: string | null;
@@ -70,11 +71,18 @@ export interface NegotiationDetailView extends NegotiationView {
     readonly decision: AnalysisDecisionView | null;
   }[];
   readonly auditTrail: readonly AuditEventView[];
+  readonly followUpHistory: readonly {
+    readonly id: string;
+    readonly description: string;
+    readonly dueDate: string | null;
+    readonly completedAt: string;
+    readonly completedByDisplayName: string;
+  }[];
 }
 
 export interface AuditEventView {
   readonly id: string;
-  readonly action: 'contact_created' | 'contact_updated' | 'contact_deleted' | 'negotiation_created' | 'negotiation_updated' | 'negotiation_stage_changed' | 'analysis_accepted' | 'analysis_ignored';
+  readonly action: 'contact_created' | 'contact_updated' | 'contact_deleted' | 'negotiation_created' | 'negotiation_updated' | 'negotiation_stage_changed' | 'negotiation_follow_up_completed' | 'analysis_accepted' | 'analysis_ignored';
   readonly actorDisplayName: string;
   readonly changedFields: readonly string[];
   readonly previousVersion: number | null;
@@ -104,8 +112,37 @@ export class CrmNotFoundError extends Error {}
 export class CrmConflictError extends Error {}
 export class CrmDecisionConflictError extends Error {}
 export class CrmTagLimitError extends Error {}
+export class CrmCloseReasonRequiredError extends Error {}
+export class CrmNoNextActionError extends Error {}
+
+export interface NegotiationListFilters {
+  readonly stage?: NegotiationStage | undefined;
+  readonly followUp?: 'overdue' | 'today' | 'upcoming' | 'missing' | undefined;
+  readonly search?: string | undefined;
+  readonly limit: number;
+}
+
+export interface DashboardView {
+  readonly periodDays: 30 | 90 | 365;
+  readonly contactsCount: number;
+  readonly activeNegotiationsCount: number;
+  readonly pipelineValue: string;
+  readonly overdueFollowUpsCount: number;
+  readonly todayFollowUpsCount: number;
+  readonly missingFollowUpsCount: number;
+  readonly wonCount: number;
+  readonly lostCount: number;
+  readonly winRatePercent: string | null;
+  readonly stages: readonly {
+    readonly stage: NegotiationStage;
+    readonly count: number;
+    readonly value: string;
+  }[];
+  readonly recentNegotiations: readonly NegotiationView[];
+}
 
 export interface CrmRepository {
+  getDashboard(workspaceId: string, periodDays: 30 | 90 | 365): Promise<DashboardView>;
   listContacts(workspaceId: string, search: string | undefined, limit: number): Promise<ContactView[]>;
   createContact(input: {
     workspaceId: string;
@@ -124,7 +161,7 @@ export interface CrmRepository {
     tags?: readonly string[] | undefined;
     notes?: string | null | undefined;
   }): Promise<ContactView>;
-  listNegotiations(workspaceId: string, stage: NegotiationStage | undefined): Promise<NegotiationView[]>;
+  listNegotiations(workspaceId: string, filters: NegotiationListFilters): Promise<NegotiationView[]>;
   createNegotiation(input: {
     workspaceId: string;
     userId: string;
@@ -156,6 +193,13 @@ export interface CrmRepository {
     userId: string;
     negotiationId: string;
     stage: NegotiationStage;
+    expectedVersion: number;
+    closeReason?: string | undefined;
+  }): Promise<NegotiationView>;
+  completeNextAction(input: {
+    workspaceId: string;
+    userId: string;
+    negotiationId: string;
     expectedVersion: number;
   }): Promise<NegotiationView>;
   decideAnalysis(input: {

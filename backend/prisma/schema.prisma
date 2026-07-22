@@ -94,6 +94,7 @@ enum AuditAction {
   negotiation_created
   negotiation_updated
   negotiation_stage_changed
+  negotiation_follow_up_completed
   analysis_accepted
   analysis_ignored
 }
@@ -116,6 +117,7 @@ model Workspace {
   analysisDecisions  AnalysisDecision[]
   auditEvents        AuditEvent[]
   mediaDeletionTasks MediaDeletionTask[]
+  negotiationFollowUpHistory NegotiationFollowUpHistory[]
 
   @@map("workspaces")
 }
@@ -135,6 +137,7 @@ model User {
   sessions          Session[]
   analysisDecisions AnalysisDecision[]
   auditEvents       AuditEvent[]
+  completedNegotiationFollowUps NegotiationFollowUpHistory[]
 
   @@unique([workspaceId, email])
   @@unique([workspaceId, id])
@@ -244,6 +247,7 @@ model Negotiation {
   pipelineStageOrder Int                @default(0) @map("pipeline_stage_order")
   metadata           Json               @default("{}")
   closedAt           DateTime?          @map("closed_at") @db.Timestamptz(6)
+  closeReason        String?            @map("close_reason")
   version            Int                @default(1)
   createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -253,6 +257,7 @@ model Negotiation {
   aiAnalyses         AiAnalysis[]
   analysisDecisions  AnalysisDecision[]
   auditEvents        AuditEvent[]
+  followUpHistory    NegotiationFollowUpHistory[]
 
   @@unique([workspaceId, id])
   @@index([workspaceId, stage])
@@ -260,6 +265,23 @@ model Negotiation {
   @@index([contactId])
   @@index([workspaceId, priority])
   @@map("negotiations")
+}
+
+model NegotiationFollowUpHistory {
+  id                String      @id @default(uuid()) @db.Uuid
+  workspaceId       String      @map("workspace_id") @db.Uuid
+  negotiationId     String      @map("negotiation_id") @db.Uuid
+  completedByUserId String      @map("completed_by_user_id") @db.Uuid
+  description       String
+  dueDate            DateTime?   @map("due_date") @db.Date
+  completedAt        DateTime    @default(now()) @map("completed_at") @db.Timestamptz(6)
+  workspace          Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  negotiation        Negotiation @relation(fields: [workspaceId, negotiationId], references: [workspaceId, id], onDelete: Cascade)
+  completedByUser    User        @relation(fields: [workspaceId, completedByUserId], references: [workspaceId, id], onDelete: Restrict)
+
+  @@index([workspaceId, completedAt])
+  @@index([negotiationId, completedAt])
+  @@map("negotiation_follow_up_history")
 }
 
 model Message {

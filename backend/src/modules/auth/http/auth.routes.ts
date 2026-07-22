@@ -44,6 +44,31 @@ export function registerAuthRoutes(
     return user ? { user } : reply.code(401).send({ error: 'unauthorized' });
   });
 
+  app.get('/api/auth/sessions', async (request, reply) => {
+    const sessions = await options.authService.listSessions(request.cookies[SESSION_COOKIE_NAME]);
+    reply.header('cache-control', 'no-store');
+    return sessions ? { data: sessions } : reply.code(401).send({ error: 'unauthorized' });
+  });
+
+  app.delete('/api/auth/sessions/:id', async (request, reply) => {
+    const params = z.object({ id: z.uuid() }).safeParse(request.params);
+    const body = z.object({ confirmation: z.string() }).strict().safeParse(request.body);
+    if (!params.success || !body.success || body.data.confirmation !== params.data.id) {
+      return reply.code(400).send({ error: 'confirmation_required' });
+    }
+    const result = await options.authService.revokeManagedSession(
+      request.cookies[SESSION_COOKIE_NAME], params.data.id,
+    );
+    if (!result) return reply.code(401).send({ error: 'unauthorized' });
+    if (!result.revoked) return reply.code(404).send({ error: 'not_found' });
+    if (result.current) {
+      reply.clearCookie(SESSION_COOKIE_NAME, cookieOptions(options.secureCookie));
+      reply.header('clear-site-data', '"cache", "cookies", "storage"');
+    }
+    reply.header('cache-control', 'no-store');
+    return reply.code(204).send();
+  });
+
   app.post('/api/auth/logout', async (request, reply) => {
     await options.authService.logout(request.cookies[SESSION_COOKIE_NAME]);
     reply.clearCookie(SESSION_COOKIE_NAME, cookieOptions(options.secureCookie));

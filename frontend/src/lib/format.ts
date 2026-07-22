@@ -31,6 +31,7 @@ export const AUDIT_ACTION_LABELS = {
   negotiation_created: 'Negociação criada manualmente',
   negotiation_updated: 'Negociação atualizada manualmente',
   negotiation_stage_changed: 'Etapa alterada manualmente',
+  negotiation_follow_up_completed: 'Próxima ação concluída',
   analysis_accepted: 'Sugestão da IA aplicada',
   analysis_ignored: 'Sugestão da IA ignorada',
 } as const;
@@ -48,6 +49,7 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   productInterest: 'produto de interesse',
   nextAction: 'próxima ação',
   nextActionDueDate: 'prazo da próxima ação',
+  closeReason: 'motivo do fechamento',
 };
 
 export function formatDateOnly(value: string | null): string {
