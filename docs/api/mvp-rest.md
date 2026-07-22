@@ -13,6 +13,7 @@ Nenhum token, telefone ou conteúdo deve aparecer em logs ou exemplos versionado
 
 - `POST /api/internal/messages/ingest`: ingestão idempotente de texto ou áudio;
 - `GET /api/internal/health/ready`: verifica PostgreSQL e Redis, exige token interno e retorna `503` quando uma dependência está indisponível;
+- `GET /api/internal/metrics`: expõe métricas Prometheus agregadas e exige token interno;
 - `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout`: ciclo da sessão;
 - `GET /api/auth/sessions`: lista as sessões ativas do administrador autenticado;
 - `DELETE /api/auth/sessions/:id`: revoga uma sessão após confirmar o mesmo UUID no corpo;
@@ -67,7 +68,7 @@ npm run start:retention -w @noter/backend
 
 O processo da outbox publica `message.text.ingested`, `message.audio.ingested`, `message.audio.ready_for_analysis`, `message.persisted` e eventos de atualização do CRM nas filas correspondentes. Os jobs e notificações contêm IDs e metadados de roteamento, nunca o conteúdo integral da conversa.
 
-`GET /health` é somente um liveness público e não consulta nem revela dependências. O readiness detalhado é privado, desabilita cache e expõe apenas `ok` ou `unavailable` para PostgreSQL e Redis, sem URLs, credenciais ou mensagens de erro.
+`GET /health` é somente um liveness público e não consulta nem revela dependências. Readiness e métricas são privados, desabilitam cache e não expõem URLs, credenciais, mensagens de erro ou labels com identificadores de negócio. O proxy de produção devolve `404` para `/api/internal/`; processos autorizados devem acessar essas rotas diretamente pela rede interna do backend.
 
 O CI executa lint, migrations em banco vazio, testes com PostgreSQL e Redis, typecheck e build. O teste integrado usa workspace e prefixo BullMQ exclusivos e percorre ingestão HTTP, outbox, análise e notificação em tempo real sem compartilhar conteúdo com serviços externos.
 

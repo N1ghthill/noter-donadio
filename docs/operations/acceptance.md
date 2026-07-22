@@ -9,7 +9,7 @@ Os fluxos comerciais e administrativos implementados estão aceitos para demonst
 Evidências automatizadas do marco:
 
 - lint e TypeScript estrito sem erros;
-- 124 testes aprovados: 1 de contratos, 92 de backend e 31 de frontend;
+- 128 testes aprovados: 1 de contratos, 96 de backend e 31 de frontend;
 - build dos três workspaces aprovado;
 - 14 migrations aplicadas em PostgreSQL vazio;
 - fluxo integrado validado com PostgreSQL, Redis, BullMQ e adapters falsos;
@@ -21,6 +21,7 @@ Evidências automatizadas do marco:
 - login, sessão opaca, listagem e revogação de sessões;
 - exportação administrativa versionada e auditada, sem credenciais ou chaves internas;
 - auditoria global minimizada e isolada por workspace;
+- métricas Prometheus agregadas, autenticadas e bloqueadas no proxy público;
 - criação e edição de contato e negociação;
 - filtros, busca, Kanban, dashboard e agregações do PostgreSQL;
 - próxima ação, conclusão imutável e histórico de auditoria;

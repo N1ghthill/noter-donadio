@@ -215,3 +215,11 @@ A área administrativa consulta as ações auditáveis mais recentes de todo o w
 A projeção expõe ator, instante, referências internas opcionais, campos afetados, versões e detalhes presentes em uma allowlist. Valores comerciais, tags completas, identidade do contato, mensagens, transcrições e propriedades desconhecidas de `details` não atravessam a resposta.
 
 O MVP mostra os 50 eventos mais recentes. Paginação estável e política de retenção da auditoria permanecem requisitos anteriores a grandes volumes.
+
+## ADR-034 — Métricas operacionais são agregadas e privadas
+
+`GET /api/internal/metrics` expõe formato Prometheus somente após autenticação pelo token interno. O proxy público bloqueia todo o prefixo `/api/internal/`; monitoramento, readiness e ingestão acessam a API diretamente pela rede privada.
+
+As métricas agregam estados da outbox, transcrição, análise, tarefas de exclusão de mídia, idade do item pendente mais antigo e contagens fechadas das três filas BullMQ. Não existem labels de workspace, contato, negociação, mensagem, telefone, modelo ou código de erro, evitando alta cardinalidade e vazamento de dados.
+
+Falha no PostgreSQL ou Redis faz a coleta retornar `503` com corpo genérico. Métricas complementam logs e readiness, mas não substituem o PostgreSQL como fonte de verdade nem autorizam descarte automático de jobs falhos.

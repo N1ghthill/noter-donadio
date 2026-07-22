@@ -72,6 +72,59 @@ test('readiness retorna 503 sem revelar detalhes de conexão', async (context) =
   });
 });
 
+test('métricas operacionais exigem token e usam formato Prometheus sem cache', async (context) => {
+  const app = buildApp({
+    internalIngestionToken: 'token-interno-de-teste',
+    readinessProbe: { async check() { return { database: 'ok', redis: 'ok' }; } },
+    metricsCollector: {
+      async collect() {
+        return {
+          outbox: { pending: 1, processing: 0, published: 2, failed: 0 },
+          transcriptions: { pending: 0, processing: 0, completed: 1, failed: 0 },
+          analyses: { pending: 0, processing: 0, completed: 1, failed: 0 },
+          mediaDeletionTasks: 0,
+          oldestPendingOutboxAgeSeconds: 5,
+          oldestPendingTranscriptionAgeSeconds: 0,
+          oldestPendingAnalysisAgeSeconds: 0,
+          queues: {
+            'ai-processing': { waiting: 0, active: 0, delayed: 0, failed: 0, paused: 0 },
+            'audio-transcription': { waiting: 0, active: 0, delayed: 0, failed: 0, paused: 0 },
+            'realtime-events': { waiting: 0, active: 0, delayed: 0, failed: 0, paused: 0 },
+          },
+        };
+      },
+    },
+  });
+  context.after(async () => app.close());
+
+  assert.equal((await app.inject({ method: 'GET', url: '/api/internal/metrics' })).statusCode, 401);
+  const response = await app.inject({
+    method: 'GET', url: '/api/internal/metrics',
+    headers: { 'x-internal-token': 'token-interno-de-teste' },
+  });
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.headers['cache-control'], 'no-store');
+  assert.match(String(response.headers['content-type']), /text\/plain/);
+  assert.match(response.body, /noter_outbox_events\{status="pending"\} 1/);
+});
+
+test('falha das métricas retorna 503 sem detalhes internos', async (context) => {
+  const app = buildApp({
+    internalIngestionToken: 'token-interno-de-teste',
+    readinessProbe: { async check() { return { database: 'ok', redis: 'ok' }; } },
+    metricsCollector: { async collect() { throw new Error('redis://segredo-interno'); } },
+  });
+  context.after(async () => app.close());
+
+  const response = await app.inject({
+    method: 'GET', url: '/api/internal/metrics',
+    headers: { 'x-internal-token': 'token-interno-de-teste' },
+  });
+  assert.equal(response.statusCode, 503);
+  assert.equal(response.body, '# metrics unavailable\n');
+  assert.doesNotMatch(response.body, /redis|segredo/);
+});
+
 test('corpo JSON vazio é recusado como requisição inválida sem erro interno', async (context) => {
   const app = buildApp();
   app.post('/test/json', async () => ({ ok: true }));

@@ -23,6 +23,7 @@ import { PrismaContactDeletionRepository } from './modules/privacy/infrastructur
 import { PrismaWorkspaceExportRepository } from './modules/privacy/infrastructure/prisma-workspace-export.repository.js';
 import { PrismaAuditLogRepository } from './modules/privacy/infrastructure/prisma-audit-log.repository.js';
 import { DependencyReadinessProbe } from './modules/health/infrastructure/dependency-readiness.js';
+import { PrismaBullMqOperationalMetricsCollector } from './modules/health/infrastructure/operational-metrics.js';
 
 const environment = readEnvironment();
 const prisma = createPrismaClient(environment.DATABASE_URL);
@@ -35,6 +36,7 @@ const contactDeletionService = new ContactDeletionService(
   mediaStorage,
 );
 const readinessProbe = new DependencyReadinessProbe(prisma, environment.REDIS_URL);
+const metricsCollector = new PrismaBullMqOperationalMetricsCollector(prisma, environment.REDIS_URL);
 const demoMessageService = environment.WHATSAPP_ADAPTER === 'fake'
   ? new DemoMessageService(
       new PrismaConnectedWhatsappAccountRepository(prisma),
@@ -66,6 +68,7 @@ const app = buildApp({
   auditLogRepository: new PrismaAuditLogRepository(prisma),
   allowedOrigins: environment.APP_ORIGINS,
   readinessProbe,
+  metricsCollector,
   ...(demoMessageService ? { demoMessageService } : {}),
   ...(whatsappService ? { whatsappService } : {}),
 });
@@ -75,6 +78,7 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => {
     void app.close().finally(async () => {
       readinessProbe.close();
+      await metricsCollector.close();
       await prisma.$disconnect();
     });
   });
@@ -85,6 +89,7 @@ try {
 } catch (error: unknown) {
   app.log.error({ err: error }, 'Falha ao iniciar o backend');
   readinessProbe.close();
+  await metricsCollector.close();
   await prisma.$disconnect();
   process.exitCode = 1;
 }

@@ -34,6 +34,29 @@ Antes de qualquer upgrade:
 4. execute readiness privado com `x-internal-token` sem expor sua resposta publicamente;
 5. mantenha rollback da imagem anterior e restauração do banco documentados.
 
+## Métricas e alertas
+
+O backend oferece `GET /api/internal/metrics` no formato Prometheus, com prazo de coleta de dois segundos. O scraper deve acessar `backend:3000` pela rede privada e enviar `x-internal-token` como header protegido. O Nginx público responde `404` para todo `/api/internal/`; não abra uma porta pública alternativa para contornar essa restrição.
+
+As séries disponíveis são:
+
+- `noter_outbox_events{status}`;
+- `noter_transcriptions{state}` e `noter_analyses{state}`;
+- `noter_media_deletion_tasks`;
+- `noter_oldest_pending_age_seconds{pipeline}`;
+- `noter_queue_jobs{queue,state}`.
+
+Ponto inicial para alertas, a ajustar depois de medir carga real:
+
+- scrape ou readiness indisponível por dois minutos: crítico;
+- outbox pendente mais antiga acima de 120 segundos: aviso; acima de 300: crítico;
+- transcrição ou análise pendente acima de 10 minutos: aviso; acima de 30: crítico;
+- qualquer outbox com estado `failed`: crítico até investigação;
+- tarefa de exclusão de mídia pendente por mais de 15 minutos: aviso;
+- jobs `failed` em qualquer fila: aviso e inspeção antes de retry ou remoção.
+
+O runbook deve correlacionar por IDs internos nos logs estruturados. Nunca acrescente conteúdo, telefone, workspace ou mensagem como label para facilitar diagnóstico.
+
 ## Backup e teste de restauração
 
 Com o PostgreSQL da composição em execução, gere um dump customizado com permissões restritas:
@@ -61,7 +84,7 @@ A verificação confere o checksum quando disponível, restaura com `--exit-on-e
 - implementar adapters aprovados de transcrição e IA, com contratos, retenção e custos revisados;
 - substituir filesystem por armazenamento de objeto privado criptografado;
 - aprovar o protocolo de exclusão integral de workspace, prazo de auditoria e procedimento de atendimento ao titular; a exportação síncrona atual deve se tornar assíncrona para grandes volumes;
-- configurar TLS, rate limiting no proxy, monitoramento, alertas, backup e teste periódico de restauração;
+- configurar TLS e rate limiting no proxy, conectar scraper/alertas às métricas privadas e testar backup e restauração periodicamente;
 - executar avaliação de segurança e privacidade antes do primeiro workspace real.
 
 O inventário de portões por integração está em [`provider-readiness.md`](provider-readiness.md), e a evidência do marco atual em [`acceptance.md`](acceptance.md).

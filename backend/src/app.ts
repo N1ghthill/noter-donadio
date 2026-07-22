@@ -25,6 +25,7 @@ import { registerWorkspaceExportRoute } from './modules/privacy/http/workspace-e
 import type { AuditLogRepository } from './modules/privacy/domain/audit-log.js';
 import { registerAuditLogRoute } from './modules/privacy/http/audit-log.route.js';
 import type { ReadinessProbe } from './modules/health/domain/readiness.js';
+import type { OperationalMetricsCollector } from './modules/health/domain/operational-metrics.js';
 import { registerHealthRoutes } from './modules/health/http/health.routes.js';
 
 interface AppOptions {
@@ -43,6 +44,7 @@ interface AppOptions {
   readonly workspaceExportRepository?: WorkspaceExportRepository;
   readonly auditLogRepository?: AuditLogRepository;
   readonly readinessProbe?: ReadinessProbe;
+  readonly metricsCollector?: OperationalMetricsCollector;
 }
 
 export function buildApp(options: AppOptions = {}): FastifyInstance {
@@ -103,6 +105,7 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
     registerHealthRoutes(app, {
       readinessProbe: options.readinessProbe,
       internalToken: options.internalIngestionToken,
+      metricsCollector: options.metricsCollector,
     });
   }
 
