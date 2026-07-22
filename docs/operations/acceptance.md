@@ -1,0 +1,48 @@
+# Aceitação do MVP v0.2.0
+
+Marco avaliado: tag `v0.2.0-mvp`, publicada em 21/07/2026.
+
+## Resultado
+
+Os fluxos comerciais e administrativos implementados estão aceitos para demonstração com dados fictícios. Isso não constitui liberação para dados reais ou provedores externos.
+
+Evidências automatizadas do marco:
+
+- lint e TypeScript estrito sem erros;
+- 116 testes aprovados: 1 de contratos, 87 de backend e 28 de frontend;
+- build dos três workspaces aprovado;
+- 13 migrations aplicadas em PostgreSQL vazio;
+- fluxo integrado validado com PostgreSQL, Redis, BullMQ e adapters falsos;
+- imagens de backend e frontend construídas, configuração do Compose validada e Nginx com sintaxe válida;
+- auditoria de dependências de produção sem vulnerabilidades conhecidas no momento da execução.
+
+## Jornadas cobertas
+
+- login, sessão opaca, listagem e revogação de sessões;
+- criação e edição de contato e negociação;
+- filtros, busca, Kanban, dashboard e agregações do PostgreSQL;
+- próxima ação, conclusão imutável e histórico de auditoria;
+- fechamento ganho/perdido com motivo e reabertura;
+- ingestão idempotente de texto e áudio fictícios;
+- transcrição e análise falsas, aceite ou descarte explícito de sugestões;
+- atualização em tempo real seguida de reconciliação REST;
+- acesso assinado a mídia fictícia, retenção e exclusão de contato.
+
+## Aceitação manual
+
+O responsável pelo produto informou que testou manualmente pipeline, mensagens e demais jornadas principais com resultado satisfatório. Em cada nova candidata a release, repetir ao menos:
+
+1. entrar e revogar uma segunda sessão;
+2. criar contato e negociação com próxima ação;
+3. filtrar e localizar a negociação no pipeline;
+4. concluir a ação e conferir o histórico;
+5. fechar como ganho e perdido, confirmar a exigência do motivo e reabrir;
+6. simular texto e áudio duplicados e confirmar uma única mensagem;
+7. aceitar uma sugestão editada e confirmar que ela não sobrescreve dado manual;
+8. recarregar as telas após eventos em tempo real e conferir reconciliação REST.
+
+Use somente fixtures fictícias. Conta real do WhatsApp, áudio real e chamadas pagas não fazem parte desta aceitação.
+
+## Critérios que ainda bloqueiam dados reais
+
+Consulte [`provider-readiness.md`](provider-readiness.md) e [`production.md`](production.md). A liberação exige adapters aprovados, mídia privada externa, backup restaurado, alertas configurados, exportação/exclusão integral de workspace e revisão formal de segurança e privacidade.

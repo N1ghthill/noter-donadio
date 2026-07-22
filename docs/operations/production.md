@@ -34,6 +34,26 @@ Antes de qualquer upgrade:
 4. execute readiness privado com `x-internal-token` sem expor sua resposta publicamente;
 5. mantenha rollback da imagem anterior e restauração do banco documentados.
 
+## Backup e teste de restauração
+
+Com o PostgreSQL da composição em execução, gere um dump customizado com permissões restritas:
+
+```bash
+export DB_USER=noter
+export BACKUP_DIRECTORY=/caminho/privado/fora-do-repositorio
+scripts/backup-postgres.sh
+```
+
+O script grava o dump de forma atômica e produz um checksum SHA-256. Ele não inclui o armazenamento de mídia: o provedor privado futuro deve possuir backup, retenção e restauração próprios.
+
+Teste o dump em um PostgreSQL 16 efêmero e isolado, sem tocar no banco de origem:
+
+```bash
+scripts/verify-postgres-backup.sh /caminho/privado/noter-AAAAMMDDTHHMMSSZ.dump
+```
+
+A verificação confere o checksum quando disponível, restaura com `--exit-on-error` e confirma a tabela de migrations. O container temporário é removido ao terminar. Armazene dumps criptografados fora do host da aplicação, aplique retenção e registre data, resultado e responsável por cada teste periódico.
+
 ## Checklist pendente antes de dados reais
 
 - escolher e aprovar um provedor oficial de WhatsApp ou aceitar formalmente o risco da integração adotada;
@@ -43,5 +63,7 @@ Antes de qualquer upgrade:
 - definir exclusão integral de workspace, exportação, prazo de auditoria e procedimento de atendimento ao titular;
 - configurar TLS, rate limiting no proxy, monitoramento, alertas, backup e teste periódico de restauração;
 - executar avaliação de segurança e privacidade antes do primeiro workspace real.
+
+O inventário de portões por integração está em [`provider-readiness.md`](provider-readiness.md), e a evidência do marco atual em [`acceptance.md`](acceptance.md).
 
 Publicação de imagens, release e deploy continuam exigindo autorização explícita.

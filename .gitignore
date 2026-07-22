@@ -18,3 +18,4 @@ backend/src/generated/prisma/
 .idea/
 .vscode/
 *.tsbuildinfo
+backups/

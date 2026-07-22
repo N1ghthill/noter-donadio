@@ -191,3 +191,11 @@ Indicadores operacionais não são calculados sobre listas parciais no navegador
 As imagens de container separam interface, API, dispatcher, tempo real e retenção, com migrations como tarefa anterior à inicialização. O proxy mantém frontend, REST e Socket.IO na mesma origem e adiciona cabeçalhos defensivos.
 
 Esse empacotamento é uma base operacional reproduzível, não autoriza deploy nem uso de dados reais. WhatsApp, transcrição e IA continuam desabilitados na composição de produção enquanto não houver adapters aprovados, armazenamento de objetos privado e revisão dos requisitos externos.
+
+## ADR-031 — Produção terá como alvo a API oficial do WhatsApp
+
+Para a primeira operação com dados reais, o alvo aprovado de arquitetura é a WhatsApp Cloud API oficial da Meta. O adapter falso continua sendo o único implementado; esta decisão não adiciona credenciais, não conecta conta e não habilita ingestão ou envio real.
+
+A integração inicial será somente de entrada. O webhook deverá validar autenticidade antes de interpretar o payload, normalizar o evento para o contrato interno e persistir mensagem e outbox antes de baixar mídia ou publicar jobs. O endpoint de envio permanecerá ausente até existir uma decisão separada sobre consentimento, templates, autorização humana e auditoria.
+
+Esta decisão substitui Baileys como caminho pretendido para produção na ADR-008. A porta de domínio permanece independente do SDK da Meta. Antes da implementação ainda são necessários conta controlada, credenciais, revisão contratual e de privacidade e autorização explícita para adicionar um provedor que receba conversas.

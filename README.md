@@ -55,4 +55,6 @@ O armazenamento privado local, acesso assinado, player e retenção estão em [`
 O worker de análise assistiva, seu contrato estrito e seus limites estão em [`docs/integrations/analysis.md`](docs/integrations/analysis.md).
 O empacotamento em containers, secrets, migrations, backup e limites de produção estão em [`docs/operations/production.md`](docs/operations/production.md).
 
+A aceitação do marco `v0.2.0-mvp` está registrada em [`docs/operations/acceptance.md`](docs/operations/acceptance.md). Os portões para WhatsApp oficial, transcrição e análise reais estão em [`docs/operations/provider-readiness.md`](docs/operations/provider-readiness.md).
+
 Com o ambiente local iniciado, `/pipeline` permite filtrar e acompanhar negociações, concluir próximas ações e registrar fechamentos; `/` exibe indicadores agregados e `/administracao` permite revogar sessões. `/conversas` apresenta a caixa de entrada persistida e permite simular uma mensagem recebida sem conectar ou enviar dados a um WhatsApp real.
