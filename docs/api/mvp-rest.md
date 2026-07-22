@@ -22,23 +22,23 @@ Nenhum token, telefone ou conteúdo deve aparecer em logs ou exemplos versionado
 - `POST /api/negotiations`: cria uma negociação manual para um contato do workspace;
 - `GET /api/negotiations/:id`: retorna contato, até 100 mensagens cronológicas, mídia/transcrição, até 20 análises e até 50 ações auditadas recentes;
 - `PATCH /api/negotiations/:id`: edita título, valor, produto, previsão de fechamento, próxima ação e prazo com `expectedVersion`;
-- `PATCH /api/negotiations/:id/stage`: mudança manual com `expectedVersion` para controle de concorrência.
-- `POST /api/negotiations/:id/analyses/:analysisId/decision`: aceita uma seleção editável de etapa, tags, valor, produto, previsões e próxima ação ou ignora a sugestão, com UUID idempotente e `expectedVersion`.
+- `PATCH /api/negotiations/:id/stage`: mudança manual com `expectedVersion` para controle de concorrência;
+- `POST /api/negotiations/:id/analyses/:analysisId/decision`: aceita uma seleção editável de etapa, tags, valor, produto, previsões e próxima ação ou ignora a sugestão, com UUID idempotente e `expectedVersion`;
 - `GET /api/conversations`: lista até 50 conversas, usando a mensagem mais recente de cada negociação;
 - `GET /api/whatsapp/connection`: consulta o estado da conta principal;
 - `POST /api/whatsapp/setup`: inicia setup e retorna QR efêmero no adapter falso;
-- `POST /api/whatsapp/demo/connect`: simula a leitura do QR, disponível somente quando o adapter falso está habilitado.
-- `POST /api/whatsapp/demo/messages`: simula texto ou áudio recebido, somente no adapter falso e com conta conectada.
+- `POST /api/whatsapp/demo/connect`: simula a leitura do QR, disponível somente quando o adapter falso está habilitado;
+- `POST /api/whatsapp/demo/messages`: simula texto ou áudio recebido, somente no adapter falso e com conta conectada;
 - `GET /api/media/:messageId/access`: cria URL relativa assinada por dois minutos para mídia acessível no workspace autenticado;
 - `GET /api/media/:messageId/content`: entrega a mídia somente com sessão ativa, workspace correspondente, prazo e assinatura válidos.
 
-Uma versão desatualizada na mudança de estágio retorna `409 version_conflict`. O cliente deve recarregar a negociação antes de tentar novamente.
+Uma versão desatualizada na edição comercial, mudança de etapa ou decisão assistiva retorna `409 version_conflict`. O cliente deve recarregar a negociação antes de tentar novamente.
 
 A decisão de análise usa `decisionId` UUID criado pelo cliente. `accepted` exige pelo menos um campo aplicável, incluindo `nextAction` e `nextActionDueDate`; `ignored` não aceita campos aplicáveis. Uma análise possui uma única decisão imutável e guarda os valores efetivamente aplicados. Repetir o mesmo UUID e payload é idempotente; outra decisão para a mesma análise retorna `409 decision_conflict`. Aceites atualizam CRM, marcas de confirmação manual, auditoria e outbox na mesma transação serializável.
 
 O detalhe, a criação e a edição nunca recebem `workspaceId` do navegador: o isolamento e o usuário autor são derivados exclusivamente da sessão. Valores monetários trafegam como decimal em string e aceitam no máximo duas casas. A edição aceita `null` para limpar conscientemente um campo e ainda registra sua confirmação manual, impedindo reposição silenciosa pela IA. O detalhe expõe os instantes de confirmação de valor, produto, previsão, próxima ação e seu prazo. Datas sem horário trafegam em `YYYY-MM-DD`. Eventos de atualização contêm somente IDs e nomes dos campos alterados.
 
-Criação e edição manual de contato, criação e mudança de etapa da negociação e decisão sobre análise gravam `audit_events` na mesma transação da ação. A resposta expõe nome do usuário, instante, campos alterados, versões e transição de etapa quando aplicável. Telefone, observações, mensagens, transcrições, valores comerciais e valores completos de tags não são copiados para a auditoria ou para notificações.
+Criação e edição manual de contato, criação, edição e mudança de etapa da negociação e decisão sobre análise gravam `audit_events` na mesma transação da ação. A resposta expõe nome do usuário, instante, campos alterados, versões e transição de etapa quando aplicável. Telefone, observações, mensagens, transcrições, valores comerciais e valores completos de tags não são copiados para a auditoria ou para notificações.
 
 Todas as mutações de navegador sob `/api/` exigem um cabeçalho `Origin` presente em `APP_ORIGINS`. A ingestão em `/api/internal/` continua protegida pelo token interno e não depende de origem de navegador. A exclusão de contato retorna `204` também em reentregas ou IDs não pertencentes ao workspace, evitando enumeração.
 

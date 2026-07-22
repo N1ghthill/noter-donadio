@@ -87,11 +87,11 @@ npm test
 npm run build
 ```
 
-Os testes do frontend cobrem o envio do cookie, codificação de busca, erros HTTP, controle otimista de versão, caixa de conversas, simulação de entrada e formatação da interface. Testes integrados com PostgreSQL e Redis requerem os serviços locais ativos.
+Os testes do frontend cobrem cookie de sessão, busca, erros HTTP, controle otimista de versão, criação e acompanhamento de negociações, decisões assistivas, caixa de conversas, simulação de entrada e formatação. Testes integrados com PostgreSQL e Redis requerem os serviços locais ativos.
 
 ## Limites conhecidos desta fatia
 
-- notificações em tempo real cobrem edição de contato, criação e mudança de etapa da negociação, conexão, persistência de mensagem, transcrição e análise;
+- notificações em tempo real cobrem edição e exclusão de contato, criação e atualização de negociação, mudança de etapa, decisão assistiva, conexão, persistência de mensagem, transcrição e análise;
 - a análise usa apenas o adapter falso; etapa, tags, valor, produto, previsões e próxima ação só são aplicados após confirmação explícita e auditada;
 - objeções e as demais próximas ações sugeridas continuam informativas e não executam ações autônomas;
 - a conexão atual é simulada; nenhum adapter real de WhatsApp está habilitado;

@@ -162,7 +162,7 @@ A conclusão de um evento da outbox usa atualização condicional. Se o workspac
 
 A interface pode criar uma negociação somente para um contato pertencente ao workspace autenticado. Workspace e usuário autor vêm da sessão; não são aceitos no payload. Valor monetário trafega como decimal em string e, quando fornecido manualmente, já nasce com `valueConfirmedAt`, impedindo que uma extração posterior da IA o sobrescreva.
 
-Negociação, auditoria append-only e `negotiation.created` são persistidos na mesma transação. A auditoria registra apenas os nomes dos campos preenchidos e a etapa resultante. O evento carrega somente workspace, IDs e etapa; título, valor, produto e previsão de fechamento permanecem no PostgreSQL e são reconciliados pela API autenticada.
+Negociação, auditoria append-only e `negotiation.created` são persistidos na mesma transação. A auditoria registra apenas os nomes dos campos preenchidos e a etapa resultante. O evento carrega somente workspace, IDs e etapa; título, valor, produto, previsões e próxima ação permanecem no PostgreSQL e são reconciliados pela API autenticada.
 
 ## ADR-026 — Campos comerciais possuem confirmação explícita independente
 

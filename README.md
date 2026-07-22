@@ -2,7 +2,7 @@
 
 Pipeline inteligente de contatos e negociações alimentado por conversas do WhatsApp e análise assistiva por IA.
 
-O projeto está na fase de MVP local. Antes de alterar código, leia [AGENTS.md](AGENTS.md), o [escopo do MVP](docs/product/mvp.md) e as [decisões arquiteturais](docs/architecture/decisions.md).
+O projeto possui um MVP local funcional com PostgreSQL, Redis, filas, atualização em tempo real e adapters falsos para integrações externas. Antes de alterar código, leia [AGENTS.md](AGENTS.md), o [escopo do MVP](docs/product/mvp.md) e as [decisões arquiteturais](docs/architecture/decisions.md).
 
 ## Requisitos
 
@@ -33,7 +33,7 @@ npm exec -w @noter/backend -- prisma migrate dev
 
 O relatório permanece como referência histórica. As correções necessárias para implementação são registradas em `docs/architecture/decisions.md`.
 
-## Estrutura planejada
+## Estrutura do projeto
 
 ```text
 backend/                 API, ingestão do WhatsApp e workers
@@ -42,7 +42,7 @@ packages/contracts/      contratos compartilhados sem dependências de infraestr
 docs/                    produto, arquitetura e operação
 ```
 
-O MVP usa Node.js 24 LTS, TypeScript 6, Fastify 5, React 19 e Vite 8. A API, persistência, outbox, autenticação e interface inicial são desenvolvidas em fatias verticais testáveis; adapters externos de WhatsApp e IA permanecem isolados das regras de domínio.
+O MVP usa Node.js 24 LTS, TypeScript 6, Fastify 5, React 19 e Vite 8. API, persistência, outbox, autenticação, workers e interface são implementados em fatias verticais testáveis; adapters externos de WhatsApp, transcrição e IA permanecem isolados das regras de domínio.
 
 A API disponível nesta fase está documentada em [`docs/api/mvp-rest.md`](docs/api/mvp-rest.md).
 O modelo de login, cookies, sessões e bootstrap está em [`docs/security/authentication.md`](docs/security/authentication.md).
@@ -54,4 +54,4 @@ O worker idempotente e o adapter falso de áudio estão em [`docs/integrations/t
 O armazenamento privado local, acesso assinado, player e retenção estão em [`docs/integrations/media.md`](docs/integrations/media.md).
 O worker de análise assistiva, seu contrato estrito e seus limites estão em [`docs/integrations/analysis.md`](docs/integrations/analysis.md).
 
-Com o ambiente local iniciado, a rota `/conversas` apresenta a caixa de entrada persistida e permite simular uma mensagem recebida sem conectar ou enviar dados a um WhatsApp real.
+Com o ambiente local iniciado, `/pipeline` permite criar e acompanhar negociações com próxima ação e prazo, enquanto `/conversas` apresenta a caixa de entrada persistida e permite simular uma mensagem recebida sem conectar ou enviar dados a um WhatsApp real.
