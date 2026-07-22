@@ -57,6 +57,8 @@ Ponto inicial para alertas, a ajustar depois de medir carga real:
 
 O runbook deve correlacionar por IDs internos nos logs estruturados. Nunca acrescente conteúdo, telefone, workspace ou mensagem como label para facilitar diagnóstico.
 
+Uma composição local, regras Prometheus, dashboard Grafana e procedimentos de resposta versionados estão disponíveis em [`observability.md`](observability.md). Esse perfil valida coleta e avaliação de regras, mas não envia notificações: Alertmanager e qualquer destino externo dependem de configuração e aprovação separadas.
+
 ## Backup e teste de restauração
 
 Com o PostgreSQL da composição em execução, gere um dump customizado com permissões restritas:
@@ -84,7 +86,7 @@ A verificação confere o checksum quando disponível, restaura com `--exit-on-e
 - implementar adapters aprovados de transcrição e IA, com contratos, retenção e custos revisados;
 - substituir filesystem por armazenamento de objeto privado criptografado;
 - aprovar o protocolo de exclusão integral de workspace, prazo de auditoria e procedimento de atendimento ao titular; a exportação síncrona atual deve se tornar assíncrona para grandes volumes;
-- configurar TLS e rate limiting no proxy, conectar scraper/alertas às métricas privadas e testar backup e restauração periodicamente;
+- configurar TLS e rate limiting no proxy, conectar um destino aprovado aos alertas já versionados e testar backup e restauração periodicamente;
 - executar avaliação de segurança e privacidade antes do primeiro workspace real.
 
 O inventário de portões por integração está em [`provider-readiness.md`](provider-readiness.md), e a evidência do marco atual em [`acceptance.md`](acceptance.md).

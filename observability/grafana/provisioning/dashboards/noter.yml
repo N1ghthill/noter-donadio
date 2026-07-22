@@ -1,0 +1,14 @@
+apiVersion: 1
+
+providers:
+  - name: noter-donadio
+    orgId: 1
+    folder: noter.donadio
+    folderUid: noter-donadio
+    type: file
+    disableDeletion: false
+    allowUiUpdates: false
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false

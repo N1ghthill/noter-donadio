@@ -223,3 +223,9 @@ O MVP mostra os 50 eventos mais recentes. Paginação estável e política de re
 As métricas agregam estados da outbox, transcrição, análise, tarefas de exclusão de mídia, idade do item pendente mais antigo e contagens fechadas das três filas BullMQ. Não existem labels de workspace, contato, negociação, mensagem, telefone, modelo ou código de erro, evitando alta cardinalidade e vazamento de dados.
 
 Falha no PostgreSQL ou Redis faz a coleta retornar `503` com corpo genérico. Métricas complementam logs e readiness, mas não substituem o PostgreSQL como fonte de verdade nem autorizam descarte automático de jobs falhos.
+
+## ADR-035 — Observabilidade local é versionada e isolada
+
+Prometheus coleta o endpoint privado diretamente na rede da composição e lê `x-internal-token` de um secret montado, sem incorporar a credencial na configuração. Grafana recebe datasource e dashboard por provisionamento versionado. Ambas as interfaces ficam vinculadas a `127.0.0.1`, usam volumes próprios e não recebem labels com identificadores de negócio.
+
+As regras iniciais cobrem disponibilidade, atraso do outbox e dos pipelines assistivos, falhas de jobs e pendências de exclusão de mídia. Elas são acompanhadas por runbooks, mas não existe destino de notificação nesta etapa. Alertmanager, exposição por TLS e qualquer integração externa dependem de decisão operacional e aprovação de segurança separadas.

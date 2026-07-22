@@ -1,0 +1,74 @@
+groups:
+  - name: noter-pipelines
+    rules:
+      - alert: NoterMetricsTargetDown
+        expr: up{job="noter-backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Backend indisponível para coleta de métricas
+          runbook: docs/operations/observability.md#backend-indisponivel-para-coleta
+
+      - alert: NoterOutboxBacklogWarning
+        expr: noter_oldest_pending_age_seconds{pipeline="outbox"} > 120
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Evento mais antigo do outbox aguarda há mais de 2 minutos
+          runbook: docs/operations/observability.md#outbox-atrasado-ou-com-falha
+
+      - alert: NoterOutboxBacklogCritical
+        expr: noter_oldest_pending_age_seconds{pipeline="outbox"} > 300
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Evento mais antigo do outbox aguarda há mais de 5 minutos
+          runbook: docs/operations/observability.md#outbox-atrasado-ou-com-falha
+
+      - alert: NoterOutboxFailed
+        expr: noter_outbox_events{status="failed"} > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: Há eventos do outbox em estado failed
+          runbook: docs/operations/observability.md#outbox-atrasado-ou-com-falha
+
+      - alert: NoterProcessingBacklogWarning
+        expr: noter_oldest_pending_age_seconds{pipeline=~"transcription|analysis"} > 600
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Pipeline assistivo aguarda processamento há mais de 10 minutos
+          runbook: docs/operations/observability.md#transcricao-ou-analise-atrasada
+
+      - alert: NoterProcessingBacklogCritical
+        expr: noter_oldest_pending_age_seconds{pipeline=~"transcription|analysis"} > 1800
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: Pipeline assistivo aguarda processamento há mais de 30 minutos
+          runbook: docs/operations/observability.md#transcricao-ou-analise-atrasada
+
+      - alert: NoterMediaDeletionBacklog
+        expr: noter_media_deletion_tasks > 0
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Há tarefas de exclusão de mídia pendentes há pelo menos 15 minutos
+          runbook: docs/operations/observability.md#exclusao-de-midia-pendente
+
+      - alert: NoterQueueFailedJobs
+        expr: noter_queue_jobs{state="failed"} > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Há jobs em estado failed
+          runbook: docs/operations/observability.md#jobs-em-failed
