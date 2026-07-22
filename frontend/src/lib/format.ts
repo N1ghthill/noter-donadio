@@ -34,6 +34,7 @@ export const AUDIT_ACTION_LABELS = {
   negotiation_follow_up_completed: 'Próxima ação concluída',
   analysis_accepted: 'Sugestão da IA aplicada',
   analysis_ignored: 'Sugestão da IA ignorada',
+  workspace_exported: 'Workspace exportado',
 } as const;
 
 export const AUDIT_FIELD_LABELS: Record<string, string> = {

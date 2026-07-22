@@ -1,6 +1,6 @@
 # Aceitação do MVP v0.2.0
 
-Marco avaliado: tag `v0.2.0-mvp`, publicada em 21/07/2026.
+Marco base: tag `v0.2.0-mvp`, publicada em 21/07/2026. As evidências abaixo acompanham o estado atual da `main`, incluindo evoluções posteriores ao marco.
 
 ## Resultado
 
@@ -9,9 +9,9 @@ Os fluxos comerciais e administrativos implementados estão aceitos para demonst
 Evidências automatizadas do marco:
 
 - lint e TypeScript estrito sem erros;
-- 116 testes aprovados: 1 de contratos, 87 de backend e 28 de frontend;
+- 121 testes aprovados: 1 de contratos, 90 de backend e 30 de frontend;
 - build dos três workspaces aprovado;
-- 13 migrations aplicadas em PostgreSQL vazio;
+- 14 migrations aplicadas em PostgreSQL vazio;
 - fluxo integrado validado com PostgreSQL, Redis, BullMQ e adapters falsos;
 - imagens de backend e frontend construídas, configuração do Compose validada e Nginx com sintaxe válida;
 - auditoria de dependências de produção sem vulnerabilidades conhecidas no momento da execução.
@@ -19,6 +19,7 @@ Evidências automatizadas do marco:
 ## Jornadas cobertas
 
 - login, sessão opaca, listagem e revogação de sessões;
+- exportação administrativa versionada e auditada, sem credenciais ou chaves internas;
 - criação e edição de contato e negociação;
 - filtros, busca, Kanban, dashboard e agregações do PostgreSQL;
 - próxima ação, conclusão imutável e histórico de auditoria;
@@ -45,4 +46,4 @@ Use somente fixtures fictícias. Conta real do WhatsApp, áudio real e chamadas 
 
 ## Critérios que ainda bloqueiam dados reais
 
-Consulte [`provider-readiness.md`](provider-readiness.md) e [`production.md`](production.md). A liberação exige adapters aprovados, mídia privada externa, backup restaurado, alertas configurados, exportação/exclusão integral de workspace e revisão formal de segurança e privacidade.
+Consulte [`provider-readiness.md`](provider-readiness.md) e [`production.md`](production.md). A liberação exige adapters aprovados, mídia privada externa, backup restaurado, alertas configurados, exportação assíncrona para grandes volumes, exclusão integral de workspace e revisão formal de segurança e privacidade.

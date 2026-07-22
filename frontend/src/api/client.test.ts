@@ -48,6 +48,20 @@ describe('cliente HTTP', () => {
     }));
   });
 
+  it('obtém a exportação como arquivo sem interpretar seu conteúdo', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{"schemaVersion":"workspace-export-v1"}', {
+      status: 200,
+      headers: { 'content-disposition': 'attachment; filename="noter-demo-2026-07-21.json"' },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await api.workspaceExport();
+
+    expect(result.filename).toBe('noter-demo-2026-07-21.json');
+    expect(await result.blob.text()).toContain('workspace-export-v1');
+    expect(fetchMock).toHaveBeenCalledWith('/api/privacy/workspace-export', { credentials: 'include' });
+  });
+
   it('transforma respostas de erro em ApiError', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: 'invalid_credentials' }), {
       status: 401,

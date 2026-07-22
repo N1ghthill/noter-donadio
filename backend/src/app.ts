@@ -20,6 +20,8 @@ import type { MediaAccessService } from './modules/media/domain/media-access.js'
 import { registerMediaRoutes } from './modules/media/http/media.routes.js';
 import type { ContactDeletionService } from './modules/privacy/domain/contact-deletion.js';
 import { registerContactDeletionRoute } from './modules/privacy/http/contact-deletion.route.js';
+import type { WorkspaceExportRepository } from './modules/privacy/domain/workspace-export.js';
+import { registerWorkspaceExportRoute } from './modules/privacy/http/workspace-export.route.js';
 import type { ReadinessProbe } from './modules/health/domain/readiness.js';
 import { registerHealthRoutes } from './modules/health/http/health.routes.js';
 
@@ -36,6 +38,7 @@ interface AppOptions {
   readonly mediaAccessService?: MediaAccessService;
   readonly allowedOrigins?: readonly string[];
   readonly contactDeletionService?: ContactDeletionService;
+  readonly workspaceExportRepository?: WorkspaceExportRepository;
   readonly readinessProbe?: ReadinessProbe;
 }
 
@@ -129,6 +132,13 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
   if (options.contactDeletionService && sessionAuthenticator) {
     registerContactDeletionRoute(app, {
       service: options.contactDeletionService,
+      sessionAuthenticator,
+    });
+  }
+
+  if (options.workspaceExportRepository && sessionAuthenticator) {
+    registerWorkspaceExportRoute(app, {
+      repository: options.workspaceExportRepository,
       sessionAuthenticator,
     });
   }

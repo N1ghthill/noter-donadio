@@ -97,6 +97,7 @@ enum AuditAction {
   negotiation_follow_up_completed
   analysis_accepted
   analysis_ignored
+  workspace_exported
 }
 
 model Workspace {

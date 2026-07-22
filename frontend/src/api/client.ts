@@ -40,6 +40,17 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.status === 204 ? (undefined as T) : ((await response.json()) as T);
 }
 
+async function requestDownload(path: string): Promise<{ blob: Blob; filename: string }> {
+  const response = await fetch(path, { credentials: 'include' });
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new ApiError(response.status, body?.error ?? 'request_failed');
+  }
+  const disposition = response.headers.get('content-disposition') ?? '';
+  const filename = disposition.match(/filename="([a-zA-Z0-9._-]+)"/)?.[1] ?? 'noter-workspace-export.json';
+  return { blob: await response.blob(), filename };
+}
+
 export const api = {
   async login(input: { workspace: string; email: string; password: string }) {
     return request<{ user: SessionUser; expiresAt: string }>('/api/auth/login', {
@@ -64,6 +75,10 @@ export const api = {
     return request<void>(`/api/auth/sessions/${id}`, {
       method: 'DELETE', body: JSON.stringify({ confirmation: id }),
     });
+  },
+
+  async workspaceExport() {
+    return requestDownload('/api/privacy/workspace-export');
   },
 
   async dashboard(periodDays: 30 | 90 | 365 = 30) {

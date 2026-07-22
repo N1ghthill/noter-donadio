@@ -11,6 +11,8 @@ export function AdministrationPage() {
   const [sessions, setSessions] = useState<SessionInfo[]>();
   const [error, setError] = useState(false);
   const [busyId, setBusyId] = useState<string>();
+  const [exportBusy, setExportBusy] = useState(false);
+  const [exportError, setExportError] = useState(false);
 
   const load = useCallback(async () => {
     setError(false);
@@ -29,6 +31,24 @@ export function AdministrationPage() {
       setError(!(requestError instanceof ApiError && requestError.status === 404));
       await load();
     } finally { setBusyId(undefined); }
+  };
+
+  const exportWorkspace = async () => {
+    setExportBusy(true);
+    setExportError(false);
+    try {
+      const download = await api.workspaceExport();
+      const url = URL.createObjectURL(download.blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = download.filename;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setExportError(true);
+    } finally {
+      setExportBusy(false);
+    }
   };
 
   if (error && !sessions) return <ErrorState message="Não foi possível carregar a administração." retry={() => void load()} />;
@@ -53,6 +73,13 @@ export function AdministrationPage() {
       <ul><li>Exclusão de contatos exige confirmação explícita e remove mídias associadas.</li>
         <li>Mídias usam acesso temporário assinado e retenção configurável.</li>
         <li>Auditoria preserva somente metadados necessários, sem conteúdo de mensagens.</li></ul>
+      <div className="form-actions">
+        <button className="button secondary" type="button" disabled={exportBusy} onClick={() => void exportWorkspace()}>
+          {exportBusy ? 'Preparando exportação…' : 'Exportar dados do workspace'}
+        </button>
+      </div>
+      {exportError ? <p className="error-text">Não foi possível exportar os dados agora.</p> : null}
+      <p className="muted">O arquivo contém dados pessoais e comerciais. Guarde-o em local seguro.</p>
       <p className="muted">A exclusão integral do workspace permanece restrita ao procedimento operacional autenticado para evitar remoções acidentais.</p>
     </section>
   </div>;

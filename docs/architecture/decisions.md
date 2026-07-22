@@ -199,3 +199,11 @@ Para a primeira operação com dados reais, o alvo aprovado de arquitetura é a 
 A integração inicial será somente de entrada. O webhook deverá validar autenticidade antes de interpretar o payload, normalizar o evento para o contrato interno e persistir mensagem e outbox antes de baixar mídia ou publicar jobs. O endpoint de envio permanecerá ausente até existir uma decisão separada sobre consentimento, templates, autorização humana e auditoria.
 
 Esta decisão substitui Baileys como caminho pretendido para produção na ADR-008. A porta de domínio permanece independente do SDK da Meta. Antes da implementação ainda são necessários conta controlada, credenciais, revisão contratual e de privacidade e autorização explícita para adicionar um provedor que receba conversas.
+
+## ADR-032 — Exportação do workspace é versionada, auditada e sem segredos
+
+O administrador pode baixar um documento JSON `workspace-export-v1` com os dados funcionais do workspace. A consulta e o registro `workspace_exported` pertencem à mesma transação com snapshot repetível; o workspace e o usuário derivam exclusivamente da sessão.
+
+A exportação contém usuários sem hashes, contas sem credenciais, contatos, negociações, acompanhamentos, mensagens, metadados de mídia sem chave física, transcrições, análises, decisões e auditoria. Sessões, hashes de conteúdo, chaves de autenticação, chaves de armazenamento, outbox, leases e tarefas internas não são exportados.
+
+O endpoint é administrativo, limitado por taxa, impede cache e força download. A versão síncrona atende o volume do MVP; antes de workspaces grandes, deverá ser substituída por geração assíncrona paginada em armazenamento privado, com expiração curta e a mesma seleção explícita de campos.

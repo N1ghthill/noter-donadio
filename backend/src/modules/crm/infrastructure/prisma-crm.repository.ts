@@ -339,6 +339,11 @@ export class PrismaCrmRepository implements CrmRepository {
       where: {
         workspaceId,
         OR: [{ negotiationId }, { contactId: negotiation.contactId }],
+        action: { in: [
+          'contact_created', 'contact_updated', 'contact_deleted', 'negotiation_created',
+          'negotiation_updated', 'negotiation_stage_changed', 'negotiation_follow_up_completed',
+          'analysis_accepted', 'analysis_ignored',
+        ] },
       },
       include: { user: { select: { displayName: true } } },
       orderBy: { createdAt: 'desc' },

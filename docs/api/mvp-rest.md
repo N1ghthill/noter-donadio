@@ -16,6 +16,7 @@ Nenhum token, telefone ou conteúdo deve aparecer em logs ou exemplos versionado
 - `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout`: ciclo da sessão;
 - `GET /api/auth/sessions`: lista as sessões ativas do administrador autenticado;
 - `DELETE /api/auth/sessions/:id`: revoga uma sessão após confirmar o mesmo UUID no corpo;
+- `GET /api/privacy/workspace-export`: baixa a exportação administrativa versionada do workspace;
 - `GET /api/dashboard`: retorna indicadores agregados; `periodDays` aceita `30`, `90` ou `365`;
 - `GET /api/contacts`: lista e busca contatos do workspace;
 - `POST /api/contacts`: cria contato manual;
@@ -47,6 +48,8 @@ Criação e edição manual de contato, criação, edição e mudança de etapa 
 O dashboard agrega contagens e somas diretamente no PostgreSQL, sempre pelo `workspaceId` da sessão. Valores monetários retornam como decimal em string. A taxa de ganho considera somente negociações fechadas dentro do período escolhido; sem fechamentos, retorna `null`.
 
 Todas as mutações de navegador sob `/api/` exigem um cabeçalho `Origin` presente em `APP_ORIGINS`. A ingestão em `/api/internal/` continua protegida pelo token interno e não depende de origem de navegador. A exclusão de contato retorna `204` também em reentregas ou IDs não pertencentes ao workspace, evitando enumeração.
+
+A exportação retorna `workspace-export-v1` como anexo JSON, usa `Cache-Control: no-store` e aceita no máximo uma geração por minuto por origem no processo atual. Ela inclui dados funcionais e conteúdo do workspace, mas exclui hashes de senha e sessão, credenciais do WhatsApp, chaves físicas de mídia, leases, outbox e tarefas internas. Cada geração cria `workspace_exported` na auditoria. Como o arquivo contém dados pessoais e comerciais, o cliente deve armazená-lo com proteção equivalente à do banco.
 
 ## Processos do backend
 

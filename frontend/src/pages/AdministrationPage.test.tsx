@@ -32,4 +32,30 @@ describe('administração', () => {
       expect.objectContaining({ method: 'DELETE', body: JSON.stringify({ confirmation: sessionId }) }),
     ));
   });
+
+  it('baixa a exportação administrativa com o nome fornecido pelo servidor', async () => {
+    const fetchMock = vi.fn().mockImplementation(async (path: string) => {
+      if (path === '/api/privacy/workspace-export') return new Response('{}', {
+        status: 200,
+        headers: { 'content-disposition': 'attachment; filename="noter-demo-2026-07-21.json"' },
+      });
+      return new Response(JSON.stringify({ data: [] }), { status: 200 });
+    });
+    const createObjectURL = vi.fn().mockReturnValue('blob:exportacao');
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+
+    render(<AdministrationPage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Exportar dados do workspace' }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      '/api/privacy/workspace-export', { credentials: 'include' },
+    ));
+    expect(createObjectURL).toHaveBeenCalledOnce();
+    expect(click).toHaveBeenCalledOnce();
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:exportacao');
+    click.mockRestore();
+  });
 });

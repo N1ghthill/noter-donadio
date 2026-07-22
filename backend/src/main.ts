@@ -20,6 +20,7 @@ import { MediaAccessService } from './modules/media/domain/media-access.js';
 import { PrismaMediaAccessRepository } from './modules/media/infrastructure/prisma-media-access.repository.js';
 import { ContactDeletionService } from './modules/privacy/domain/contact-deletion.js';
 import { PrismaContactDeletionRepository } from './modules/privacy/infrastructure/prisma-contact-deletion.repository.js';
+import { PrismaWorkspaceExportRepository } from './modules/privacy/infrastructure/prisma-workspace-export.repository.js';
 import { DependencyReadinessProbe } from './modules/health/infrastructure/dependency-readiness.js';
 
 const environment = readEnvironment();
@@ -60,6 +61,7 @@ const app = buildApp({
     environment.MEDIA_SIGNING_SECRET,
   ),
   contactDeletionService,
+  workspaceExportRepository: new PrismaWorkspaceExportRepository(prisma),
   allowedOrigins: environment.APP_ORIGINS,
   readinessProbe,
   ...(demoMessageService ? { demoMessageService } : {}),
