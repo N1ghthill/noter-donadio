@@ -5,11 +5,13 @@ import { LocalMediaStorage } from './modules/media/infrastructure/local-media-st
 import { PrismaMediaRetentionRepository } from './modules/media/infrastructure/prisma-media-retention.repository.js';
 import { ContactDeletionService } from './modules/privacy/domain/contact-deletion.js';
 import { PrismaContactDeletionRepository } from './modules/privacy/infrastructure/prisma-contact-deletion.repository.js';
+import { createAppLogger, safeErrorContext } from './config/logger.js';
 
 const BATCH_SIZE = 100;
 const INTERVAL_MS = 60 * 60 * 1_000;
 
 const environment = readEnvironment();
+const logger = createAppLogger('media-retention');
 const prisma = createPrismaClient(environment.DATABASE_URL);
 const service = new MediaRetentionService(
   new PrismaMediaRetentionRepository(prisma),
@@ -31,14 +33,20 @@ async function sweep(): Promise<void> {
       deletionResult = await pendingDeletionService.flushPendingMedia(BATCH_SIZE);
     }
     if (deletionResult.pendingMedia > 0) {
-      console.error('Algumas remoções físicas de mídia continuam pendentes para nova tentativa.');
+      logger.warn(
+        { pendingMedia: deletionResult.pendingMedia },
+        'Remoções físicas de mídia continuam pendentes para nova tentativa',
+      );
     }
     let result = await service.runBatch(new Date(), BATCH_SIZE);
     while (!stopping && result.selected === BATCH_SIZE) {
       result = await service.runBatch(new Date(), BATCH_SIZE);
     }
-  } catch {
-    console.error('Falha no ciclo de retenção de mídia; uma nova tentativa será feita no próximo intervalo.');
+  } catch (error: unknown) {
+    logger.error(
+      safeErrorContext(error),
+      'Falha no ciclo de retenção de mídia; nova tentativa será feita no próximo intervalo',
+    );
   } finally {
     if (!stopping) timer = setTimeout(() => void sweep(), INTERVAL_MS);
   }

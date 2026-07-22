@@ -7,15 +7,19 @@ import { MessageAnalysisService } from './modules/analysis/domain/message-analys
 import { parseMessageAnalysisJob } from './modules/analysis/infrastructure/analysis-job.js';
 import { FakeMessageAnalyzer } from './modules/analysis/infrastructure/fake-message-analyzer.js';
 import { PrismaMessageAnalysisRepository } from './modules/analysis/infrastructure/prisma-message-analysis.repository.js';
+import { createAppLogger, safeErrorContext } from './config/logger.js';
 
 const environment = readEnvironment();
+const logger = createAppLogger('analysis-worker');
 if (environment.AI_ADAPTER !== 'fake') {
   throw new Error('AI_ADAPTER precisa estar configurado como fake');
 }
 
 const prisma = createPrismaClient(environment.DATABASE_URL);
 const connection = new Redis(environment.REDIS_URL, { maxRetriesPerRequest: null });
-connection.on('error', () => undefined);
+connection.on('error', (error) => {
+  logger.error(safeErrorContext(error), 'Falha na conexão Redis do worker de análise');
+});
 const service = new MessageAnalysisService(
   new PrismaMessageAnalysisRepository(prisma),
   new FakeMessageAnalyzer(),
@@ -29,7 +33,9 @@ const worker = new Worker(
   },
   { connection, concurrency: 2 },
 );
-worker.on('error', () => undefined);
+worker.on('error', (error) => {
+  logger.error(safeErrorContext(error), 'Falha interna no worker de análise');
+});
 
 async function shutdown(): Promise<void> {
   await worker.close();

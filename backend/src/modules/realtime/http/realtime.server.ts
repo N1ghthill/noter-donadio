@@ -5,6 +5,7 @@ import { Server } from 'socket.io';
 
 import type { SessionAuthenticator } from '../../auth/domain/auth.service.js';
 import { SESSION_COOKIE_NAME } from '../../auth/http/auth.routes.js';
+import { safeErrorContext } from '../../../config/logger.js';
 
 export const REALTIME_EVENT_NAME = 'crm.updated';
 const SESSION_REVALIDATION_MS = 60_000;
@@ -18,7 +19,11 @@ export function attachRealtimeServer(
     serveClient: false,
     transports: ['websocket', 'polling'],
   });
-  const redisClients = options.redisUrl ? createRedisAdapter(io, options.redisUrl) : [];
+  const redisClients = options.redisUrl
+    ? createRedisAdapter(io, options.redisUrl, (error) => {
+        app.log.error(safeErrorContext(error), 'Falha na conexão Redis do servidor de tempo real');
+      })
+    : [];
 
   io.use(async (socket, next) => {
     try {
@@ -70,11 +75,15 @@ export function cookieValue(header: string | undefined, name: string): string | 
   }
 }
 
-function createRedisAdapter(io: Server, redisUrl: string): Redis[] {
+function createRedisAdapter(
+  io: Server,
+  redisUrl: string,
+  onError: (error: unknown) => void,
+): Redis[] {
   const publisher = new Redis(redisUrl);
   const subscriber = publisher.duplicate();
-  publisher.on('error', () => undefined);
-  subscriber.on('error', () => undefined);
+  publisher.on('error', onError);
+  subscriber.on('error', onError);
   io.adapter(createAdapter(publisher, subscriber));
   return [publisher, subscriber];
 }

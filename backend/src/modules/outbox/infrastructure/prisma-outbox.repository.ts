@@ -1,4 +1,4 @@
-import type { PrismaClient } from '../../../generated/prisma/client.js';
+import { Prisma, type PrismaClient } from '../../../generated/prisma/client.js';
 import type {
   OutboxRepository,
   PendingOutboxEvent,
@@ -12,10 +12,16 @@ interface ClaimedRow {
 }
 
 export class PrismaOutboxRepository implements OutboxRepository {
-  public constructor(private readonly prisma: PrismaClient) {}
+  public constructor(
+    private readonly prisma: PrismaClient,
+    private readonly workspaceId?: string,
+  ) {}
 
   public async claimBatch(limit: number): Promise<readonly PendingOutboxEvent[]> {
     const safeLimit = Math.max(1, Math.min(100, Math.trunc(limit)));
+    const workspaceFilter = this.workspaceId
+      ? Prisma.sql`AND workspace_id = ${this.workspaceId}::uuid`
+      : Prisma.empty;
     const rows = await this.prisma.$queryRaw<ClaimedRow[]>`
       WITH candidates AS (
         SELECT id
@@ -24,6 +30,7 @@ export class PrismaOutboxRepository implements OutboxRepository {
             (status IN ('pending', 'failed') AND attempts < 10)
             OR status = 'processing'
           )
+          ${workspaceFilter}
           AND available_at <= NOW()
         ORDER BY created_at
         FOR UPDATE SKIP LOCKED
@@ -48,7 +55,7 @@ export class PrismaOutboxRepository implements OutboxRepository {
   }
 
   public async markPublished(id: string): Promise<void> {
-    await this.prisma.outboxEvent.update({
+    await this.prisma.outboxEvent.updateMany({
       where: { id },
       data: {
         status: 'published',
@@ -59,7 +66,7 @@ export class PrismaOutboxRepository implements OutboxRepository {
   }
 
   public async markFailed(id: string, errorCode: string, retryAt: Date): Promise<void> {
-    await this.prisma.outboxEvent.update({
+    await this.prisma.outboxEvent.updateMany({
       where: { id },
       data: {
         status: 'failed',

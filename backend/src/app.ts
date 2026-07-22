@@ -20,6 +20,8 @@ import type { MediaAccessService } from './modules/media/domain/media-access.js'
 import { registerMediaRoutes } from './modules/media/http/media.routes.js';
 import type { ContactDeletionService } from './modules/privacy/domain/contact-deletion.js';
 import { registerContactDeletionRoute } from './modules/privacy/http/contact-deletion.route.js';
+import type { ReadinessProbe } from './modules/health/domain/readiness.js';
+import { registerHealthRoutes } from './modules/health/http/health.routes.js';
 
 interface AppOptions {
   readonly ingestionService?: MessageIngestionService;
@@ -34,6 +36,7 @@ interface AppOptions {
   readonly mediaAccessService?: MediaAccessService;
   readonly allowedOrigins?: readonly string[];
   readonly contactDeletionService?: ContactDeletionService;
+  readonly readinessProbe?: ReadinessProbe;
 }
 
 export function buildApp(options: AppOptions = {}): FastifyInstance {
@@ -70,6 +73,10 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
         ? String(error.code)
         : undefined;
 
+    if (errorCode?.startsWith('FST_ERR_CTP_')) {
+      return reply.code(400).send({ error: 'invalid_request' });
+    }
+
     request.log.error(
       {
         errorName,
@@ -85,6 +92,13 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
     service: 'noter-backend',
     status: 'ok',
   }));
+
+  if (options.readinessProbe && options.internalIngestionToken) {
+    registerHealthRoutes(app, {
+      readinessProbe: options.readinessProbe,
+      internalToken: options.internalIngestionToken,
+    });
+  }
 
   app.get('/api/meta/negotiation-stages', async () => ({
     stages: NEGOTIATION_STAGES,

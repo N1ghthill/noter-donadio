@@ -2,6 +2,11 @@ import { Queue, type JobsOptions } from 'bullmq';
 import { Redis } from 'ioredis';
 
 import type { EventPublisher, PendingOutboxEvent } from '../domain/outbox-dispatcher.js';
+import { safeErrorContext } from '../../../config/logger.js';
+
+interface ErrorLogger {
+  error(context: Readonly<Record<string, unknown>>, message: string): void;
+}
 
 export class BullMqEventPublisher implements EventPublisher {
   private readonly connection: Redis;
@@ -9,15 +14,18 @@ export class BullMqEventPublisher implements EventPublisher {
   private readonly audioQueue: Queue;
   private readonly realtimeQueue: Queue;
 
-  public constructor(redisUrl: string) {
+  public constructor(redisUrl: string, logger?: ErrorLogger, prefix?: string) {
     this.connection = new Redis(redisUrl, {
       enableOfflineQueue: false,
       maxRetriesPerRequest: 1,
     });
-    this.connection.on('error', () => undefined);
-    this.textQueue = new Queue('ai-processing', { connection: this.connection });
-    this.audioQueue = new Queue('audio-transcription', { connection: this.connection });
-    this.realtimeQueue = new Queue('realtime-events', { connection: this.connection });
+    this.connection.on('error', (error) => {
+      logger?.error(safeErrorContext(error), 'Falha na conexão Redis da outbox');
+    });
+    const queueOptions = { connection: this.connection, ...(prefix ? { prefix } : {}) };
+    this.textQueue = new Queue('ai-processing', queueOptions);
+    this.audioQueue = new Queue('audio-transcription', queueOptions);
+    this.realtimeQueue = new Queue('realtime-events', queueOptions);
   }
 
   public async publish(event: PendingOutboxEvent): Promise<void> {

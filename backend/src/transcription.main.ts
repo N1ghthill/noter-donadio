@@ -7,15 +7,19 @@ import { AudioTranscriptionService } from './modules/transcription/domain/audio-
 import { FakeAudioTranscriber } from './modules/transcription/infrastructure/fake-audio-transcriber.js';
 import { PrismaAudioTranscriptionRepository } from './modules/transcription/infrastructure/prisma-audio-transcription.repository.js';
 import { parseAudioTranscriptionJob } from './modules/transcription/infrastructure/transcription-job.js';
+import { createAppLogger, safeErrorContext } from './config/logger.js';
 
 const environment = readEnvironment();
+const logger = createAppLogger('transcription-worker');
 if (environment.TRANSCRIPTION_ADAPTER !== 'fake') {
   throw new Error('TRANSCRIPTION_ADAPTER precisa estar configurado como fake');
 }
 
 const prisma = createPrismaClient(environment.DATABASE_URL);
 const connection = new Redis(environment.REDIS_URL, { maxRetriesPerRequest: null });
-connection.on('error', () => undefined);
+connection.on('error', (error) => {
+  logger.error(safeErrorContext(error), 'Falha na conexão Redis do worker de transcrição');
+});
 const service = new AudioTranscriptionService(
   new PrismaAudioTranscriptionRepository(prisma),
   new FakeAudioTranscriber(),
@@ -29,7 +33,9 @@ const worker = new Worker(
   },
   { connection, concurrency: 2 },
 );
-worker.on('error', () => undefined);
+worker.on('error', (error) => {
+  logger.error(safeErrorContext(error), 'Falha interna no worker de transcrição');
+});
 
 async function shutdown(): Promise<void> {
   await worker.close();

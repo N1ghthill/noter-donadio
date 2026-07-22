@@ -12,6 +12,7 @@ O projeto está na fase de MVP local. Antes de alterar código, leia [AGENTS.md]
 ```bash
 npm install
 npm run prisma:validate -w @noter/backend
+npm run lint
 npm run typecheck
 npm test
 npm run build
