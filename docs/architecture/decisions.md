@@ -175,3 +175,19 @@ Edições comerciais exigem a versão esperada da negociação e gravam mutaçã
 Cada negociação pode guardar uma próxima ação textual e uma data civil de vencimento, com marcas independentes de confirmação manual. Esses campos podem nascer na criação, ser editados diretamente ou ser selecionados a partir da análise assistiva. A IA nunca cria tarefa nem agenda contato sem o aceite explícito do usuário.
 
 O Kanban classifica o prazo por comparação de datas civis em vencido, hoje ou futuro e continua permitindo ação sem prazo. A API trafega a data em `YYYY-MM-DD`, sem conversão implícita para o fuso do navegador. Alterações seguem o mesmo controle otimista, auditoria minimizada e evento `negotiation.updated` dos demais campos comerciais; texto e data não atravessam a notificação em tempo real.
+
+## ADR-028 — Acompanhamentos concluídos e fechamento são histórico comercial
+
+Concluir uma próxima ação cria um registro imutável com descrição, prazo original, autor e instante, depois limpa os campos atuais na mesma transação com controle otimista. Auditoria e outbox carregam somente nomes de campos e identificadores; o texto permanece no agregado REST autenticado.
+
+Etapas `closed_won` e `closed_lost` exigem motivo explícito. O motivo pertence à negociação e não é copiado para auditoria ou eventos. Reabrir uma negociação limpa `closedAt` e `closeReason`.
+
+## ADR-029 — Dashboard usa agregações do PostgreSQL
+
+Indicadores operacionais não são calculados sobre listas parciais no navegador. O repositório agrega contagens e valores por workspace no PostgreSQL e retorna dinheiro como decimal em string. A taxa de ganho possui janela explícita de 30, 90 ou 365 dias e considera `closedAt`; ausência de fechamentos não é representada como zero percentual.
+
+## ADR-030 — Empacotamento não antecipa adapters reais
+
+As imagens de container separam interface, API, dispatcher, tempo real e retenção, com migrations como tarefa anterior à inicialização. O proxy mantém frontend, REST e Socket.IO na mesma origem e adiciona cabeçalhos defensivos.
+
+Esse empacotamento é uma base operacional reproduzível, não autoriza deploy nem uso de dados reais. WhatsApp, transcrição e IA continuam desabilitados na composição de produção enquanto não houver adapters aprovados, armazenamento de objetos privado e revisão dos requisitos externos.

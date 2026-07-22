@@ -20,6 +20,8 @@ Senhas são derivadas com `scrypt`, salt aleatório individual de 16 bytes e par
 - duração absoluta: 8 horas;
 - atividade é registrada no máximo uma vez a cada 5 minutos;
 - logout revoga a sessão no servidor e limpa cookies/cache/storage no navegador;
+- a área administrativa lista somente sessões ativas do mesmo usuário e workspace;
+- revogação por identificador exige confirmação exata;
 - usuário desabilitado invalida imediatamente todas as suas sessões na próxima requisição;
 - respostas de autenticação usam `Cache-Control: no-store`.
 
@@ -28,6 +30,8 @@ Senhas são derivadas com `scrypt`, salt aleatório individual de 16 bytes e par
 - `POST /api/auth/login` — cria sessão e cookie;
 - `GET /api/auth/me` — retorna a identidade atual;
 - `POST /api/auth/logout` — revoga e encerra a sessão.
+- `GET /api/auth/sessions` — lista sessões ativas, marcando a atual;
+- `DELETE /api/auth/sessions/:id` — revoga uma sessão do administrador autenticado.
 
 O login aceita `workspace`, `email` e `password`. Há limite de cinco tentativas por minuto por origem no processo atual. Antes de exposição pública, o proxy também deve aplicar rate limiting.
 

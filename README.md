@@ -53,5 +53,6 @@ O setup simulado e a fronteira do adapter de WhatsApp estão em [`docs/integrati
 O worker idempotente e o adapter falso de áudio estão em [`docs/integrations/transcription.md`](docs/integrations/transcription.md).
 O armazenamento privado local, acesso assinado, player e retenção estão em [`docs/integrations/media.md`](docs/integrations/media.md).
 O worker de análise assistiva, seu contrato estrito e seus limites estão em [`docs/integrations/analysis.md`](docs/integrations/analysis.md).
+O empacotamento em containers, secrets, migrations, backup e limites de produção estão em [`docs/operations/production.md`](docs/operations/production.md).
 
-Com o ambiente local iniciado, `/pipeline` permite criar e acompanhar negociações com próxima ação e prazo, enquanto `/conversas` apresenta a caixa de entrada persistida e permite simular uma mensagem recebida sem conectar ou enviar dados a um WhatsApp real.
+Com o ambiente local iniciado, `/pipeline` permite filtrar e acompanhar negociações, concluir próximas ações e registrar fechamentos; `/` exibe indicadores agregados e `/administracao` permite revogar sessões. `/conversas` apresenta a caixa de entrada persistida e permite simular uma mensagem recebida sem conectar ou enviar dados a um WhatsApp real.

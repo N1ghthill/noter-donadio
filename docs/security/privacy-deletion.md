@@ -26,7 +26,7 @@ Auditorias anteriores perdem as referências ao contato e às negociações por 
 
 ## Limites atuais
 
-- exclusão integral do workspace ainda não possui fluxo administrativo;
+- exclusão integral do workspace não é exposta na interface nem na API; permanece um procedimento operacional deliberadamente restrito e ainda não implementado;
 - uma nova mensagem futura da mesma identidade do WhatsApp poderá criar outro contato; interrupção definitiva da coleta exige desconectar ou bloquear a origem;
 - não há restauração: a confirmação deixa explícito que a ação é irreversível;
 - outbox e auditoria preservam identificadores internos mínimos conforme a política operacional;

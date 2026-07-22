@@ -5,7 +5,7 @@
 A aplicação React é uma interface autenticada para o CRM e contém:
 
 - login por workspace, e-mail e senha usando cookie de sessão `HttpOnly`;
-- visão geral com totais de contatos, negociações abertas e valor do pipeline;
+- visão geral agregada no servidor com contatos, negociações abertas, valor, conversão e pendências de acompanhamento;
 - listagem e busca de contatos;
 - cadastro manual de contato, com telefone, tags e observações;
 - edição manual de nome, telefone, tags e observações do contato;
@@ -18,12 +18,16 @@ A aplicação React é uma interface autenticada para o CRM e contém:
 - edição manual de título, valor, produto e previsão de fechamento com proteção contra conflito;
 - confirmação explícita de uma seleção editável de etapa, tags, valor, produto, prazos e próxima ação sugeridos, ou registro de que a sugestão foi ignorada;
 - sinalização no Kanban de próxima ação vencida, prevista para hoje, futura ou sem prazo;
+- filtros de pipeline por busca, etapa e situação do acompanhamento;
+- conclusão e histórico de próximas ações;
+- motivo obrigatório ao fechar uma negociação como ganha ou perdida;
 - histórico de auditoria com ator, instante, campos afetados, versões e transições de etapa;
 - caixa de conversas ordenada pela mensagem mais recente, com histórico reconciliado via REST;
 - formulário local para simular recebimento idempotente de texto ou áudio sem enviar mensagens;
 - exclusão irreversível de contato com confirmação explícita e remoção dos dados associados;
 - indicador de conexão em tempo real e reconciliação REST automática;
 - configuração simulada do WhatsApp com QR efêmero e estado persistido;
+- administração de sessões ativas e resumo dos controles de privacidade;
 - atualização otimista com reversão em erro e reconciliação em conflito de versão.
 
 As telas tratam separadamente carregamento, falha e ausência de dados. A interface não guarda token no navegador e não executa ações autônomas de IA.
@@ -36,7 +40,7 @@ src/
 ├── auth/         estado e bootstrap da sessão
 ├── components/   shell e estados reutilizáveis
 ├── lib/          rótulos e formatação local
-├── pages/        dashboard, contatos, conversas, login, pipeline e WhatsApp
+├── pages/        dashboard, administração, contatos, conversas, login, pipeline e WhatsApp
 └── types/        representações das respostas REST
 ```
 
@@ -96,4 +100,4 @@ Os testes do frontend cobrem cookie de sessão, busca, erros HTTP, controle otim
 - objeções e as demais próximas ações sugeridas continuam informativas e não executam ações autônomas;
 - a conexão atual é simulada; nenhum adapter real de WhatsApp está habilitado;
 - áudio fictício pode ser carregado sob demanda por URL curta, assinada e autenticada; download real do WhatsApp e armazenamento de produção ainda não estão conectados;
-- exclusão integral de workspace e uma tela global para auditorias de contatos removidos ainda não estão disponíveis.
+- exclusão integral de workspace permanece restrita ao procedimento operacional e uma tela global para auditorias de contatos removidos ainda não está disponível.

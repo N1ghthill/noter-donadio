@@ -61,6 +61,15 @@ O usuário conecta uma conta do WhatsApp, recebe novas conversas diretas no note
 3. Uma sugestão da IA nunca move o card sem confirmação.
 4. Cards fechados deixam de ser considerados negociações ativas.
 5. O usuário define a próxima ação e identifica no Kanban acompanhamentos vencidos ou previstos para hoje.
+6. Ao concluir uma ação, o sistema preserva descrição, prazo, autor e instante no histórico.
+7. Fechar como ganho ou perda exige um motivo explícito.
+
+### Acompanhar a operação
+
+1. O dashboard consolida contatos, negociações ativas e valor do pipeline no servidor.
+2. A tela destaca acompanhamentos vencidos, previstos para hoje e negociações sem próxima ação.
+3. O administrador alterna o período de conversão entre 30, 90 e 365 dias.
+4. Sessões ativas podem ser consultadas e revogadas individualmente.
 
 ## Critérios de aceite transversais
 
