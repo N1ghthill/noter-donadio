@@ -1,0 +1,103 @@
+x-backend: &backend
+  build:
+    context: .
+    dockerfile: backend.Dockerfile
+  restart: unless-stopped
+  environment: &backend-environment
+    NODE_ENV: production
+    HOST: 0.0.0.0
+    PORT: 3000
+    DATABASE_URL: postgresql://${DB_USER:?defina DB_USER}:${DB_PASSWORD:?defina DB_PASSWORD}@postgres:5432/${DB_NAME:-noter_donadio}
+    REDIS_URL: redis://redis:6379
+    INTERNAL_INGESTION_TOKEN: ${INTERNAL_INGESTION_TOKEN:?defina INTERNAL_INGESTION_TOKEN}
+    MEDIA_STORAGE_PATH: /app/backend/storage/media
+    MEDIA_SIGNING_SECRET: ${MEDIA_SIGNING_SECRET:?defina MEDIA_SIGNING_SECRET}
+    MEDIA_RETENTION_DAYS: ${MEDIA_RETENTION_DAYS:-30}
+    MEDIA_MAX_BYTES: ${MEDIA_MAX_BYTES:-10485760}
+    APP_ORIGINS: ${APP_ORIGINS:?defina APP_ORIGINS}
+    WHATSAPP_ADAPTER: disabled
+    TRANSCRIPTION_ADAPTER: disabled
+    AI_ADAPTER: disabled
+  depends_on:
+    migrate:
+      condition: service_completed_successfully
+    redis:
+      condition: service_healthy
+  volumes:
+    - noter_media:/app/backend/storage/media
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-noter_donadio}
+      POSTGRES_USER: ${DB_USER:?defina DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?defina DB_PASSWORD}
+    volumes:
+      - noter_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - noter_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    build:
+      context: .
+      dockerfile: backend.Dockerfile
+    environment:
+      <<: *backend-environment
+    command: ["../node_modules/.bin/prisma", "migrate", "deploy"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  backend:
+    <<: *backend
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  outbox:
+    <<: *backend
+    command: ["node", "dist/outbox.main.js"]
+
+  realtime:
+    <<: *backend
+    command: ["node", "dist/realtime.main.js"]
+
+  retention:
+    <<: *backend
+    command: ["node", "dist/media-retention.main.js"]
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${HTTP_BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT:-8080}:80"
+
+volumes:
+  noter_postgres:
+  noter_redis:
+  noter_media:

@@ -1,0 +1,15 @@
+.git
+.github
+.env
+.env.*
+!.env.example
+node_modules
+**/dist
+**/coverage
+backend/storage
+backend/.baileys-auth
+backend/src/generated/prisma
+*.log
+*.dump
+*.sql.gz
+projeto_tecnico_noter_donadio_FINAL_PDF.pdf
