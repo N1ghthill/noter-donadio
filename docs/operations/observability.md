@@ -2,11 +2,11 @@
 
 ## Escopo e limites
 
-O perfil local adiciona Prometheus e Grafana à composição de produção para validar coleta, visualização e regras de alerta sem conectar um serviço externo. As imagens possuem versão fixada, os dados ficam em volumes Docker locais e as interfaces são publicadas somente em `127.0.0.1`. Telemetria, verificação de atualização, administração de plugins e pré-instalação de plugins do Grafana ficam desabilitadas.
+O perfil local adiciona Prometheus, Alertmanager e Grafana à composição de produção para validar coleta, roteamento, visualização e regras de alerta sem conectar um serviço externo. As imagens possuem versão fixada, os dados ficam em volumes Docker locais e as interfaces são publicadas somente em `127.0.0.1`. Telemetria, verificação de atualização, administração de plugins e pré-instalação de plugins do Grafana ficam desabilitadas.
 
 O Prometheus acessa `backend:3000` pela rede privada. O valor de `INTERNAL_INGESTION_TOKEN` é fornecido como secret do Compose e lido de `/run/secrets/metrics_internal_token`; ele não é copiado para os arquivos versionados. O dashboard não contém conteúdo de conversas nem identificadores de negócio.
 
-Este perfil não inclui Alertmanager e, portanto, não envia e-mail, mensagem ou webhook. As regras podem ser conferidas em **Alerts** no Prometheus e no indicador **Alertas ativos** do dashboard. Um destino de notificação só deve ser adicionado depois de aprovados seu responsável, política de escalonamento, retenção e armazenamento de credenciais.
+O Alertmanager agrupa alertas por nome e severidade e separa receivers locais para avisos e críticos. Quando o backlog crítico e o aviso equivalente coexistem no mesmo pipeline, o crítico inibe o aviso. Os receivers não possuem integração de saída: nenhum e-mail, mensagem ou webhook é enviado. Um destino real só deve ser adicionado depois de aprovados seu responsável, política de escalonamento, retenção e armazenamento de credenciais.
 
 ## Iniciar
 
@@ -27,8 +27,9 @@ Acesse:
 - aplicação: `http://127.0.0.1:8080`;
 - Grafana: `http://127.0.0.1:3001`, com usuário `admin` ou `GRAFANA_ADMIN_USER`;
 - Prometheus: `http://127.0.0.1:9090`.
+- Alertmanager: `http://127.0.0.1:9093`.
 
-As portas podem ser alteradas com `GRAFANA_PORT` e `PROMETHEUS_PORT`. A retenção local do Prometheus é de 15 dias e pode ser ajustada com `PROMETHEUS_RETENTION`.
+As portas podem ser alteradas com `GRAFANA_PORT`, `PROMETHEUS_PORT` e `ALERTMANAGER_PORT`. A retenção local do Prometheus é de 15 dias e a do Alertmanager é de 120 horas; ajuste-as com `PROMETHEUS_RETENTION` e `ALERTMANAGER_RETENTION`.
 
 ## Validar
 
@@ -37,11 +38,12 @@ Antes de analisar o dashboard, confirme:
 ```bash
 docker compose -f compose.production.yaml -f compose.observability.yaml ps
 curl --fail --silent http://127.0.0.1:9090/-/ready
+curl --fail --silent http://127.0.0.1:9093/-/ready
 curl --fail --silent http://127.0.0.1:3001/api/health
 curl --fail --silent 'http://127.0.0.1:9090/api/v1/query?query=up%7Bjob%3D%22noter-backend%22%7D'
 ```
 
-O alvo `noter-backend` deve aparecer como `UP`, o dashboard **noter.donadio — Operação** deve existir na pasta **noter.donadio** e `/api/internal/metrics` deve continuar inacessível pelo proxy público.
+O alvo `noter-backend` deve aparecer como `UP`, o Prometheus deve mostrar o Alertmanager como ativo em **Status > Runtime & Build Information**, o dashboard **noter.donadio — Operação** deve existir na pasta **noter.donadio** e `/api/internal/metrics` deve continuar inacessível pelo proxy público. O Grafana provisiona Prometheus e Alertmanager como datasources não editáveis; alertas gerenciados pelo próprio Grafana não são encaminhados automaticamente.
 
 Valide configuração e regras sem iniciar a stack:
 
@@ -51,9 +53,25 @@ docker run --rm \
   --entrypoint /bin/promtool \
   prom/prometheus:v3.13.1 \
   check config /etc/prometheus/prometheus.yml
+
+docker run --rm \
+  -v "$PWD/observability/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro" \
+  --entrypoint /bin/amtool \
+  prom/alertmanager:v0.33.1 \
+  check-config /etc/alertmanager/alertmanager.yml
 ```
 
-Esse comando não consegue ler o secret usado em runtime, mas valida o schema da configuração e os arquivos referenciados.
+Esses comandos não conseguem ler o secret usado em runtime, mas validam os schemas e os arquivos referenciados.
+
+## Exercício sintético
+
+Com a stack saudável, envie um alerta exclusivamente sintético, confirme seu recebimento e resolva-o automaticamente:
+
+```bash
+scripts/test-alertmanager.sh
+```
+
+O script usa apenas `NoterSyntheticAlert` e identificadores fixos de teste. Ele não consulta banco, mensagens ou dados de negócio e não aciona destino externo. Para uma porta diferente, defina `ALERTMANAGER_URL`, por exemplo `http://127.0.0.1:19093`.
 
 ## Encerrar e preservar dados
 
@@ -61,7 +79,7 @@ Esse comando não consegue ler o secret usado em runtime, mas valida o schema da
 docker compose -f compose.production.yaml -f compose.observability.yaml down
 ```
 
-O comando preserva os volumes. Remover volumes apaga o histórico local de métricas e a base local do Grafana; faça isso apenas quando essa perda for intencional.
+O comando preserva os volumes. Remover volumes apaga o histórico local de métricas, silêncios e estado do Alertmanager e a base local do Grafana; faça isso apenas quando essa perda for intencional.
 
 ## Runbooks
 
@@ -74,6 +92,14 @@ Antes de qualquer intervenção, registre horário, alerta e resultado. Use some
 3. Teste `/health` a partir da rede da aplicação e `/api/internal/health/ready` com o token por meio seguro.
 4. Se o backend está saudável, confira se o secret do Prometheus corresponde ao token do backend e se ambos compartilham a mesma rede.
 5. Reinicie somente o processo comprovadamente degradado; não execute migration nem restauração como tentativa exploratória.
+
+### Alertmanager indisponível
+
+1. Confirme `http://127.0.0.1:9093/-/ready` e o estado do container.
+2. Verifique no Prometheus se o Alertmanager aparece ativo e consulte logs sem adicionar payloads ou labels sensíveis.
+3. Valide novamente `alertmanager.yml` com `amtool`; uma configuração inválida não deve substituir a última válida em runtime.
+4. Confirme rede e resolução do endereço `alertmanager:9093` a partir do Prometheus.
+5. Depois da recuperação, execute o exercício sintético e verifique recebimento e resolução.
 
 ### Outbox atrasado ou com falha
 
@@ -109,8 +135,8 @@ Antes de qualquer intervenção, registre horário, alerta e resultado. Use some
 
 ## Evolução antes de produção real
 
-- definir Alertmanager ou plataforma equivalente e testar entrega, agrupamento, silenciamento e escalonamento;
-- proteger Prometheus e Grafana atrás de TLS e autenticação adequados ao ambiente, sem expor suas portas diretamente;
+- escolher um destino real aprovado e testar entrega, agrupamento, silenciamento e escalonamento sem dados de negócio;
+- proteger Prometheus, Alertmanager e Grafana atrás de TLS e autenticação adequados ao ambiente, sem expor suas portas diretamente;
 - ajustar limiares após observar carga sintética representativa;
 - definir retenção, backup e controle de acesso dos dados operacionais;
 - criar exercício periódico de alerta com evidência e responsável;

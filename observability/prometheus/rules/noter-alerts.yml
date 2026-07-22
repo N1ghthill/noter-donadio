@@ -15,6 +15,8 @@ groups:
         for: 2m
         labels:
           severity: warning
+          component: outbox
+          alert_class: backlog
         annotations:
           summary: Evento mais antigo do outbox aguarda há mais de 2 minutos
           runbook: docs/operations/observability.md#outbox-atrasado-ou-com-falha
@@ -24,6 +26,8 @@ groups:
         for: 2m
         labels:
           severity: critical
+          component: outbox
+          alert_class: backlog
         annotations:
           summary: Evento mais antigo do outbox aguarda há mais de 5 minutos
           runbook: docs/operations/observability.md#outbox-atrasado-ou-com-falha
@@ -42,6 +46,8 @@ groups:
         for: 5m
         labels:
           severity: warning
+          component: processing
+          alert_class: backlog
         annotations:
           summary: Pipeline assistivo aguarda processamento há mais de 10 minutos
           runbook: docs/operations/observability.md#transcricao-ou-analise-atrasada
@@ -51,6 +57,8 @@ groups:
         for: 5m
         labels:
           severity: critical
+          component: processing
+          alert_class: backlog
         annotations:
           summary: Pipeline assistivo aguarda processamento há mais de 30 minutos
           runbook: docs/operations/observability.md#transcricao-ou-analise-atrasada

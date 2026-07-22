@@ -54,7 +54,7 @@ O worker idempotente e o adapter falso de áudio estão em [`docs/integrations/t
 O armazenamento privado local, acesso assinado, player e retenção estão em [`docs/integrations/media.md`](docs/integrations/media.md).
 O worker de análise assistiva, seu contrato estrito e seus limites estão em [`docs/integrations/analysis.md`](docs/integrations/analysis.md).
 O empacotamento em containers, secrets, migrations, backup e limites de produção estão em [`docs/operations/production.md`](docs/operations/production.md).
-O perfil local de Prometheus/Grafana, seus alertas e runbooks estão em [`docs/operations/observability.md`](docs/operations/observability.md).
+O perfil local de Prometheus, Alertmanager e Grafana, seus alertas e runbooks estão em [`docs/operations/observability.md`](docs/operations/observability.md).
 
 A aceitação do marco `v0.2.0-mvp` está registrada em [`docs/operations/acceptance.md`](docs/operations/acceptance.md). Os portões para WhatsApp oficial, transcrição e análise reais estão em [`docs/operations/provider-readiness.md`](docs/operations/provider-readiness.md).
 

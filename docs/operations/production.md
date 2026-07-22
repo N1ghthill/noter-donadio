@@ -57,7 +57,7 @@ Ponto inicial para alertas, a ajustar depois de medir carga real:
 
 O runbook deve correlacionar por IDs internos nos logs estruturados. Nunca acrescente conteúdo, telefone, workspace ou mensagem como label para facilitar diagnóstico.
 
-Uma composição local, regras Prometheus, dashboard Grafana e procedimentos de resposta versionados estão disponíveis em [`observability.md`](observability.md). Esse perfil valida coleta e avaliação de regras, mas não envia notificações: Alertmanager e qualquer destino externo dependem de configuração e aprovação separadas.
+Uma composição local, regras Prometheus, Alertmanager, dashboard Grafana e procedimentos de resposta versionados estão disponíveis em [`observability.md`](observability.md). Esse perfil valida coleta, avaliação, agrupamento e inibição, mas seus receivers são locais e não enviam notificações. Qualquer destino externo depende de configuração e aprovação separadas.
 
 ## Backup e teste de restauração
 

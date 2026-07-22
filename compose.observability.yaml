@@ -1,10 +1,25 @@
 services:
+  alertmanager:
+    image: prom/alertmanager:v0.33.1
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+      - --data.retention=${ALERTMANAGER_RETENTION:-120h}
+    ports:
+      - "127.0.0.1:${ALERTMANAGER_PORT:-9093}:9093"
+    volumes:
+      - ./observability/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - noter_alertmanager:/alertmanager
+
   prometheus:
     image: prom/prometheus:v3.13.1
     restart: unless-stopped
     depends_on:
       backend:
         condition: service_healthy
+      alertmanager:
+        condition: service_started
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
@@ -23,6 +38,7 @@ services:
     restart: unless-stopped
     depends_on:
       - prometheus
+      - alertmanager
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?defina GRAFANA_ADMIN_PASSWORD}
@@ -47,5 +63,6 @@ secrets:
     environment: INTERNAL_INGESTION_TOKEN
 
 volumes:
+  noter_alertmanager:
   noter_prometheus:
   noter_grafana:

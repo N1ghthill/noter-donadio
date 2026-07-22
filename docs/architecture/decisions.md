@@ -229,3 +229,9 @@ Falha no PostgreSQL ou Redis faz a coleta retornar `503` com corpo genérico. M�
 Prometheus coleta o endpoint privado diretamente na rede da composição e lê `x-internal-token` de um secret montado, sem incorporar a credencial na configuração. Grafana recebe datasource e dashboard por provisionamento versionado. Ambas as interfaces ficam vinculadas a `127.0.0.1`, usam volumes próprios e não recebem labels com identificadores de negócio.
 
 As regras iniciais cobrem disponibilidade, atraso do outbox e dos pipelines assistivos, falhas de jobs e pendências de exclusão de mídia. Elas são acompanhadas por runbooks, mas não existe destino de notificação nesta etapa. Alertmanager, exposição por TLS e qualquer integração externa dependem de decisão operacional e aprovação de segurança separadas.
+
+## ADR-036 — Alertmanager local valida roteamento sem notificar terceiros
+
+O perfil de observabilidade inclui Alertmanager com versão fixada, armazenamento próprio e acesso somente por loopback. Prometheus envia os alertas pela rede privada; Grafana recebe um datasource provisionado e não editável. Receivers locais separam avisos e críticos, agrupam eventos equivalentes e não possuem e-mail, chat ou webhook configurado.
+
+Backlogs críticos inibem apenas os avisos equivalentes quando `component`, `alert_class` e `pipeline` coincidem. Um exercício sintético confirma recebimento e resolução sem consultar dados de negócio. Esta decisão implementa localmente a etapa deixada pendente na ADR-035; TLS, alta disponibilidade, destinatários reais e credenciais continuam sujeitos a aprovação separada.
