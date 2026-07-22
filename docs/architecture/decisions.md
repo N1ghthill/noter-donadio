@@ -207,3 +207,11 @@ O administrador pode baixar um documento JSON `workspace-export-v1` com os dados
 A exportação contém usuários sem hashes, contas sem credenciais, contatos, negociações, acompanhamentos, mensagens, metadados de mídia sem chave física, transcrições, análises, decisões e auditoria. Sessões, hashes de conteúdo, chaves de autenticação, chaves de armazenamento, outbox, leases e tarefas internas não são exportados.
 
 O endpoint é administrativo, limitado por taxa, impede cache e força download. A versão síncrona atende o volume do MVP; antes de workspaces grandes, deverá ser substituída por geração assíncrona paginada em armazenamento privado, com expiração curta e a mesma seleção explícita de campos.
+
+## ADR-033 — Auditoria global usa projeção minimizada
+
+A área administrativa consulta as ações auditáveis mais recentes de todo o workspace, não apenas eventos ligados a uma negociação existente. O endpoint deriva o workspace da sessão administrativa, desabilita cache, limita a consulta a no máximo 100 registros e permite filtrar apenas pela lista fechada de ações.
+
+A projeção expõe ator, instante, referências internas opcionais, campos afetados, versões e detalhes presentes em uma allowlist. Valores comerciais, tags completas, identidade do contato, mensagens, transcrições e propriedades desconhecidas de `details` não atravessam a resposta.
+
+O MVP mostra os 50 eventos mais recentes. Paginação estável e política de retenção da auditoria permanecem requisitos anteriores a grandes volumes.

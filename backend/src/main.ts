@@ -21,6 +21,7 @@ import { PrismaMediaAccessRepository } from './modules/media/infrastructure/pris
 import { ContactDeletionService } from './modules/privacy/domain/contact-deletion.js';
 import { PrismaContactDeletionRepository } from './modules/privacy/infrastructure/prisma-contact-deletion.repository.js';
 import { PrismaWorkspaceExportRepository } from './modules/privacy/infrastructure/prisma-workspace-export.repository.js';
+import { PrismaAuditLogRepository } from './modules/privacy/infrastructure/prisma-audit-log.repository.js';
 import { DependencyReadinessProbe } from './modules/health/infrastructure/dependency-readiness.js';
 
 const environment = readEnvironment();
@@ -62,6 +63,7 @@ const app = buildApp({
   ),
   contactDeletionService,
   workspaceExportRepository: new PrismaWorkspaceExportRepository(prisma),
+  auditLogRepository: new PrismaAuditLogRepository(prisma),
   allowedOrigins: environment.APP_ORIGINS,
   readinessProbe,
   ...(demoMessageService ? { demoMessageService } : {}),

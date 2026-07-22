@@ -28,6 +28,7 @@ A aplicação React é uma interface autenticada para o CRM e contém:
 - indicador de conexão em tempo real e reconciliação REST automática;
 - configuração simulada do WhatsApp com QR efêmero e estado persistido;
 - administração de sessões ativas, resumo dos controles de privacidade e download da exportação do workspace;
+- trilha global com as 50 ações auditáveis mais recentes do workspace;
 - atualização otimista com reversão em erro e reconciliação em conflito de versão.
 
 As telas tratam separadamente carregamento, falha e ausência de dados. A interface não guarda token no navegador e não executa ações autônomas de IA.
@@ -101,4 +102,4 @@ Os testes do frontend cobrem cookie de sessão, busca, erros HTTP, controle otim
 - a conexão atual é simulada; nenhum adapter real de WhatsApp está habilitado;
 - áudio fictício pode ser carregado sob demanda por URL curta, assinada e autenticada; download real do WhatsApp e armazenamento de produção ainda não estão conectados;
 - a exportação JSON é gerada de forma síncrona e deverá virar uma tarefa assíncrona antes de workspaces grandes;
-- exclusão integral de workspace permanece restrita ao procedimento operacional e uma tela global para auditorias de contatos removidos ainda não está disponível.
+- exclusão integral de workspace permanece bloqueada até a aprovação da política de retenção, backups e prazo de cancelamento; a auditoria global ainda não possui paginação além dos 50 eventos recentes.

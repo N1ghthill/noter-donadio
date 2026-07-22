@@ -57,4 +57,4 @@ O empacotamento em containers, secrets, migrations, backup e limites de produç�
 
 A aceitação do marco `v0.2.0-mvp` está registrada em [`docs/operations/acceptance.md`](docs/operations/acceptance.md). Os portões para WhatsApp oficial, transcrição e análise reais estão em [`docs/operations/provider-readiness.md`](docs/operations/provider-readiness.md).
 
-Com o ambiente local iniciado, `/pipeline` permite filtrar e acompanhar negociações, concluir próximas ações e registrar fechamentos; `/` exibe indicadores agregados e `/administracao` permite revogar sessões e exportar os dados do workspace. `/conversas` apresenta a caixa de entrada persistida e permite simular uma mensagem recebida sem conectar ou enviar dados a um WhatsApp real.
+Com o ambiente local iniciado, `/pipeline` permite filtrar e acompanhar negociações, concluir próximas ações e registrar fechamentos; `/` exibe indicadores agregados e `/administracao` permite revogar sessões, consultar a auditoria global e exportar os dados do workspace. `/conversas` apresenta a caixa de entrada persistida e permite simular uma mensagem recebida sem conectar ou enviar dados a um WhatsApp real.

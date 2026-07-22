@@ -38,4 +38,6 @@ Auditorias anteriores perdem as referências ao contato e às negociações por 
 - uma nova mensagem futura da mesma identidade do WhatsApp poderá criar outro contato; interrupção definitiva da coleta exige desconectar ou bloquear a origem;
 - não há restauração: a confirmação deixa explícito que a ação é irreversível;
 - outbox e auditoria preservam identificadores internos mínimos conforme a política operacional;
-- o histórico de auditoria de contatos removidos ainda não possui uma tela global, embora permaneça consultável no banco.
+- a área administrativa mostra os 50 eventos de auditoria mais recentes, inclusive os ligados a contatos já removidos; paginação e retenção ainda precisam ser definidas para grandes volumes.
+
+O protocolo proposto para exclusão integral está em [`workspace-deletion.md`](workspace-deletion.md). Ele não autoriza nem implementa a ação destrutiva.

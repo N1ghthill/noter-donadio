@@ -13,8 +13,14 @@ describe('administração', () => {
 
   it('lista e revoga uma sessão com confirmação explícita', async () => {
     const sessionId = '54eb359b-6fb4-4d51-8c07-8c55ac7efd65';
-    const fetchMock = vi.fn().mockImplementation(async (_path: string, init?: RequestInit) => {
+    const fetchMock = vi.fn().mockImplementation(async (path: string, init?: RequestInit) => {
       if (init?.method === 'DELETE') return new Response(null, { status: 204 });
+      if (path.startsWith('/api/audit-events')) return new Response(JSON.stringify({ data: [{
+        id: '36e0bd12-2a5d-40e1-9644-7089e49ae08e', action: 'workspace_exported',
+        actorDisplayName: 'Admin fictício', contactId: null, negotiationId: null,
+        changedFields: [], previousVersion: null, resultingVersion: null, details: {},
+        createdAt: '2026-07-21T12:30:00.000Z',
+      }] }), { status: 200 });
       return new Response(JSON.stringify({ data: [{
         id: sessionId, current: false, createdAt: '2026-07-21T10:00:00.000Z',
         lastSeenAt: '2026-07-21T12:00:00.000Z', expiresAt: '2026-07-21T20:00:00.000Z',
@@ -25,6 +31,7 @@ describe('administração', () => {
 
     render(<AdministrationPage />);
     expect(await screen.findByText('Outra sessão')).toBeInTheDocument();
+    expect(screen.getByText('Workspace exportado')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Encerrar sessão' }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(

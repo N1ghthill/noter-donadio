@@ -126,6 +126,15 @@ export interface AuditEvent {
   createdAt: string;
 }
 
+export interface WorkspaceAuditEvent extends AuditEvent {
+  contactId: string | null;
+  negotiationId: string | null;
+  details: AuditEvent['details'] & {
+    schemaVersion?: string;
+    mediaAssets?: number;
+  };
+}
+
 export interface AnalysisDecision {
   id: string;
   decision: 'accepted' | 'ignored';

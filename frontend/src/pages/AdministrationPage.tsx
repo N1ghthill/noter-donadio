@@ -3,12 +3,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { ErrorState, LoadingState } from '../components/Feedback.js';
-import { formatDateTime } from '../lib/format.js';
-import type { SessionInfo } from '../types/api.js';
+import { AUDIT_ACTION_LABELS, AUDIT_FIELD_LABELS, formatDateTime } from '../lib/format.js';
+import type { SessionInfo, WorkspaceAuditEvent } from '../types/api.js';
 
 export function AdministrationPage() {
   const auth = useAuth();
   const [sessions, setSessions] = useState<SessionInfo[]>();
+  const [auditEvents, setAuditEvents] = useState<WorkspaceAuditEvent[]>();
   const [error, setError] = useState(false);
   const [busyId, setBusyId] = useState<string>();
   const [exportBusy, setExportBusy] = useState(false);
@@ -16,7 +17,11 @@ export function AdministrationPage() {
 
   const load = useCallback(async () => {
     setError(false);
-    try { setSessions((await api.sessions()).data); } catch { setError(true); }
+    try {
+      const [sessionResponse, auditResponse] = await Promise.all([api.sessions(), api.auditEvents()]);
+      setSessions(sessionResponse.data);
+      setAuditEvents(auditResponse.data);
+    } catch { setError(true); }
   }, []);
   useEffect(() => { void load(); }, [load]);
 
@@ -51,8 +56,8 @@ export function AdministrationPage() {
     }
   };
 
-  if (error && !sessions) return <ErrorState message="Não foi possível carregar a administração." retry={() => void load()} />;
-  if (!sessions) return <LoadingState label="Carregando administração…" />;
+  if (error && (!sessions || !auditEvents)) return <ErrorState message="Não foi possível carregar a administração." retry={() => void load()} />;
+  if (!sessions || !auditEvents) return <LoadingState label="Carregando administração…" />;
 
   return <div className="page-stack">
     <header className="page-header"><div><p className="eyebrow">Conta e privacidade</p><h1>Administração</h1></div>
@@ -67,6 +72,17 @@ export function AdministrationPage() {
           {busyId === session.id ? 'Encerrando…' : 'Encerrar sessão'}
         </button>
       </article>)}</div>
+    </section>
+    <section className="panel">
+      <div className="panel-heading"><div><p className="eyebrow">Rastreabilidade</p><h2>Auditoria do workspace</h2></div>
+        <small>Últimos {auditEvents.length} evento(s)</small></div>
+      {auditEvents.length === 0 ? <p className="muted">Nenhuma ação auditável registrada.</p> :
+        <div className="session-list">{auditEvents.map((event) => <article key={event.id}>
+          <div><strong>{AUDIT_ACTION_LABELS[event.action]}</strong>
+            <small>{event.actorDisplayName} · {formatDateTime(event.createdAt)}</small>
+            {event.changedFields.length > 0 ? <small>Campos: {event.changedFields.map((field) => AUDIT_FIELD_LABELS[field] ?? field).join(', ')}</small> : null}
+          </div>
+        </article>)}</div>}
     </section>
     <section className="panel privacy-summary">
       <div className="panel-heading"><div><p className="eyebrow">Privacidade</p><h2>Controles implementados</h2></div></div>

@@ -62,6 +62,17 @@ describe('cliente HTTP', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/privacy/workspace-export', { credentials: 'include' });
   });
 
+  it('consulta a auditoria global com limite explícito', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await api.auditEvents(25);
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/audit-events?limit=25', expect.objectContaining({
+      credentials: 'include',
+    }));
+  });
+
   it('transforma respostas de erro em ApiError', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: 'invalid_credentials' }), {
       status: 401,

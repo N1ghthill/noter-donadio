@@ -9,6 +9,7 @@ import type {
   NegotiationDetail,
   SessionUser,
   SessionInfo,
+  WorkspaceAuditEvent,
   WhatsappConnection,
 } from '../types/api.js';
 
@@ -79,6 +80,10 @@ export const api = {
 
   async workspaceExport() {
     return requestDownload('/api/privacy/workspace-export');
+  },
+
+  async auditEvents(limit = 50) {
+    return request<{ data: WorkspaceAuditEvent[] }>(`/api/audit-events?limit=${limit}`);
   },
 
   async dashboard(periodDays: 30 | 90 | 365 = 30) {

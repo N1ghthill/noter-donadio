@@ -60,7 +60,7 @@ A verificação confere o checksum quando disponível, restaura com `--exit-on-e
 - implementar criptografia autenticada das credenciais do WhatsApp com chave fora do banco;
 - implementar adapters aprovados de transcrição e IA, com contratos, retenção e custos revisados;
 - substituir filesystem por armazenamento de objeto privado criptografado;
-- definir exclusão integral de workspace, prazo de auditoria e procedimento de atendimento ao titular; a exportação síncrona atual deve se tornar assíncrona para grandes volumes;
+- aprovar o protocolo de exclusão integral de workspace, prazo de auditoria e procedimento de atendimento ao titular; a exportação síncrona atual deve se tornar assíncrona para grandes volumes;
 - configurar TLS, rate limiting no proxy, monitoramento, alertas, backup e teste periódico de restauração;
 - executar avaliação de segurança e privacidade antes do primeiro workspace real.
 
