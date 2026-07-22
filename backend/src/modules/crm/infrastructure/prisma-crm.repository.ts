@@ -138,6 +138,91 @@ export class PrismaCrmRepository implements CrmRepository {
     return negotiations.map(toNegotiationView);
   }
 
+  public async createNegotiation(input: {
+    workspaceId: string;
+    userId: string;
+    contactId: string;
+    title?: string | undefined;
+    stage: NegotiationStage;
+    value?: string | undefined;
+    currency: 'BRL';
+    expectedCloseDate?: string | undefined;
+    productInterest?: string | undefined;
+    nextAction?: string | undefined;
+    nextActionDueDate?: string | undefined;
+  }): Promise<NegotiationView> {
+    return this.prisma.$transaction(async (transaction) => {
+      const contact = await transaction.contact.findFirst({
+        where: { id: input.contactId, workspaceId: input.workspaceId },
+        select: { id: true, displayName: true },
+      });
+      if (!contact) throw new CrmNotFoundError();
+
+      const negotiation = await transaction.negotiation.create({
+        data: {
+          workspaceId: input.workspaceId,
+          contactId: input.contactId,
+          title: input.title ?? null,
+          stage: input.stage,
+          value: input.value ?? null,
+          valueConfirmedAt: input.value !== undefined ? new Date() : null,
+          currency: input.currency,
+          expectedCloseDate: input.expectedCloseDate
+            ? new Date(`${input.expectedCloseDate}T00:00:00.000Z`)
+            : null,
+          expectedCloseDateConfirmedAt: input.expectedCloseDate !== undefined ? new Date() : null,
+          productInterest: input.productInterest ?? null,
+          productInterestConfirmedAt: input.productInterest !== undefined ? new Date() : null,
+          nextAction: input.nextAction ?? null,
+          nextActionConfirmedAt: input.nextAction !== undefined ? new Date() : null,
+          nextActionDueDate: input.nextActionDueDate
+            ? new Date(`${input.nextActionDueDate}T00:00:00.000Z`)
+            : null,
+          nextActionDueDateConfirmedAt: input.nextActionDueDate !== undefined ? new Date() : null,
+          closedAt: input.stage === 'closed_won' || input.stage === 'closed_lost'
+            ? new Date()
+            : null,
+        },
+      });
+      await transaction.auditEvent.create({
+        data: {
+          workspaceId: input.workspaceId,
+          userId: input.userId,
+          contactId: input.contactId,
+          negotiationId: negotiation.id,
+          action: 'negotiation_created',
+          changedFields: [
+            'contactId',
+            'stage',
+            ...(input.title !== undefined ? ['title'] : []),
+            ...(input.value !== undefined ? ['value'] : []),
+            ...(input.expectedCloseDate !== undefined ? ['expectedCloseDate'] : []),
+            ...(input.productInterest !== undefined ? ['productInterest'] : []),
+            ...(input.nextAction !== undefined ? ['nextAction'] : []),
+            ...(input.nextActionDueDate !== undefined ? ['nextActionDueDate'] : []),
+          ],
+          resultingVersion: negotiation.version,
+          details: { resultingStage: input.stage },
+        },
+      });
+      await transaction.outboxEvent.create({
+        data: {
+          workspaceId: input.workspaceId,
+          aggregateType: 'negotiation',
+          aggregateId: negotiation.id,
+          eventType: 'negotiation.created',
+          payload: {
+            workspaceId: input.workspaceId,
+            negotiationId: negotiation.id,
+            contactId: input.contactId,
+            stage: input.stage,
+          },
+        },
+      });
+      return toNegotiationView({ ...negotiation, contact });
+    });
+  }
+
   public async getNegotiation(workspaceId: string, negotiationId: string): Promise<NegotiationDetailView> {
     const now = new Date();
     const negotiation = await this.prisma.negotiation.findFirst({
@@ -169,6 +254,13 @@ export class PrismaCrmRepository implements CrmRepository {
 
     return {
       ...toNegotiationView(negotiation),
+      valueConfirmedAt: negotiation.valueConfirmedAt?.toISOString() ?? null,
+      expectedCloseDate: negotiation.expectedCloseDate?.toISOString().slice(0, 10) ?? null,
+      expectedCloseDateConfirmedAt: negotiation.expectedCloseDateConfirmedAt?.toISOString() ?? null,
+      productInterest: negotiation.productInterest,
+      productInterestConfirmedAt: negotiation.productInterestConfirmedAt?.toISOString() ?? null,
+      nextActionConfirmedAt: negotiation.nextActionConfirmedAt?.toISOString() ?? null,
+      nextActionDueDateConfirmedAt: negotiation.nextActionDueDateConfirmedAt?.toISOString() ?? null,
       contact: toContactView(negotiation.contact),
       messages: negotiation.messages.toReversed().map((message) => ({
         id: message.id,
@@ -206,6 +298,99 @@ export class PrismaCrmRepository implements CrmRepository {
       })),
       auditTrail: auditTrail.map(toAuditEventView),
     };
+  }
+
+  public async updateNegotiation(input: {
+    workspaceId: string;
+    userId: string;
+    negotiationId: string;
+    expectedVersion: number;
+    title?: string | null | undefined;
+    value?: string | null | undefined;
+    expectedCloseDate?: string | null | undefined;
+    productInterest?: string | null | undefined;
+    nextAction?: string | null | undefined;
+    nextActionDueDate?: string | null | undefined;
+  }): Promise<NegotiationView> {
+    return this.prisma.$transaction(async (transaction) => {
+      const current = await transaction.negotiation.findFirst({
+        where: { id: input.negotiationId, workspaceId: input.workspaceId },
+        select: { contactId: true, version: true },
+      });
+      if (!current) throw new CrmNotFoundError();
+      const changedFields = [
+        ...(input.title !== undefined ? ['title'] : []),
+        ...(input.value !== undefined ? ['value'] : []),
+        ...(input.expectedCloseDate !== undefined ? ['expectedCloseDate'] : []),
+        ...(input.productInterest !== undefined ? ['productInterest'] : []),
+        ...(input.nextAction !== undefined ? ['nextAction'] : []),
+        ...(input.nextActionDueDate !== undefined ? ['nextActionDueDate'] : []),
+      ];
+      const confirmedAt = new Date();
+      const updated = await transaction.negotiation.updateMany({
+        where: {
+          id: input.negotiationId,
+          workspaceId: input.workspaceId,
+          version: input.expectedVersion,
+        },
+        data: {
+          ...(input.title !== undefined ? { title: input.title } : {}),
+          ...(input.value !== undefined ? { value: input.value, valueConfirmedAt: confirmedAt } : {}),
+          ...(input.expectedCloseDate !== undefined ? {
+            expectedCloseDate: input.expectedCloseDate
+              ? new Date(`${input.expectedCloseDate}T00:00:00.000Z`)
+              : null,
+            expectedCloseDateConfirmedAt: confirmedAt,
+          } : {}),
+          ...(input.productInterest !== undefined ? {
+            productInterest: input.productInterest,
+            productInterestConfirmedAt: confirmedAt,
+          } : {}),
+          ...(input.nextAction !== undefined ? {
+            nextAction: input.nextAction,
+            nextActionConfirmedAt: confirmedAt,
+          } : {}),
+          ...(input.nextActionDueDate !== undefined ? {
+            nextActionDueDate: input.nextActionDueDate
+              ? new Date(`${input.nextActionDueDate}T00:00:00.000Z`)
+              : null,
+            nextActionDueDateConfirmedAt: confirmedAt,
+          } : {}),
+          version: { increment: 1 },
+        },
+      });
+      if (updated.count !== 1) throw new CrmConflictError();
+      await transaction.auditEvent.create({
+        data: {
+          workspaceId: input.workspaceId,
+          userId: input.userId,
+          contactId: current.contactId,
+          negotiationId: input.negotiationId,
+          action: 'negotiation_updated',
+          changedFields,
+          previousVersion: current.version,
+          resultingVersion: current.version + 1,
+        },
+      });
+      await transaction.outboxEvent.create({
+        data: {
+          workspaceId: input.workspaceId,
+          aggregateType: 'negotiation',
+          aggregateId: input.negotiationId,
+          eventType: 'negotiation.updated',
+          payload: {
+            workspaceId: input.workspaceId,
+            negotiationId: input.negotiationId,
+            changedFields,
+          },
+        },
+      });
+      const result = await transaction.negotiation.findUniqueOrThrow({
+        where: { id: input.negotiationId },
+        include: { contact: { select: { displayName: true } } },
+      });
+      return toNegotiationView(result);
+    });
   }
 
   public async updateNegotiationStage(input: {
@@ -286,9 +471,22 @@ export class PrismaCrmRepository implements CrmRepository {
     expectedVersion: number;
     stage?: NegotiationStage | undefined;
     tags?: readonly string[] | undefined;
+    value?: string | undefined;
+    expectedCloseDate?: string | undefined;
+    productInterest?: string | undefined;
+    nextAction?: string | undefined;
+    nextActionDueDate?: string | undefined;
   }): Promise<AnalysisDecisionView> {
     const requestedTags = [...new Set(input.tags ?? [])];
-    if (input.decision === 'accepted' && input.stage === undefined && requestedTags.length === 0) {
+    const hasCommercialSelection = input.value !== undefined
+      || input.expectedCloseDate !== undefined
+      || input.productInterest !== undefined
+      || input.nextAction !== undefined
+      || input.nextActionDueDate !== undefined;
+    if (input.decision === 'accepted' && input.stage === undefined && requestedTags.length === 0 && !hasCommercialSelection) {
+      throw new CrmDecisionConflictError();
+    }
+    if (input.decision === 'ignored' && (input.stage !== undefined || requestedTags.length > 0 || hasCommercialSelection)) {
       throw new CrmDecisionConflictError();
     }
     try {
@@ -304,6 +502,11 @@ export class PrismaCrmRepository implements CrmRepository {
             || existing.decision !== input.decision
             || existing.appliedStage !== (input.stage ?? null)
             || !sameStrings(existing.appliedTags, requestedTags)
+            || existing.appliedValue?.toString() !== (input.value ?? undefined)
+            || existing.appliedExpectedCloseDate?.toISOString().slice(0, 10) !== input.expectedCloseDate
+            || existing.appliedProductInterest !== (input.productInterest ?? null)
+            || existing.appliedNextAction !== (input.nextAction ?? null)
+            || existing.appliedNextActionDueDate?.toISOString().slice(0, 10) !== input.nextActionDueDate
           ) throw new CrmDecisionConflictError();
           return toAnalysisDecisionView(existing);
         }
@@ -345,6 +548,23 @@ export class PrismaCrmRepository implements CrmRepository {
                 stage: input.stage,
                 closedAt: input.stage === 'closed_won' || input.stage === 'closed_lost' ? new Date() : null,
               } : {}),
+              ...(input.value !== undefined ? { value: input.value, valueConfirmedAt: new Date() } : {}),
+              ...(input.expectedCloseDate !== undefined ? {
+                expectedCloseDate: new Date(`${input.expectedCloseDate}T00:00:00.000Z`),
+                expectedCloseDateConfirmedAt: new Date(),
+              } : {}),
+              ...(input.productInterest !== undefined ? {
+                productInterest: input.productInterest,
+                productInterestConfirmedAt: new Date(),
+              } : {}),
+              ...(input.nextAction !== undefined ? {
+                nextAction: input.nextAction,
+                nextActionConfirmedAt: new Date(),
+              } : {}),
+              ...(input.nextActionDueDate !== undefined ? {
+                nextActionDueDate: new Date(`${input.nextActionDueDate}T00:00:00.000Z`),
+                nextActionDueDateConfirmedAt: new Date(),
+              } : {}),
               version: { increment: 1 },
             },
           });
@@ -373,6 +593,25 @@ export class PrismaCrmRepository implements CrmRepository {
               payload: { workspaceId: input.workspaceId, negotiationId: input.negotiationId, stage: input.stage },
             });
           }
+          if (hasCommercialSelection) {
+            events.push({
+              workspaceId: input.workspaceId,
+              aggregateType: 'negotiation',
+              aggregateId: input.negotiationId,
+              eventType: 'negotiation.updated',
+              payload: {
+                workspaceId: input.workspaceId,
+                negotiationId: input.negotiationId,
+                changedFields: [
+                  ...(input.value !== undefined ? ['value'] : []),
+                  ...(input.expectedCloseDate !== undefined ? ['expectedCloseDate'] : []),
+                  ...(input.productInterest !== undefined ? ['productInterest'] : []),
+                  ...(input.nextAction !== undefined ? ['nextAction'] : []),
+                  ...(input.nextActionDueDate !== undefined ? ['nextActionDueDate'] : []),
+                ],
+              },
+            });
+          }
         }
 
         const decision = await transaction.analysisDecision.create({
@@ -385,6 +624,15 @@ export class PrismaCrmRepository implements CrmRepository {
             decision: input.decision,
             appliedStage: input.decision === 'accepted' ? input.stage ?? null : null,
             appliedTags: input.decision === 'accepted' ? requestedTags : [],
+            appliedValue: input.decision === 'accepted' ? input.value ?? null : null,
+            appliedExpectedCloseDate: input.decision === 'accepted' && input.expectedCloseDate
+              ? new Date(`${input.expectedCloseDate}T00:00:00.000Z`)
+              : null,
+            appliedProductInterest: input.decision === 'accepted' ? input.productInterest ?? null : null,
+            appliedNextAction: input.decision === 'accepted' ? input.nextAction ?? null : null,
+            appliedNextActionDueDate: input.decision === 'accepted' && input.nextActionDueDate
+              ? new Date(`${input.nextActionDueDate}T00:00:00.000Z`)
+              : null,
             resultingNegotiationVersion: resultingVersion,
           },
         });
@@ -396,7 +644,15 @@ export class PrismaCrmRepository implements CrmRepository {
             negotiationId: input.negotiationId,
             action: input.decision === 'accepted' ? 'analysis_accepted' : 'analysis_ignored',
             changedFields: input.decision === 'accepted'
-              ? [...(input.stage !== undefined ? ['stage'] : []), ...(requestedTags.length ? ['tags'] : [])]
+              ? [
+                  ...(input.stage !== undefined ? ['stage'] : []),
+                  ...(requestedTags.length ? ['tags'] : []),
+                  ...(input.value !== undefined ? ['value'] : []),
+                  ...(input.expectedCloseDate !== undefined ? ['expectedCloseDate'] : []),
+                  ...(input.productInterest !== undefined ? ['productInterest'] : []),
+                  ...(input.nextAction !== undefined ? ['nextAction'] : []),
+                  ...(input.nextActionDueDate !== undefined ? ['nextActionDueDate'] : []),
+                ]
               : [],
             previousVersion: analysis.negotiation.version,
             resultingVersion,
@@ -446,6 +702,11 @@ function toAnalysisDecisionView(decision: {
   decision: 'accepted' | 'ignored';
   appliedStage: NegotiationStage | null;
   appliedTags: string[];
+  appliedValue: { toString(): string } | null;
+  appliedExpectedCloseDate: Date | null;
+  appliedProductInterest: string | null;
+  appliedNextAction: string | null;
+  appliedNextActionDueDate: Date | null;
   resultingNegotiationVersion: number;
   createdAt: Date;
 }): AnalysisDecisionView {
@@ -454,6 +715,11 @@ function toAnalysisDecisionView(decision: {
     decision: decision.decision,
     appliedStage: decision.appliedStage,
     appliedTags: decision.appliedTags,
+    appliedValue: decision.appliedValue?.toString() ?? null,
+    appliedExpectedCloseDate: decision.appliedExpectedCloseDate?.toISOString().slice(0, 10) ?? null,
+    appliedProductInterest: decision.appliedProductInterest,
+    appliedNextAction: decision.appliedNextAction,
+    appliedNextActionDueDate: decision.appliedNextActionDueDate?.toISOString().slice(0, 10) ?? null,
     resultingNegotiationVersion: decision.resultingNegotiationVersion,
     createdAt: decision.createdAt.toISOString(),
   };
@@ -520,6 +786,7 @@ function toContactView(contact: {
 function toNegotiationView(negotiation: {
   id: string; contactId: string; title: string | null; stage: NegotiationStage;
   value: { toString(): string } | null; currency: string; sentiment: string | null;
+  nextAction: string | null; nextActionDueDate: Date | null;
   version: number; updatedAt: Date; contact: { displayName: string };
 }): NegotiationView {
   return {
@@ -531,6 +798,8 @@ function toNegotiationView(negotiation: {
     value: negotiation.value?.toString() ?? null,
     currency: negotiation.currency,
     sentiment: negotiation.sentiment,
+    nextAction: negotiation.nextAction,
+    nextActionDueDate: negotiation.nextActionDueDate?.toISOString().slice(0, 10) ?? null,
     version: negotiation.version,
     updatedAt: negotiation.updatedAt.toISOString(),
   };

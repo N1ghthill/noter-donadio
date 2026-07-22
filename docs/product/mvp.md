@@ -60,6 +60,7 @@ O usuário conecta uma conta do WhatsApp, recebe novas conversas diretas no note
 2. Arrastar um card registra uma alteração manual auditável.
 3. Uma sugestão da IA nunca move o card sem confirmação.
 4. Cards fechados deixam de ser considerados negociações ativas.
+5. O usuário define a próxima ação e identifica no Kanban acompanhamentos vencidos ou previstos para hoje.
 
 ## Critérios de aceite transversais
 

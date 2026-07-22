@@ -20,11 +20,14 @@ const NEGOTIATION_ID = 'db71084e-5829-4a90-8346-5832998294ea';
 const ANALYSIS_ID = 'c7edac69-9eca-4763-9302-8363f2f91a72';
 const USER_ID = 'd86e2931-7552-41f6-831f-85dd34c8bf29';
 const SESSION_COOKIE = 'noter_session=valid-session-token-with-more-than-forty-characters';
+const CONTACT_ID = '3a3db76b-c51a-4584-ab4b-6d3e70952e44';
 
 class FakeCrmRepository implements CrmRepository {
   public lastWorkspaceId?: string;
   public lastContactCreate?: Parameters<CrmRepository['createContact']>[0];
   public lastContactUpdate?: { workspaceId: string; userId: string; contactId: string; displayName?: string };
+  public lastNegotiationCreate?: Parameters<CrmRepository['createNegotiation']>[0];
+  public lastNegotiationUpdate?: Parameters<CrmRepository['updateNegotiation']>[0];
   public lastStageUpdate?: Parameters<CrmRepository['updateNegotiationStage']>[0];
   public lastAnalysisDecision?: Parameters<CrmRepository['decideAnalysis']>[0];
   public async listContacts(workspaceId: string): Promise<ContactView[]> {
@@ -60,6 +63,25 @@ class FakeCrmRepository implements CrmRepository {
     };
   }
   public async listNegotiations(): Promise<NegotiationView[]> { return []; }
+  public async createNegotiation(
+    input: Parameters<CrmRepository['createNegotiation']>[0],
+  ): Promise<NegotiationView> {
+    this.lastNegotiationCreate = input;
+    return {
+      id: NEGOTIATION_ID,
+      contactId: input.contactId,
+      contactName: 'Contato',
+      title: input.title ?? null,
+      stage: input.stage,
+      value: input.value ?? null,
+      currency: input.currency,
+      sentiment: null,
+      nextAction: input.nextAction ?? null,
+      nextActionDueDate: input.nextActionDueDate ?? null,
+      version: 1,
+      updatedAt: '2026-07-21T12:00:00.000Z',
+    };
+  }
   public async getNegotiation(workspaceId: string, negotiationId: string): Promise<NegotiationDetailView> {
     this.lastWorkspaceId = workspaceId;
     return {
@@ -73,6 +95,15 @@ class FakeCrmRepository implements CrmRepository {
       sentiment: null,
       version: 1,
       updatedAt: '2026-07-20T12:00:00.000Z',
+      valueConfirmedAt: null,
+      expectedCloseDate: null,
+      expectedCloseDateConfirmedAt: null,
+      productInterest: null,
+      productInterestConfirmedAt: null,
+      nextAction: null,
+      nextActionDueDate: null,
+      nextActionConfirmedAt: null,
+      nextActionDueDateConfirmedAt: null,
       contact: {
         id: '3a3db76b-c51a-4584-ab4b-6d3e70952e44', displayName: 'Contato',
         phoneNumber: '5571999999999', tags: [], source: 'manual', status: 'active',
@@ -81,6 +112,26 @@ class FakeCrmRepository implements CrmRepository {
       messages: [],
       analyses: [],
       auditTrail: [],
+    };
+  }
+  public async updateNegotiation(
+    input: Parameters<CrmRepository['updateNegotiation']>[0],
+  ): Promise<NegotiationView> {
+    this.lastNegotiationUpdate = input;
+    if (input.expectedVersion !== 1) throw new CrmConflictError();
+    return {
+      id: input.negotiationId,
+      contactId: CONTACT_ID,
+      contactName: 'Contato',
+      title: input.title ?? null,
+      stage: 'lead',
+      value: input.value ?? null,
+      currency: 'BRL',
+      sentiment: null,
+      nextAction: input.nextAction ?? null,
+      nextActionDueDate: input.nextActionDueDate ?? null,
+      version: 2,
+      updatedAt: '2026-07-21T12:00:00.000Z',
     };
   }
   public async updateNegotiationStage(input: {
@@ -97,6 +148,8 @@ class FakeCrmRepository implements CrmRepository {
       value: null,
       currency: 'BRL',
       sentiment: null,
+      nextAction: null,
+      nextActionDueDate: null,
       version: 2,
       updatedAt: '2026-07-20T12:00:00.000Z',
     };
@@ -110,6 +163,11 @@ class FakeCrmRepository implements CrmRepository {
       decision: input.decision,
       appliedStage: input.decision === 'accepted' ? input.stage ?? null : null,
       appliedTags: input.decision === 'accepted' ? input.tags ?? [] : [],
+      appliedValue: input.decision === 'accepted' ? input.value ?? null : null,
+      appliedExpectedCloseDate: input.decision === 'accepted' ? input.expectedCloseDate ?? null : null,
+      appliedProductInterest: input.decision === 'accepted' ? input.productInterest ?? null : null,
+      appliedNextAction: input.decision === 'accepted' ? input.nextAction ?? null : null,
+      appliedNextActionDueDate: input.decision === 'accepted' ? input.nextActionDueDate ?? null : null,
       resultingNegotiationVersion: input.decision === 'accepted' ? 2 : 1,
       createdAt: '2026-07-21T06:00:00.000Z',
     };
@@ -267,6 +325,102 @@ test('cadastro e mudança de etapa encaminham o usuário autenticado para audito
   assert.equal(repository.lastStageUpdate?.userId, USER_ID);
 });
 
+test('criação manual de negociação deriva identidade e valida dinheiro como decimal', async (context) => {
+  const repository = new FakeCrmRepository();
+  const app = buildApp({
+    crmRepository: repository,
+    sessionAuthenticator: new FakeSessionAuthenticator(),
+  });
+  context.after(async () => app.close());
+
+  const invalid = await app.inject({
+    method: 'POST',
+    url: '/api/negotiations',
+    headers: { cookie: SESSION_COOKIE },
+    payload: {
+      contactId: CONTACT_ID,
+      value: '12.345',
+      workspaceId: 'f35cd133-89aa-4614-84c1-16392b68199e',
+    },
+  });
+  assert.equal(invalid.statusCode, 400);
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/negotiations',
+    headers: { cookie: SESSION_COOKIE },
+    payload: {
+      contactId: CONTACT_ID,
+      title: 'Projeto fictício',
+      stage: 'qualified',
+      value: '12500.50',
+      expectedCloseDate: '2026-08-31',
+      productInterest: 'Implantação local',
+      nextAction: 'Enviar proposta revisada',
+      nextActionDueDate: '2026-08-20',
+    },
+  });
+
+  assert.equal(response.statusCode, 201);
+  assert.deepEqual(repository.lastNegotiationCreate, {
+    workspaceId: WORKSPACE_ID,
+    userId: USER_ID,
+    contactId: CONTACT_ID,
+    title: 'Projeto fictício',
+    stage: 'qualified',
+    value: '12500.50',
+    currency: 'BRL',
+    expectedCloseDate: '2026-08-31',
+    productInterest: 'Implantação local',
+    nextAction: 'Enviar proposta revisada',
+    nextActionDueDate: '2026-08-20',
+  });
+});
+
+test('edição comercial confirma campos com identidade e versão da sessão', async (context) => {
+  const repository = new FakeCrmRepository();
+  const app = buildApp({
+    crmRepository: repository,
+    sessionAuthenticator: new FakeSessionAuthenticator(),
+  });
+  context.after(async () => app.close());
+  const invalid = await app.inject({
+    method: 'PATCH',
+    url: `/api/negotiations/${NEGOTIATION_ID}`,
+    headers: { cookie: SESSION_COOKIE },
+    payload: { expectedVersion: 1, value: 1200.5 },
+  });
+  assert.equal(invalid.statusCode, 400);
+
+  const response = await app.inject({
+    method: 'PATCH',
+    url: `/api/negotiations/${NEGOTIATION_ID}`,
+    headers: { cookie: SESSION_COOKIE },
+    payload: {
+      expectedVersion: 1,
+      title: 'Projeto revisado',
+      value: '1200.50',
+      expectedCloseDate: null,
+      productInterest: 'Serviço confirmado',
+      nextAction: 'Retornar ao contato',
+      nextActionDueDate: '2026-08-25',
+    },
+  });
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(repository.lastNegotiationUpdate, {
+    workspaceId: WORKSPACE_ID,
+    userId: USER_ID,
+    negotiationId: NEGOTIATION_ID,
+    expectedVersion: 1,
+    title: 'Projeto revisado',
+    value: '1200.50',
+    expectedCloseDate: null,
+    productInterest: 'Serviço confirmado',
+    nextAction: 'Retornar ao contato',
+    nextActionDueDate: '2026-08-25',
+  });
+});
+
 test('aceita sugestões editadas com identidade e workspace da sessão', async (context) => {
   const repository = new FakeCrmRepository();
   const app = buildApp({
@@ -294,7 +448,18 @@ test('aceita sugestões editadas com identidade e workspace da sessão', async (
     method: 'POST',
     url: `/api/negotiations/${NEGOTIATION_ID}/analyses/${ANALYSIS_ID}/decision`,
     headers: { cookie: SESSION_COOKIE },
-    payload: { decisionId, decision: 'accepted', expectedVersion: 1, stage: 'proposal_sent', tags: ['prioridade'] },
+    payload: {
+      decisionId,
+      decision: 'accepted',
+      expectedVersion: 1,
+      stage: 'proposal_sent',
+      tags: ['prioridade'],
+      value: '7500.25',
+      expectedCloseDate: '2026-09-30',
+      productInterest: 'Serviço confirmado',
+      nextAction: 'Agendar apresentação',
+      nextActionDueDate: '2026-09-15',
+    },
   });
   assert.equal(validResponse.statusCode, 200);
   assert.deepEqual(repository.lastAnalysisDecision, {
@@ -307,6 +472,11 @@ test('aceita sugestões editadas com identidade e workspace da sessão', async (
     expectedVersion: 1,
     stage: 'proposal_sent',
     tags: ['prioridade'],
+    value: '7500.25',
+    expectedCloseDate: '2026-09-30',
+    productInterest: 'Serviço confirmado',
+    nextAction: 'Agendar apresentação',
+    nextActionDueDate: '2026-09-15',
   });
 });
 

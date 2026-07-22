@@ -25,7 +25,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     credentials: 'include',
     headers: {
-      'content-type': 'application/json',
+      ...(init?.body === undefined ? {} : { 'content-type': 'application/json' }),
       ...init?.headers,
     },
   });
@@ -95,8 +95,39 @@ export const api = {
     return request<{ data: Negotiation[] }>(`/api/negotiations${query}`);
   },
 
+  async createNegotiation(input: {
+    contactId: string;
+    title?: string;
+    stage: NegotiationStage;
+    value?: string;
+    expectedCloseDate?: string;
+    productInterest?: string;
+    nextAction?: string;
+    nextActionDueDate?: string;
+  }) {
+    return request<Negotiation>('/api/negotiations', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+
   async negotiation(id: string) {
     return request<NegotiationDetail>(`/api/negotiations/${id}`);
+  },
+
+  async updateNegotiation(id: string, input: {
+    expectedVersion: number;
+    title?: string | null;
+    value?: string | null;
+    expectedCloseDate?: string | null;
+    productInterest?: string | null;
+    nextAction?: string | null;
+    nextActionDueDate?: string | null;
+  }) {
+    return request<Negotiation>(`/api/negotiations/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    });
   },
 
   async mediaAccess(messageId: string) {
@@ -127,6 +158,11 @@ export const api = {
       expectedVersion: number;
       stage?: NegotiationStage;
       tags?: string[];
+      value?: string;
+      expectedCloseDate?: string;
+      productInterest?: string;
+      nextAction?: string;
+      nextActionDueDate?: string;
     },
   ) {
     return request<AnalysisDecision>(`/api/negotiations/${negotiationId}/analyses/${analysisId}/decision`, {

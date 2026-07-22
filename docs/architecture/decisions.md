@@ -120,9 +120,9 @@ Jobs e eventos carregam apenas IDs e estado. Resultados permanecem no PostgreSQL
 
 ## ADR-019 — Decisões de IA são explícitas, imutáveis e idempotentes
 
-O usuário pode aceitar uma seleção editável de etapa e tags ou ignorar uma análise concluída. Cada análise possui no máximo uma decisão, vinculada ao usuário autenticado. Um UUID fornecido pelo cliente permite reentrega idempotente; decisões diferentes para a mesma análise são recusadas.
+O usuário pode aceitar uma seleção editável de etapa, tags, valor, produto, previsões e próxima ação ou ignorar uma análise concluída. Cada análise possui no máximo uma decisão, vinculada ao usuário autenticado. Um UUID fornecido pelo cliente permite reentrega idempotente; decisões diferentes para a mesma análise são recusadas.
 
-No aceite, decisão, atualização da negociação, união das tags do contato e eventos da outbox são gravados em uma transação serializável com controle otimista da versão da negociação. A decisão registra os valores efetivamente aplicados e a versão resultante. Entidades de valor, produto e prazo continuam apenas informativas até receberem contratos próprios de confirmação e precedência manual.
+No aceite, decisão, atualização da negociação, união das tags do contato e eventos da outbox são gravados em uma transação serializável com controle otimista da versão da negociação. A decisão registra os valores efetivamente aplicados e a versão resultante. Campos comerciais aplicados recebem as mesmas marcas de confirmação manual usadas pela edição direta.
 
 ## ADR-020 — Auditoria manual é append-only e minimizada
 
@@ -147,3 +147,31 @@ O arquivo está fora da transação do PostgreSQL. Por isso, sua chave é copiad
 Cookies de sessão continuam `HttpOnly`, `SameSite=Strict` e `Secure` em produção. Como defesa adicional contra CSRF, toda requisição mutável em `/api/` exige um `Origin` exatamente presente em `APP_ORIGINS`. A lista é explícita e aceita apenas origens HTTP(S), sem caminho, credenciais, query ou fragmento.
 
 Rotas de leitura não dependem de `Origin`. A ingestão `/api/internal/` também fica fora da regra porque usa token próprio e não autenticação ambiente do navegador.
+
+## ADR-024 — Liveness público e readiness interno são separados
+
+O endpoint público `GET /health` informa apenas que o processo HTTP está vivo. A disponibilidade de PostgreSQL e Redis é verificada por `GET /api/internal/health/ready`, protegido pelo mesmo token interno usado entre processos e com resposta sem cache.
+
+O readiness possui prazo curto e retorna somente `ok` ou `unavailable` por dependência; URLs, credenciais e mensagens de erro não são expostas. Falhas operacionais dos workers usam logging JSON estruturado com códigos e nomes sanitizados, sem conteúdo de mensagem, transcrição, telefone, QR ou segredo.
+
+O CI inicia PostgreSQL e Redis e mantém um teste integrado com workspace e prefixo de filas exclusivos. Esse teste valida ingestão idempotente, outbox, BullMQ, análise e evento sanitizado sem disputar jobs com processos locais ou usar provedores externos.
+
+A conclusão de um evento da outbox usa atualização condicional. Se o workspace ou evento for removido entre publicação e confirmação, a ausência é tratada como conclusão idempotente e não encerra o dispatcher.
+
+## ADR-025 — Criação manual de negociação confirma dados comerciais
+
+A interface pode criar uma negociação somente para um contato pertencente ao workspace autenticado. Workspace e usuário autor vêm da sessão; não são aceitos no payload. Valor monetário trafega como decimal em string e, quando fornecido manualmente, já nasce com `valueConfirmedAt`, impedindo que uma extração posterior da IA o sobrescreva.
+
+Negociação, auditoria append-only e `negotiation.created` são persistidos na mesma transação. A auditoria registra apenas os nomes dos campos preenchidos e a etapa resultante. O evento carrega somente workspace, IDs e etapa; título, valor, produto e previsão de fechamento permanecem no PostgreSQL e são reconciliados pela API autenticada.
+
+## ADR-026 — Campos comerciais possuem confirmação explícita independente
+
+Valor, produto de interesse e previsão de fechamento guardam instantes próprios de confirmação manual. A edição direta e o aceite de uma sugestão atualizam essas marcas, inclusive quando o usuário limpa conscientemente um campo. Assim, ausência confirmada também não pode ser silenciosamente substituída por uma extração posterior.
+
+Edições comerciais exigem a versão esperada da negociação e gravam mutação, auditoria e `negotiation.updated` na mesma transação. O evento informa somente IDs e nomes de campos; valores permanecem no PostgreSQL. Uma decisão de análise continua única e imutável, mas registra separadamente o valor, produto e data efetivamente aplicados para que a trilha não dependa da resposta original do modelo.
+
+## ADR-027 — Próxima ação é estado confirmado da negociação
+
+Cada negociação pode guardar uma próxima ação textual e uma data civil de vencimento, com marcas independentes de confirmação manual. Esses campos podem nascer na criação, ser editados diretamente ou ser selecionados a partir da análise assistiva. A IA nunca cria tarefa nem agenda contato sem o aceite explícito do usuário.
+
+O Kanban classifica o prazo por comparação de datas civis em vencido, hoje ou futuro e continua permitindo ação sem prazo. A API trafega a data em `YYYY-MM-DD`, sem conversão implícita para o fuso do navegador. Alterações seguem o mesmo controle otimista, auditoria minimizada e evento `negotiation.updated` dos demais campos comerciais; texto e data não atravessam a notificação em tempo real.

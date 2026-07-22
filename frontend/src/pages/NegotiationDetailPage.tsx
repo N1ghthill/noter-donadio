@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { ApiError, api } from '../api/client.js';
@@ -8,6 +8,7 @@ import {
   AUDIT_ACTION_LABELS,
   AUDIT_FIELD_LABELS,
   formatDate,
+  formatDateOnly,
   formatDateTime,
   formatMoney,
   PROCESSING_LABELS,
@@ -26,6 +27,14 @@ export function NegotiationDetailPage() {
   const [decisionError, setDecisionError] = useState<string>();
   const [suggestedStage, setSuggestedStage] = useState('');
   const [suggestedTags, setSuggestedTags] = useState('');
+  const [suggestedValue, setSuggestedValue] = useState('');
+  const [suggestedExpectedCloseDate, setSuggestedExpectedCloseDate] = useState('');
+  const [suggestedProductInterest, setSuggestedProductInterest] = useState('');
+  const [suggestedNextAction, setSuggestedNextAction] = useState('');
+  const [suggestedNextActionDueDate, setSuggestedNextActionDueDate] = useState('');
+  const [showCommercialForm, setShowCommercialForm] = useState(false);
+  const [commercialBusy, setCommercialBusy] = useState(false);
+  const [commercialError, setCommercialError] = useState<string>();
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -45,8 +54,17 @@ export function NegotiationDetailPage() {
   useEffect(() => {
     setSuggestedStage(latestAnalysis?.suggestedStage ?? '');
     setSuggestedTags(latestAnalysis?.suggestedTags.join(', ') ?? '');
+    setSuggestedValue('');
+    setSuggestedExpectedCloseDate(
+      latestAnalysis?.entities?.deadline?.match(/^\d{4}-\d{2}-\d{2}$/)?.[0] ?? '',
+    );
+    setSuggestedProductInterest(latestAnalysis?.entities?.product ?? '');
+    setSuggestedNextAction(latestAnalysis?.nextActions[0] ?? '');
+    setSuggestedNextActionDueDate(
+      latestAnalysis?.entities?.deadline?.match(/^\d{4}-\d{2}-\d{2}$/)?.[0] ?? '',
+    );
     setDecisionError(undefined);
-  }, [latestAnalysis?.id]);
+  }, [latestAnalysis]);
 
   const decide = async (decision: 'accepted' | 'ignored') => {
     if (!id || !detail || !latestAnalysis) return;
@@ -60,6 +78,19 @@ export function NegotiationDetailPage() {
         expectedVersion: detail.version,
         ...(decision === 'accepted' && suggestedStage ? { stage: suggestedStage as typeof detail.stage } : {}),
         ...(decision === 'accepted' && tags.length ? { tags } : {}),
+        ...(decision === 'accepted' && suggestedValue ? { value: suggestedValue } : {}),
+        ...(decision === 'accepted' && suggestedExpectedCloseDate
+          ? { expectedCloseDate: suggestedExpectedCloseDate }
+          : {}),
+        ...(decision === 'accepted' && suggestedProductInterest.trim()
+          ? { productInterest: suggestedProductInterest.trim() }
+          : {}),
+        ...(decision === 'accepted' && suggestedNextAction.trim()
+          ? { nextAction: suggestedNextAction.trim() }
+          : {}),
+        ...(decision === 'accepted' && suggestedNextActionDueDate
+          ? { nextActionDueDate: suggestedNextActionDueDate }
+          : {}),
       });
       await load();
     } catch (caught: unknown) {
@@ -73,6 +104,43 @@ export function NegotiationDetailPage() {
       }
     } finally {
       setDecisionBusy(false);
+    }
+  };
+
+  const updateCommercial = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!id || !detail) return;
+    const form = new FormData(event.currentTarget);
+    const optional = (name: string) => String(form.get(name) ?? '').trim();
+    setCommercialBusy(true);
+    setCommercialError(undefined);
+    try {
+      const title = optional('title');
+      const value = optional('value');
+      const expectedCloseDate = optional('expectedCloseDate');
+      const productInterest = optional('productInterest');
+      const nextAction = optional('nextAction');
+      const nextActionDueDate = optional('nextActionDueDate');
+      await api.updateNegotiation(id, {
+        expectedVersion: detail.version,
+        title: title || null,
+        value: value || null,
+        expectedCloseDate: expectedCloseDate || null,
+        productInterest: productInterest || null,
+        nextAction: nextAction || null,
+        nextActionDueDate: nextActionDueDate || null,
+      });
+      setShowCommercialForm(false);
+      await load();
+    } catch (caught: unknown) {
+      if (caught instanceof ApiError && caught.code === 'version_conflict') {
+        setCommercialError('A negociação mudou em outra sessão. Os dados foram recarregados.');
+        await load();
+      } else {
+        setCommercialError('Não foi possível atualizar os dados comerciais. Confira os campos.');
+      }
+    } finally {
+      setCommercialBusy(false);
     }
   };
 
@@ -90,8 +158,35 @@ export function NegotiationDetailPage() {
         <div className="detail-summary">
           <span className={`stage-badge stage-${detail.stage}`}>{STAGE_LABELS[detail.stage]}</span>
           <strong>{formatMoney(detail.value, detail.currency)}</strong>
+          <button className="button secondary" type="button" onClick={() => setShowCommercialForm((value) => !value)}>
+            {showCommercialForm ? 'Cancelar edição' : 'Editar dados'}
+          </button>
         </div>
       </header>
+
+      {showCommercialForm ? (
+        <section className="panel form-panel" aria-labelledby="commercial-form-title">
+          <div className="panel-heading"><h2 id="commercial-form-title">Dados comerciais confirmados</h2></div>
+          <form className="negotiation-form" key={detail.version} onSubmit={(event) => void updateCommercial(event)}>
+            <label>Título<input name="title" maxLength={255} defaultValue={detail.title ?? ''} /></label>
+            <label>Valor (R$)<input name="value" type="number" min="0" step="0.01" defaultValue={detail.value ?? ''} /></label>
+            <label>Previsão de fechamento<input name="expectedCloseDate" type="date" defaultValue={detail.expectedCloseDate ?? ''} /></label>
+            <label>Produto ou interesse<input name="productInterest" maxLength={1_000} defaultValue={detail.productInterest ?? ''} /></label>
+            <label className="full-width">Próxima ação<input name="nextAction" maxLength={1_000} defaultValue={detail.nextAction ?? ''} /></label>
+            <label>Prazo da próxima ação<input name="nextActionDueDate" type="date" defaultValue={detail.nextActionDueDate ?? ''} /></label>
+            {commercialError ? <p className="inline-error full-width" role="alert">{commercialError}</p> : null}
+            <div className="full-width form-actions"><button className="button primary" disabled={commercialBusy}>{commercialBusy ? 'Salvando…' : 'Salvar dados'}</button></div>
+          </form>
+        </section>
+      ) : null}
+
+      <section className="panel next-action-panel">
+        <div><p className="eyebrow">Acompanhamento</p><h2>Próxima ação</h2></div>
+        <div>
+          <strong>{detail.nextAction ?? 'Nenhuma próxima ação definida'}</strong>
+          <small>{detail.nextActionDueDate ? `Prazo: ${formatDateOnly(detail.nextActionDueDate)}` : 'Sem prazo definido'}</small>
+        </div>
+      </section>
 
       <section className="detail-grid">
         <article className="panel">
@@ -141,9 +236,24 @@ export function NegotiationDetailPage() {
                   <label>Tags a adicionar
                     <input value={suggestedTags} maxLength={1_000} onChange={(event) => setSuggestedTags(event.target.value)} placeholder="Separe as tags por vírgulas" />
                   </label>
+                  <label>Valor confirmado (R$)
+                    <input type="number" min="0" step="0.01" value={suggestedValue} onChange={(event) => setSuggestedValue(event.target.value)} placeholder={latestAnalysis.entities?.amount ?? 'Não alterar o valor'} />
+                  </label>
+                  <label>Previsão confirmada
+                    <input type="date" value={suggestedExpectedCloseDate} onChange={(event) => setSuggestedExpectedCloseDate(event.target.value)} />
+                  </label>
+                  <label>Produto ou interesse confirmado
+                    <input maxLength={1_000} value={suggestedProductInterest} onChange={(event) => setSuggestedProductInterest(event.target.value)} placeholder="Não alterar o produto" />
+                  </label>
+                  <label>Próxima ação confirmada
+                    <input maxLength={1_000} value={suggestedNextAction} onChange={(event) => setSuggestedNextAction(event.target.value)} placeholder="Não definir próxima ação" />
+                  </label>
+                  <label>Prazo da próxima ação
+                    <input type="date" value={suggestedNextActionDueDate} onChange={(event) => setSuggestedNextActionDueDate(event.target.value)} />
+                  </label>
                   {decisionError ? <p className="inline-error" role="alert">{decisionError}</p> : null}
                   <div className="decision-actions">
-                    <button className="button primary" type="button" disabled={decisionBusy || (!suggestedStage && !suggestedTags.trim())} onClick={() => void decide('accepted')}>
+                    <button className="button primary" type="button" disabled={decisionBusy || (!suggestedStage && !suggestedTags.trim() && !suggestedValue && !suggestedExpectedCloseDate && !suggestedProductInterest.trim() && !suggestedNextAction.trim() && !suggestedNextActionDueDate)} onClick={() => void decide('accepted')}>
                       {decisionBusy ? 'Registrando…' : 'Aplicar seleção'}
                     </button>
                     <button className="button secondary" type="button" disabled={decisionBusy} onClick={() => void decide('ignored')}>Ignorar sugestão</button>

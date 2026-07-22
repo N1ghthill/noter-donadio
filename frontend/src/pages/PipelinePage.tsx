@@ -1,27 +1,68 @@
 import { NEGOTIATION_STAGES, type NegotiationStage } from '@noter/contracts';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 
 import { ApiError, api } from '../api/client.js';
 import { ErrorState, LoadingState } from '../components/Feedback.js';
-import { formatMoney, STAGE_LABELS } from '../lib/format.js';
-import type { Negotiation } from '../types/api.js';
+import { formatDateOnly, formatMoney, STAGE_LABELS } from '../lib/format.js';
+import type { Contact, Negotiation } from '../types/api.js';
 import { useRealtime } from '../realtime/RealtimeContext.js';
 
 export function PipelinePage() {
   const { revision } = useRealtime();
   const [items, setItems] = useState<Negotiation[]>();
+  const [contacts, setContacts] = useState<Contact[]>();
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [draggedId, setDraggedId] = useState<string>();
   const [updatingId, setUpdatingId] = useState<string>();
   const [error, setError] = useState<string>();
 
   const load = useCallback(async () => {
     setError(undefined);
-    try { setItems((await api.negotiations()).data); }
+    try {
+      const [negotiations, contactList] = await Promise.all([api.negotiations(), api.contacts()]);
+      setItems(negotiations.data);
+      setContacts(contactList.data);
+    }
     catch { setError('Não foi possível carregar o pipeline.'); }
   }, []);
 
   useEffect(() => { void load(); }, [load, revision]);
+
+  async function create(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    const optional = (name: string) => String(form.get(name) ?? '').trim();
+    setSaving(true);
+    setError(undefined);
+    try {
+      const title = optional('title');
+      const value = optional('value');
+      const expectedCloseDate = optional('expectedCloseDate');
+      const productInterest = optional('productInterest');
+      const nextAction = optional('nextAction');
+      const nextActionDueDate = optional('nextActionDueDate');
+      await api.createNegotiation({
+        contactId: String(form.get('contactId')),
+        stage: String(form.get('stage')) as NegotiationStage,
+        ...(title ? { title } : {}),
+        ...(value ? { value } : {}),
+        ...(expectedCloseDate ? { expectedCloseDate } : {}),
+        ...(productInterest ? { productInterest } : {}),
+        ...(nextAction ? { nextAction } : {}),
+        ...(nextActionDueDate ? { nextActionDueDate } : {}),
+      });
+      formElement.reset();
+      setShowForm(false);
+      await load();
+    } catch {
+      setError('Não foi possível criar a negociação. Confira os dados e tente novamente.');
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function move(id: string, stage: NegotiationStage) {
     const currentItems = items;
@@ -45,15 +86,45 @@ export function PipelinePage() {
     }
   }
 
-  if (!items && !error) return <LoadingState label="Carregando pipeline…" />;
+  if ((!items || !contacts) && !error) return <LoadingState label="Carregando pipeline…" />;
   if (!items) return <ErrorState message={error ?? 'Não foi possível carregar o pipeline.'} retry={() => void load()} />;
 
   return (
     <div className="page-stack pipeline-page">
-      <header className="page-header">
+      <header className="page-header compact">
         <div><p className="eyebrow">Oportunidades</p><h1>Pipeline</h1></div>
-        <p>Arraste cada cartão para atualizar a etapa. Mudanças conflitantes são protegidas por versão.</p>
+        <button className="button primary" type="button" onClick={() => setShowForm((value) => !value)}>
+          {showForm ? 'Cancelar' : 'Nova negociação'}
+        </button>
       </header>
+      {showForm ? (
+        <section className="panel form-panel" aria-labelledby="negotiation-form-title">
+          <div className="panel-heading"><h2 id="negotiation-form-title">Criar negociação</h2></div>
+          {contacts?.length === 0 ? <p className="muted">Cadastre um contato antes de criar uma negociação.</p> : null}
+          <form className="negotiation-form" onSubmit={(event) => void create(event)}>
+            <label>Contato
+              <select name="contactId" required defaultValue="" disabled={contacts?.length === 0}>
+                <option value="" disabled>Selecione um contato</option>
+                {contacts?.map((contact) => <option key={contact.id} value={contact.id}>{contact.displayName}</option>)}
+              </select>
+            </label>
+            <label>Título<input name="title" maxLength={160} placeholder="Ex.: Projeto comercial" /></label>
+            <label>Etapa
+              <select name="stage" defaultValue="lead">
+                {NEGOTIATION_STAGES.map((stage) => <option key={stage} value={stage}>{STAGE_LABELS[stage]}</option>)}
+              </select>
+            </label>
+            <label>Valor estimado (R$)<input name="value" type="number" min="0" step="0.01" inputMode="decimal" placeholder="0,00" /></label>
+            <label>Previsão de fechamento<input name="expectedCloseDate" type="date" /></label>
+            <label>Produto ou interesse<input name="productInterest" maxLength={160} /></label>
+            <label className="full-width">Próxima ação<input name="nextAction" maxLength={1_000} placeholder="Ex.: Retornar com a proposta revisada" /></label>
+            <label>Prazo da próxima ação<input name="nextActionDueDate" type="date" /></label>
+            <div className="full-width form-actions">
+              <button className="button primary" disabled={saving || contacts?.length === 0}>{saving ? 'Salvando…' : 'Salvar negociação'}</button>
+            </div>
+          </form>
+        </section>
+      ) : null}
       {error ? <ErrorState message={error} /> : null}
       <section className="kanban" aria-label="Pipeline de negociações">
         {NEGOTIATION_STAGES.map((stage) => {
@@ -67,6 +138,12 @@ export function PipelinePage() {
                     <small>{item.contactName}</small>
                     <h3>{item.title ?? 'Negociação sem título'}</h3>
                     <strong>{formatMoney(item.value, item.currency)}</strong>
+                    {item.nextAction ? (
+                      <div className={`next-action ${nextActionState(item.nextActionDueDate)}`}>
+                        <span>{item.nextAction}</span>
+                        <small>{nextActionLabel(item.nextActionDueDate)}</small>
+                      </div>
+                    ) : null}
                     {item.sentiment ? <span className="sentiment">{item.sentiment}</span> : null}
                     <label className="stage-select">
                       <span>Etapa</span>
@@ -85,4 +162,27 @@ export function PipelinePage() {
       </section>
     </div>
   );
+}
+
+function localIsoDate(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
+function nextActionState(dueDate: string | null): 'overdue' | 'today' | 'scheduled' | 'unscheduled' {
+  if (!dueDate) return 'unscheduled';
+  const today = localIsoDate();
+  if (dueDate < today) return 'overdue';
+  if (dueDate === today) return 'today';
+  return 'scheduled';
+}
+
+function nextActionLabel(dueDate: string | null): string {
+  const state = nextActionState(dueDate);
+  if (state === 'overdue') return `Vencida · ${formatDateOnly(dueDate)}`;
+  if (state === 'today') return 'Vence hoje';
+  if (state === 'scheduled') return `Prazo · ${formatDateOnly(dueDate)}`;
+  return 'Sem prazo definido';
 }

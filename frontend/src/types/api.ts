@@ -29,11 +29,20 @@ export interface Negotiation {
   value: string | null;
   currency: string;
   sentiment: string | null;
+  nextAction: string | null;
+  nextActionDueDate: string | null;
   version: number;
   updatedAt: string;
 }
 
 export interface NegotiationDetail extends Negotiation {
+  valueConfirmedAt: string | null;
+  expectedCloseDate: string | null;
+  expectedCloseDateConfirmedAt: string | null;
+  productInterest: string | null;
+  productInterestConfirmedAt: string | null;
+  nextActionConfirmedAt: string | null;
+  nextActionDueDateConfirmedAt: string | null;
   contact: Contact;
   messages: Array<{
     id: string;
@@ -74,7 +83,7 @@ export interface NegotiationDetail extends Negotiation {
 
 export interface AuditEvent {
   id: string;
-  action: 'contact_created' | 'contact_updated' | 'contact_deleted' | 'negotiation_stage_changed' | 'analysis_accepted' | 'analysis_ignored';
+  action: 'contact_created' | 'contact_updated' | 'contact_deleted' | 'negotiation_created' | 'negotiation_updated' | 'negotiation_stage_changed' | 'analysis_accepted' | 'analysis_ignored';
   actorDisplayName: string;
   changedFields: string[];
   previousVersion: number | null;
@@ -91,6 +100,11 @@ export interface AnalysisDecision {
   decision: 'accepted' | 'ignored';
   appliedStage: NegotiationStage | null;
   appliedTags: string[];
+  appliedValue: string | null;
+  appliedExpectedCloseDate: string | null;
+  appliedProductInterest: string | null;
+  appliedNextAction: string | null;
+  appliedNextActionDueDate: string | null;
   resultingNegotiationVersion: number;
   createdAt: string;
 }

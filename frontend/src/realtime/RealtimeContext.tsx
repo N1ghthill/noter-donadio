@@ -54,6 +54,8 @@ function isRealtimeEvent(event: unknown): boolean {
   return event.type === 'contact.updated'
     || event.type === 'contact.deleted'
     || event.type === 'negotiation.stage.changed'
+        || event.type === 'negotiation.created'
+        || event.type === 'negotiation.updated'
     || event.type === 'whatsapp.connection.changed'
     || event.type === 'message.persisted'
     || event.type === 'message.transcription.changed'

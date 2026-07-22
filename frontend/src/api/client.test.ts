@@ -42,6 +42,27 @@ describe('cliente HTTP', () => {
     }));
   });
 
+  it('cria negociação manual sem enviar workspace ou valores numéricos flutuantes', async () => {
+    const response = { id: 'neg-1', stage: 'lead', version: 1 };
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(response), { status: 201 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const input = {
+      contactId: 'contact-1',
+      title: 'Projeto fictício',
+      stage: 'lead' as const,
+      value: '12500.50',
+      nextAction: 'Enviar proposta',
+      nextActionDueDate: '2026-08-20',
+    };
+
+    await api.createNegotiation(input);
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/negotiations', expect.objectContaining({
+      method: 'POST',
+      body: JSON.stringify(input),
+    }));
+  });
+
   it('consulta o detalhe de uma negociação pelo identificador', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: 'neg-1' }), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
@@ -50,6 +71,26 @@ describe('cliente HTTP', () => {
 
     expect(fetchMock).toHaveBeenCalledWith('/api/negotiations/neg-1', expect.objectContaining({
       credentials: 'include',
+    }));
+  });
+
+  it('edita dados comerciais com versão e decimais em string', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: 'neg-1' }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const input = {
+      expectedVersion: 3,
+      value: '9800.75',
+      expectedCloseDate: '2026-09-30',
+      productInterest: 'Serviço confirmado',
+      nextAction: 'Retornar ao contato',
+      nextActionDueDate: '2026-08-25',
+    };
+
+    await api.updateNegotiation('neg-1', input);
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/negotiations/neg-1', expect.objectContaining({
+      method: 'PATCH',
+      body: JSON.stringify(input),
     }));
   });
 
@@ -62,6 +103,11 @@ describe('cliente HTTP', () => {
       expectedVersion: 3,
       stage: 'proposal_sent' as const,
       tags: ['prioridade'],
+      value: '7500.25',
+      expectedCloseDate: '2026-09-30',
+      productInterest: 'Serviço confirmado',
+      nextAction: 'Agendar apresentação',
+      nextActionDueDate: '2026-09-15',
     };
 
     await api.decideAnalysis('neg-1', 'analysis-1', input);
@@ -105,6 +151,8 @@ describe('cliente HTTP', () => {
 
     expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/whatsapp/setup', expect.objectContaining({ method: 'POST' }));
     expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/whatsapp/demo/connect', expect.objectContaining({ method: 'POST' }));
+    expect(fetchMock.mock.calls[0]?.[1]?.headers).not.toHaveProperty('content-type');
+    expect(fetchMock.mock.calls[1]?.[1]?.headers).not.toHaveProperty('content-type');
   });
 
   it('consulta conversas e simula entrada com chave idempotente', async () => {

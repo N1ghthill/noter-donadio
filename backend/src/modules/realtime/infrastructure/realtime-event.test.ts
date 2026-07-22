@@ -39,6 +39,42 @@ test('evento de exclusão carrega somente identificadores para reconciliação',
   });
 });
 
+test('evento de criação de negociação descarta campos comerciais adicionais', () => {
+  const event = parseRealtimeEvent('negotiation.created', {
+    workspaceId: '0e723f84-ec81-441e-b816-f3f179f25fe2',
+    negotiationId: 'db71084e-5829-4a90-8346-5832998294ea',
+    contactId: '3a3db76b-c51a-4584-ab4b-6d3e70952e44',
+    stage: 'lead',
+    value: '12500.00',
+    title: 'Não deve trafegar',
+  });
+  assert.deepEqual(event, {
+    type: 'negotiation.created',
+    workspaceId: '0e723f84-ec81-441e-b816-f3f179f25fe2',
+    negotiationId: 'db71084e-5829-4a90-8346-5832998294ea',
+    contactId: '3a3db76b-c51a-4584-ab4b-6d3e70952e44',
+    stage: 'lead',
+  });
+});
+
+test('evento de edição de negociação expõe somente campos alterados', () => {
+  const event = parseRealtimeEvent('negotiation.updated', {
+    workspaceId: WORKSPACE_ID,
+    negotiationId: 'db71084e-5829-4a90-8346-5832998294ea',
+    changedFields: ['value', 'productInterest', 'nextAction', 'nextActionDueDate'],
+    value: 'dado comercial restrito ao REST',
+    productInterest: 'dado comercial restrito ao REST',
+    nextAction: 'dado comercial restrito ao REST',
+    nextActionDueDate: '2026-08-20',
+  });
+  assert.deepEqual(event, {
+    type: 'negotiation.updated',
+    workspaceId: WORKSPACE_ID,
+    negotiationId: 'db71084e-5829-4a90-8346-5832998294ea',
+    changedFields: ['value', 'productInterest', 'nextAction', 'nextActionDueDate'],
+  });
+});
+
 test('evento de conexão nunca transporta QR', () => {
   const event = parseRealtimeEvent('whatsapp.connection.changed', {
     workspaceId: WORKSPACE_ID,

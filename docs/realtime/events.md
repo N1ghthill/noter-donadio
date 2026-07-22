@@ -89,6 +89,25 @@ Todos são emitidos como `crm.updated`:
 
 ```json
 {
+  "type": "negotiation.created",
+  "workspaceId": "uuid",
+  "negotiationId": "uuid",
+  "contactId": "uuid",
+  "stage": "qualified"
+}
+```
+
+```json
+{
+  "type": "negotiation.updated",
+  "workspaceId": "uuid",
+  "negotiationId": "uuid",
+  "changedFields": ["value", "productInterest", "nextAction", "nextActionDueDate"]
+}
+```
+
+```json
+{
   "type": "negotiation.stage.changed",
   "workspaceId": "uuid",
   "negotiationId": "uuid",
@@ -116,6 +135,8 @@ O primeiro processo move eventos transacionais para BullMQ. O segundo consome `r
 - Redis e Socket.IO são transporte descartável; PostgreSQL continua sendo a fonte de verdade;
 - eventos repetidos são seguros porque apenas invalidam consultas;
 - eventos perdidos são recuperados na reconexão por REST;
-- nesta fatia, edição de contato, mudança de etapa, estado da conexão, mensagem persistida, transcrição e análise geram notificações;
+- nesta fatia, edição de contato, criação e mudança de etapa da negociação, estado da conexão, mensagem persistida, transcrição e análise geram notificações;
+- `negotiation.created` não transporta título, valor, produto, previsões ou próxima ação; o Pipeline recupera esses campos pela API autenticada;
+- `negotiation.updated` informa apenas os nomes permitidos dos campos; seus valores são reconciliados pela API autenticada;
 - `analysis.changed` nunca transporta resumo, entidades, sentimento ou sugestões; esses dados são reconciliados pela API autenticada.
 - `analysis.decision.changed` não transporta tags, etapa aplicada nem identidade do usuário; a trilha completa permanece no PostgreSQL.

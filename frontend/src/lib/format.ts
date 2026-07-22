@@ -28,6 +28,8 @@ export const AUDIT_ACTION_LABELS = {
   contact_created: 'Contato criado manualmente',
   contact_updated: 'Contato atualizado',
   contact_deleted: 'Contato excluído',
+  negotiation_created: 'Negociação criada manualmente',
+  negotiation_updated: 'Negociação atualizada manualmente',
   negotiation_stage_changed: 'Etapa alterada manualmente',
   analysis_accepted: 'Sugestão da IA aplicada',
   analysis_ignored: 'Sugestão da IA ignorada',
@@ -39,7 +41,20 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   tags: 'tags',
   notes: 'observações',
   stage: 'etapa',
+  contactId: 'contato',
+  title: 'título',
+  value: 'valor',
+  expectedCloseDate: 'previsão de fechamento',
+  productInterest: 'produto de interesse',
+  nextAction: 'próxima ação',
+  nextActionDueDate: 'prazo da próxima ação',
 };
+
+export function formatDateOnly(value: string | null): string {
+  if (!value) return 'Sem prazo';
+  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium', timeZone: 'UTC' })
+    .format(new Date(`${value}T00:00:00.000Z`));
+}
 
 export function formatMoney(value: string | null, currency = 'BRL'): string {
   if (value === null) return 'Valor não informado';

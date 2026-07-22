@@ -20,11 +20,20 @@ export interface NegotiationView {
   readonly value: string | null;
   readonly currency: string;
   readonly sentiment: string | null;
+  readonly nextAction: string | null;
+  readonly nextActionDueDate: string | null;
   readonly version: number;
   readonly updatedAt: string;
 }
 
 export interface NegotiationDetailView extends NegotiationView {
+  readonly valueConfirmedAt: string | null;
+  readonly expectedCloseDate: string | null;
+  readonly expectedCloseDateConfirmedAt: string | null;
+  readonly productInterest: string | null;
+  readonly productInterestConfirmedAt: string | null;
+  readonly nextActionConfirmedAt: string | null;
+  readonly nextActionDueDateConfirmedAt: string | null;
   readonly contact: ContactView;
   readonly messages: readonly {
     readonly id: string;
@@ -65,7 +74,7 @@ export interface NegotiationDetailView extends NegotiationView {
 
 export interface AuditEventView {
   readonly id: string;
-  readonly action: 'contact_created' | 'contact_updated' | 'contact_deleted' | 'negotiation_stage_changed' | 'analysis_accepted' | 'analysis_ignored';
+  readonly action: 'contact_created' | 'contact_updated' | 'contact_deleted' | 'negotiation_created' | 'negotiation_updated' | 'negotiation_stage_changed' | 'analysis_accepted' | 'analysis_ignored';
   readonly actorDisplayName: string;
   readonly changedFields: readonly string[];
   readonly previousVersion: number | null;
@@ -82,6 +91,11 @@ export interface AnalysisDecisionView {
   readonly decision: 'accepted' | 'ignored';
   readonly appliedStage: NegotiationStage | null;
   readonly appliedTags: readonly string[];
+  readonly appliedValue: string | null;
+  readonly appliedExpectedCloseDate: string | null;
+  readonly appliedProductInterest: string | null;
+  readonly appliedNextAction: string | null;
+  readonly appliedNextActionDueDate: string | null;
   readonly resultingNegotiationVersion: number;
   readonly createdAt: string;
 }
@@ -111,7 +125,32 @@ export interface CrmRepository {
     notes?: string | null | undefined;
   }): Promise<ContactView>;
   listNegotiations(workspaceId: string, stage: NegotiationStage | undefined): Promise<NegotiationView[]>;
+  createNegotiation(input: {
+    workspaceId: string;
+    userId: string;
+    contactId: string;
+    title?: string | undefined;
+    stage: NegotiationStage;
+    value?: string | undefined;
+    currency: 'BRL';
+    expectedCloseDate?: string | undefined;
+    productInterest?: string | undefined;
+    nextAction?: string | undefined;
+    nextActionDueDate?: string | undefined;
+  }): Promise<NegotiationView>;
   getNegotiation(workspaceId: string, negotiationId: string): Promise<NegotiationDetailView>;
+  updateNegotiation(input: {
+    workspaceId: string;
+    userId: string;
+    negotiationId: string;
+    expectedVersion: number;
+    title?: string | null | undefined;
+    value?: string | null | undefined;
+    expectedCloseDate?: string | null | undefined;
+    productInterest?: string | null | undefined;
+    nextAction?: string | null | undefined;
+    nextActionDueDate?: string | null | undefined;
+  }): Promise<NegotiationView>;
   updateNegotiationStage(input: {
     workspaceId: string;
     userId: string;
@@ -129,5 +168,10 @@ export interface CrmRepository {
     expectedVersion: number;
     stage?: NegotiationStage | undefined;
     tags?: readonly string[] | undefined;
+    value?: string | undefined;
+    expectedCloseDate?: string | undefined;
+    productInterest?: string | undefined;
+    nextAction?: string | undefined;
+    nextActionDueDate?: string | undefined;
   }): Promise<AnalysisDecisionView>;
 }

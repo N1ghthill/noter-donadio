@@ -27,7 +27,7 @@ A saída aceita apenas resumo, entidades (`product`, `amount`, `deadline`), sent
 
 As sugestões permanecem separadas do CRM. O worker não altera contato, negociação, etapa ou tags. Depois da conclusão, o usuário pode editar e aplicar a etapa e as tags selecionadas ou ignorar a sugestão. A decisão é explícita, imutável e registrada em `analysis_decisions` com usuário, instante, campos aplicados e versão resultante da negociação.
 
-O aceite, a alteração do CRM e os eventos da outbox pertencem à mesma transação serializável. A versão esperada impede uma tela desatualizada de sobrescrever trabalho manual, e o UUID da decisão torna uma reentrega de rede idempotente. Valor, produto e prazo continuam apenas informativos nesta fase.
+O aceite, a alteração do CRM e os eventos da outbox pertencem à mesma transação serializável. A versão esperada impede uma tela desatualizada de sobrescrever trabalho manual, e o UUID da decisão torna uma reentrega de rede idempotente. Etapa, tags, valor, produto, previsões e a primeira próxima ação sugerida podem ser editados e selecionados antes do aceite; os dados efetivamente aplicados ficam registrados na decisão e recebem marca de confirmação manual. Objeções e demais próximas ações permanecem informativas.
 
 ## Idempotência
 

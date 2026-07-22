@@ -30,7 +30,8 @@ export function ContactsPage() {
 
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     setSaving(true);
     setError(undefined);
     try {
@@ -48,7 +49,7 @@ export function ContactsPage() {
         tags: values.tags,
         ...(notes ? { notes } : {}),
       });
-      event.currentTarget.reset();
+      formElement.reset();
       setShowForm(false);
       setEditing(undefined);
       setSearch('');

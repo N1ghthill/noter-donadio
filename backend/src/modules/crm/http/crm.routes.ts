@@ -17,6 +17,7 @@ const stageSchema = z.enum([
 const phoneSchema = z.string().min(8).max(30).refine(
   (value) => value.replace(/\D/g, '').length >= 8 && value.replace(/\D/g, '').length <= 20,
 );
+const moneySchema = z.string().regex(/^(0|[1-9]\d{0,12})(\.\d{1,2})?$/);
 
 export function registerCrmRoutes(
   app: FastifyInstance,
@@ -71,6 +72,34 @@ export function registerCrmRoutes(
     return { data: await options.repository.listNegotiations(workspaceId, query.data.stage) };
   });
 
+  app.post('/api/negotiations', async (request, reply) => {
+    const user = await authenticatedUser(request, options.sessionAuthenticator);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const body = z.object({
+      contactId: z.uuid(),
+      title: z.string().trim().min(1).max(255).optional(),
+      stage: stageSchema.default('lead'),
+      value: moneySchema.optional(),
+      currency: z.literal('BRL').default('BRL'),
+      expectedCloseDate: z.iso.date().optional(),
+      productInterest: z.string().trim().min(1).max(1_000).optional(),
+      nextAction: z.string().trim().min(1).max(1_000).optional(),
+      nextActionDueDate: z.iso.date().optional(),
+    }).strict().safeParse(request.body);
+    if (!body.success) return reply.code(400).send({ error: 'invalid_request' });
+    try {
+      const negotiation = await options.repository.createNegotiation({
+        workspaceId: user.workspaceId,
+        userId: user.userId,
+        ...body.data,
+      });
+      return reply.code(201).send(negotiation);
+    } catch (error: unknown) {
+      if (error instanceof CrmNotFoundError) return reply.code(404).send({ error: 'contact_not_found' });
+      throw error;
+    }
+  });
+
   app.get('/api/negotiations/:id', async (request, reply) => {
     const workspaceId = await authenticatedWorkspace(request, options.sessionAuthenticator);
     if (!workspaceId) return reply.code(401).send({ error: 'unauthorized' });
@@ -80,6 +109,34 @@ export function registerCrmRoutes(
       return await options.repository.getNegotiation(workspaceId, params.data.id);
     } catch (error: unknown) {
       if (error instanceof CrmNotFoundError) return reply.code(404).send({ error: 'not_found' });
+      throw error;
+    }
+  });
+
+  app.patch('/api/negotiations/:id', async (request, reply) => {
+    const user = await authenticatedUser(request, options.sessionAuthenticator);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const params = z.object({ id: z.uuid() }).safeParse(request.params);
+    const body = z.object({
+      expectedVersion: z.number().int().positive(),
+      title: z.string().trim().min(1).max(255).nullable().optional(),
+      value: moneySchema.nullable().optional(),
+      expectedCloseDate: z.iso.date().nullable().optional(),
+      productInterest: z.string().trim().min(1).max(1_000).nullable().optional(),
+      nextAction: z.string().trim().min(1).max(1_000).nullable().optional(),
+      nextActionDueDate: z.iso.date().nullable().optional(),
+    }).strict().refine((value) => Object.keys(value).some((field) => field !== 'expectedVersion')).safeParse(request.body);
+    if (!params.success || !body.success) return reply.code(400).send({ error: 'invalid_request' });
+    try {
+      return await options.repository.updateNegotiation({
+        workspaceId: user.workspaceId,
+        userId: user.userId,
+        negotiationId: params.data.id,
+        ...body.data,
+      });
+    } catch (error: unknown) {
+      if (error instanceof CrmNotFoundError) return reply.code(404).send({ error: 'not_found' });
+      if (error instanceof CrmConflictError) return reply.code(409).send({ error: 'version_conflict' });
       throw error;
     }
   });
@@ -115,7 +172,18 @@ export function registerCrmRoutes(
         expectedVersion: z.number().int().positive(),
         stage: stageSchema.optional(),
         tags: z.array(z.string().trim().min(1).max(50)).max(20).optional(),
-      }).strict().refine((value) => value.stage !== undefined || Boolean(value.tags?.length)),
+        value: moneySchema.optional(),
+        expectedCloseDate: z.iso.date().optional(),
+        productInterest: z.string().trim().min(1).max(1_000).optional(),
+        nextAction: z.string().trim().min(1).max(1_000).optional(),
+        nextActionDueDate: z.iso.date().optional(),
+      }).strict().refine((value) => value.stage !== undefined
+        || Boolean(value.tags?.length)
+        || value.value !== undefined
+        || value.expectedCloseDate !== undefined
+        || value.productInterest !== undefined
+        || value.nextAction !== undefined
+        || value.nextActionDueDate !== undefined),
       z.object({
         decisionId: z.uuid(),
         decision: z.literal('ignored'),

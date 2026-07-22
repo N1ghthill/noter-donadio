@@ -10,10 +10,14 @@ A aplicação React é uma interface autenticada para o CRM e contém:
 - cadastro manual de contato, com telefone, tags e observações;
 - edição manual de nome, telefone, tags e observações do contato;
 - pipeline Kanban com as sete etapas do domínio;
+- criação manual de negociação vinculada a um contato, com valor decimal, etapa, produto e previsão de fechamento opcionais;
+- definição de próxima ação e prazo na criação ou edição da negociação;
 - movimentação de negociação por arrastar e soltar;
 - movimentação alternativa por seletor de etapa, acessível via teclado;
 - detalhe da negociação com contato, histórico, transcrições e sugestões estruturadas de IA;
-- edição e confirmação explícita de etapa/tags sugeridas, ou registro de que a sugestão foi ignorada;
+- edição manual de título, valor, produto e previsão de fechamento com proteção contra conflito;
+- confirmação explícita de uma seleção editável de etapa, tags, valor, produto, prazos e próxima ação sugeridos, ou registro de que a sugestão foi ignorada;
+- sinalização no Kanban de próxima ação vencida, prevista para hoje, futura ou sem prazo;
 - histórico de auditoria com ator, instante, campos afetados, versões e transições de etapa;
 - caixa de conversas ordenada pela mensagem mais recente, com histórico reconciliado via REST;
 - formulário local para simular recebimento idempotente de texto ou áudio sem enviar mensagens;
@@ -87,10 +91,9 @@ Os testes do frontend cobrem o envio do cookie, codificação de busca, erros HT
 
 ## Limites conhecidos desta fatia
 
-- o MVP ainda não cria negociações pela interface; elas surgem pelo fluxo de ingestão;
-- notificações em tempo real cobrem edição de contato, mudança de etapa, conexão, persistência de mensagem, transcrição e análise;
-- a análise usa apenas o adapter falso; etapa e tags só são aplicadas após confirmação explícita e auditada;
-- valor, produto, prazo, objeções e próximas ações ainda são apenas informativos e não possuem ação de aplicação;
+- notificações em tempo real cobrem edição de contato, criação e mudança de etapa da negociação, conexão, persistência de mensagem, transcrição e análise;
+- a análise usa apenas o adapter falso; etapa, tags, valor, produto, previsões e próxima ação só são aplicados após confirmação explícita e auditada;
+- objeções e as demais próximas ações sugeridas continuam informativas e não executam ações autônomas;
 - a conexão atual é simulada; nenhum adapter real de WhatsApp está habilitado;
 - áudio fictício pode ser carregado sob demanda por URL curta, assinada e autenticada; download real do WhatsApp e armazenamento de produção ainda não estão conectados;
 - exclusão integral de workspace e uma tela global para auditorias de contatos removidos ainda não estão disponíveis.

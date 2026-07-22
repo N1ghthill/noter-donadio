@@ -17,6 +17,19 @@ const eventSchemas = {
     negotiationId: z.uuid(),
     stage: z.enum(['lead', 'qualified', 'proposal_sent', 'in_negotiation', 'on_hold', 'closed_won', 'closed_lost']),
   }),
+  'negotiation.created': z.object({
+    workspaceId,
+    negotiationId: z.uuid(),
+    contactId: z.uuid(),
+    stage: z.enum(['lead', 'qualified', 'proposal_sent', 'in_negotiation', 'on_hold', 'closed_won', 'closed_lost']),
+  }),
+  'negotiation.updated': z.object({
+    workspaceId,
+    negotiationId: z.uuid(),
+    changedFields: z.array(z.enum([
+      'title', 'value', 'expectedCloseDate', 'productInterest', 'nextAction', 'nextActionDueDate',
+    ])).max(6),
+  }),
   'whatsapp.connection.changed': z.object({
     workspaceId,
     accountId: z.uuid(),
@@ -54,6 +67,8 @@ export type RealtimeEvent =
   | { type: 'contact.updated'; workspaceId: string; contactId: string; changedFields: string[] }
   | { type: 'contact.deleted'; workspaceId: string; contactId: string }
   | { type: 'negotiation.stage.changed'; workspaceId: string; negotiationId: string; stage: string }
+  | { type: 'negotiation.created'; workspaceId: string; negotiationId: string; contactId: string; stage: string }
+  | { type: 'negotiation.updated'; workspaceId: string; negotiationId: string; changedFields: string[] }
   | { type: 'whatsapp.connection.changed'; workspaceId: string; accountId: string; status: string }
   | { type: 'message.persisted'; workspaceId: string; messageId: string; contactId: string; negotiationId: string }
   | { type: 'message.transcription.changed'; workspaceId: string; messageId: string; negotiationId: string; state: string }
@@ -68,6 +83,12 @@ export function parseRealtimeEvent(name: string, data: unknown): RealtimeEvent {
     return { type: name, ...eventSchemas[name].parse(data) };
   }
   if (name === 'negotiation.stage.changed') {
+    return { type: name, ...eventSchemas[name].parse(data) };
+  }
+  if (name === 'negotiation.created') {
+    return { type: name, ...eventSchemas[name].parse(data) };
+  }
+  if (name === 'negotiation.updated') {
     return { type: name, ...eventSchemas[name].parse(data) };
   }
   if (name === 'whatsapp.connection.changed') {
