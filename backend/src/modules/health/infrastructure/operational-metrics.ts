@@ -73,8 +73,14 @@ export class PrismaBullMqOperationalMetricsCollector implements OperationalMetri
   }
 
   public async close(): Promise<void> {
-    await Promise.all(QUEUE_NAMES.map((name) => this.queues[name].close()));
-    await this.connection.quit();
+    await Promise.all(QUEUE_NAMES.map(async (name) => {
+      await this.queues[name].close().catch(() => undefined);
+    }));
+    if (this.connection.status === 'ready') {
+      await this.connection.quit().catch(() => this.connection.disconnect());
+    } else {
+      this.connection.disconnect();
+    }
   }
 }
 

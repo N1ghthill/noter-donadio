@@ -9,7 +9,7 @@ Os fluxos comerciais e administrativos implementados estão aceitos para demonst
 Evidências automatizadas do marco:
 
 - lint e TypeScript estrito sem erros;
-- 128 testes aprovados: 1 de contratos, 96 de backend e 31 de frontend;
+- 129 testes aprovados: 1 de contratos, 97 de backend e 31 de frontend;
 - build dos três workspaces aprovado;
 - 14 migrations aplicadas em PostgreSQL vazio;
 - fluxo integrado validado com PostgreSQL, Redis, BullMQ e adapters falsos;

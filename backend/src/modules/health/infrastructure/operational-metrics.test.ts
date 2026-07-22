@@ -36,3 +36,12 @@ test('coleta contagens persistidas e filas isoladas sem dados de negócio', asyn
   assert.equal(Object.keys(snapshot.transcriptions).length, 4);
   assert.equal(Object.keys(snapshot.analyses).length, 4);
 });
+
+test('fecha com segurança antes de a conexão Redis terminar de abrir', async () => {
+  const collector = new PrismaBullMqOperationalMetricsCollector(
+    prisma,
+    environment.REDIS_URL,
+    `metrics-close-test-${randomUUID()}`,
+  );
+  await collector.close();
+});
