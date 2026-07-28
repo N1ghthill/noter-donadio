@@ -32,7 +32,7 @@ export function WhatsappSetupPage() {
     setBusy(true);
     setError(undefined);
     try { setConnection(await api.startWhatsappSetup()); }
-    catch { setError('Não foi possível gerar o QR de demonstração.'); }
+    catch { setError('Não foi possível gerar o QR do WhatsApp. Tente novamente em alguns instantes.'); }
     finally { setBusy(false); }
   }
 
@@ -75,10 +75,10 @@ export function WhatsappSetupPage() {
         </article>
 
         <article className="panel qr-card">
-          <div className="panel-heading"><div><p className="eyebrow">Ambiente local</p><h2>QR de demonstração</h2></div></div>
+          <div className="panel-heading"><div><p className="eyebrow">{connection.adapter === 'fake' ? 'Ambiente local' : 'Aparelho conectado'}</p><h2>{connection.adapter === 'fake' ? 'QR de demonstração' : 'QR do WhatsApp'}</h2></div></div>
           {connection.qrCode ? (
             <>
-              <div className="qr-frame" aria-label="QR code de demonstração">
+              <div className="qr-frame" aria-label={connection.adapter === 'fake' ? 'QR code de demonstração' : 'QR code do WhatsApp'}>
                 <QRCodeSVG value={connection.qrCode.payload} size={220} level="M" />
               </div>
               <p>{connection.adapter === 'fake'
@@ -92,7 +92,7 @@ export function WhatsappSetupPage() {
               <small>Expira em {new Date(connection.qrCode.expiresAt).toLocaleTimeString('pt-BR')}.</small>
             </>
           ) : connection.status === 'connected' ? (
-            <div className="connection-success"><span>✓</span><h3>Conexão simulada concluída</h3><p>O próximo passo será substituir o adapter falso por uma integração isolada.</p></div>
+            <div className="connection-success"><span>✓</span><h3>{connection.adapter === 'fake' ? 'Conexão simulada concluída' : 'WhatsApp conectado'}</h3><p>{connection.adapter === 'fake' ? 'O simulador está pronto para a demonstração.' : 'Novas mensagens de texto serão organizadas automaticamente no CRM.'}</p></div>
           ) : (
             <div className="connection-placeholder"><span aria-hidden="true">▦</span><p>Inicie a configuração para gerar um QR efêmero.</p></div>
           )}

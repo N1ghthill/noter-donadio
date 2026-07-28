@@ -14,6 +14,7 @@ import { attachRealtimeServer } from './modules/realtime/http/realtime.server.js
 import { WhatsappConnectionService } from './modules/whatsapp/domain/whatsapp-connection.js';
 import { FakeWhatsappGateway } from './modules/whatsapp/infrastructure/fake-whatsapp.gateway.js';
 import { PrismaWhatsappConnectionRepository } from './modules/whatsapp/infrastructure/prisma-whatsapp.repository.js';
+import { RedisBaileysGateway } from './modules/whatsapp/infrastructure/redis-baileys.gateway.js';
 import { LocalMediaStorage } from './modules/media/infrastructure/local-media-storage.js';
 import { FakeDemoAudioProvisioner } from './modules/media/infrastructure/fake-demo-audio.provisioner.js';
 import { MediaAccessService } from './modules/media/domain/media-access.js';
@@ -45,10 +46,15 @@ const demoMessageService = environment.WHATSAPP_ADAPTER === 'fake'
     )
   : undefined;
 const authService = new AuthService(new PrismaAuthRepository(prisma), new ScryptPasswordHasher());
-const whatsappService = environment.WHATSAPP_ADAPTER === 'fake'
+const whatsappGateway = environment.WHATSAPP_ADAPTER === 'fake'
+  ? new FakeWhatsappGateway()
+  : environment.WHATSAPP_ADAPTER === 'baileys'
+    ? new RedisBaileysGateway(environment.REDIS_URL)
+    : undefined;
+const whatsappService = whatsappGateway
   ? new WhatsappConnectionService(
       new PrismaWhatsappConnectionRepository(prisma),
-      new FakeWhatsappGateway(),
+      whatsappGateway,
     )
   : undefined;
 const app = buildApp({
@@ -80,6 +86,7 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
     void app.close().finally(async () => {
       readinessProbe.close();
       await metricsCollector.close();
+      if (whatsappGateway instanceof RedisBaileysGateway) await whatsappGateway.close();
       await prisma.$disconnect();
     });
   });
@@ -91,6 +98,7 @@ try {
   app.log.error({ err: error }, 'Falha ao iniciar o backend');
   readinessProbe.close();
   await metricsCollector.close();
+  if (whatsappGateway instanceof RedisBaileysGateway) await whatsappGateway.close();
   await prisma.$disconnect();
   process.exitCode = 1;
 }

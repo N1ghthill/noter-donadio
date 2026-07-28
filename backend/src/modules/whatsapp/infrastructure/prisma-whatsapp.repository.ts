@@ -1,8 +1,9 @@
-import type { PrismaClient } from '../../../generated/prisma/client.js';
+import type { Prisma, PrismaClient } from '../../../generated/prisma/client.js';
 import type {
   StoredWhatsappConnection,
   WhatsappConnectionRepository,
 } from '../domain/whatsapp-connection.js';
+import type { WhatsappConnectionStatus } from '@noter/contracts';
 
 const PRIMARY_ACCOUNT_IDENTIFIER = 'primary';
 
@@ -26,6 +27,26 @@ export class PrismaWhatsappConnectionRepository implements WhatsappConnectionRep
     return this.updateState(workspaceId, 'connected', phoneNumber);
   }
 
+  public async markStatus(
+    workspaceId: string,
+    accountId: string,
+    status: Extract<WhatsappConnectionStatus, 'disconnected' | 'qr_generated' | 'connecting' | 'timeout'>,
+  ): Promise<StoredWhatsappConnection> {
+    return this.prisma.$transaction(async (transaction) => {
+      const current = await transaction.whatsappAccount.findUnique({
+        where: { workspaceId_id: { workspaceId, id: accountId } },
+      });
+      if (!current) throw new WhatsappAccountBindingNotFoundError();
+      if (current.connectionStatus === status) return toStoredConnection(current);
+      const account = await transaction.whatsappAccount.update({
+        where: { workspaceId_id: { workspaceId, id: accountId } },
+        data: { connectionStatus: status },
+      });
+      await createConnectionEvent(transaction, workspaceId, account.id, status);
+      return toStoredConnection(account);
+    });
+  }
+
   private async updateState(
     workspaceId: string,
     status: 'qr_generated' | 'connected',
@@ -43,19 +64,30 @@ export class PrismaWhatsappConnectionRepository implements WhatsappConnectionRep
           ...(status === 'connected' ? { lastConnectedAt: new Date() } : {}),
         },
       });
-      await transaction.outboxEvent.create({
-        data: {
-          workspaceId,
-          aggregateType: 'whatsapp_account',
-          aggregateId: account.id,
-          eventType: 'whatsapp.connection.changed',
-          payload: { workspaceId, accountId: account.id, status },
-        },
-      });
+      await createConnectionEvent(transaction, workspaceId, account.id, status);
       return toStoredConnection(account);
     });
   }
 }
+
+async function createConnectionEvent(
+  transaction: Prisma.TransactionClient,
+  workspaceId: string,
+  accountId: string,
+  status: WhatsappConnectionStatus,
+): Promise<void> {
+  await transaction.outboxEvent.create({
+    data: {
+      workspaceId,
+      aggregateType: 'whatsapp_account',
+      aggregateId: accountId,
+      eventType: 'whatsapp.connection.changed',
+      payload: { workspaceId, accountId, status },
+    },
+  });
+}
+
+export class WhatsappAccountBindingNotFoundError extends Error {}
 
 function toStoredConnection(account: {
   id: string;

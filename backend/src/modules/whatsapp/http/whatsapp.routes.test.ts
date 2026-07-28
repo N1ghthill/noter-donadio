@@ -49,6 +49,16 @@ class FakeConnectionRepository implements WhatsappConnectionRepository {
     this.stored = connection('connected', phoneNumber);
     return this.stored;
   }
+
+  public async markStatus(
+    workspaceId: string,
+    _accountId: string,
+    status: Extract<StoredWhatsappConnection['status'], 'disconnected' | 'qr_generated' | 'connecting' | 'timeout'>,
+  ) {
+    this.workspaceId = workspaceId;
+    this.stored = connection(status, this.stored?.phoneNumber ?? null);
+    return this.stored;
+  }
 }
 
 test('setup exige sessão e deriva workspace sem aceitar identificador do cliente', async (context) => {

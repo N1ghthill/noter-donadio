@@ -25,7 +25,7 @@ x-backend: &backend
     MEDIA_ORPHAN_GRACE_HOURS: ${MEDIA_ORPHAN_GRACE_HOURS:-24}
     MEDIA_MAX_BYTES: ${MEDIA_MAX_BYTES:-10485760}
     APP_ORIGINS: ${APP_ORIGINS:?defina APP_ORIGINS}
-    WHATSAPP_ADAPTER: disabled
+    WHATSAPP_ADAPTER: ${WHATSAPP_ADAPTER:-disabled}
     MEDIA_DOWNLOAD_ADAPTER: disabled
     TRANSCRIPTION_ADAPTER: disabled
     AI_ADAPTER: disabled
@@ -92,6 +92,17 @@ services:
   outbox:
     <<: *backend
     command: ["node", "dist/outbox.main.js"]
+
+  baileys:
+    <<: *backend
+    profiles: ["baileys"]
+    command: ["node", "dist/baileys.main.js"]
+    environment:
+      <<: *backend-environment
+      BAILEYS_WORKSPACE_ID: ${BAILEYS_WORKSPACE_ID:-}
+      BAILEYS_ACCOUNT_ID: ${BAILEYS_ACCOUNT_ID:-}
+      BAILEYS_ENCRYPTION_KEY: ${BAILEYS_ENCRYPTION_KEY:-}
+      BAILEYS_ENCRYPTION_KEY_VERSION: ${BAILEYS_ENCRYPTION_KEY_VERSION:-1}
 
   realtime:
     <<: *backend

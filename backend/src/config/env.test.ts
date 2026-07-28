@@ -46,11 +46,11 @@ test('limita a janela de segurança para reconciliação de mídia órfã', () =
   }).MEDIA_ORPHAN_GRACE_HOURS, 48);
 });
 
-test('recusa adapters externos ainda não implementados', () => {
-  assert.throws(() => readEnvironment({
+test('habilita somente adapters implementados', () => {
+  assert.equal(readEnvironment({
     ...required,
     WHATSAPP_ADAPTER: 'baileys',
-  }));
+  }).WHATSAPP_ADAPTER, 'baileys');
   assert.throws(() => readEnvironment({
     ...required,
     MEDIA_DOWNLOAD_ADAPTER: 'baileys',

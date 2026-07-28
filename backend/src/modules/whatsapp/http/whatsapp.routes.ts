@@ -26,7 +26,14 @@ export function registerWhatsappRoutes(
     const workspaceId = await authenticatedWorkspace(request, options.sessionAuthenticator);
     if (!workspaceId) return reply.code(401).send({ error: 'unauthorized' });
     reply.header('cache-control', 'no-store');
-    return options.service.startSetup(workspaceId);
+    try {
+      return await options.service.startSetup(workspaceId);
+    } catch (error: unknown) {
+      if (error instanceof QrCodeUnavailableError) {
+        return reply.code(503).send({ error: 'qr_unavailable' });
+      }
+      throw error;
+    }
   });
 
   app.post('/api/whatsapp/demo/connect', async (request, reply) => {

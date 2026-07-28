@@ -439,3 +439,24 @@ reavaliada antes de sair do RC.
 Esta decisão não cria socket, não gera QR real, não conecta sessão e não envia
 mensagens. A ativação de rede continua dependendo de processo dedicado,
 observabilidade sanitizada, teste controlado e autorização explícita.
+
+## ADR-053 — Socket Baileys opera em processo dedicado com controle efêmero no Redis
+
+Após autorização explícita para a fase na VPS, o socket passa a executar em um
+processo dedicado. PostgreSQL continua sendo a fonte de verdade para conta,
+estado de conexão, auth state e mensagens. Redis guarda somente QR com TTL de
+60 segundos e o comando de reinício da sessão; nenhum conteúdo de conversa ou
+credencial trafega por ele.
+
+A biblioteca usa logger silencioso, não sincroniza histórico completo e não
+marca o usuário online ao conectar. Apenas `messages.upsert` do tipo `notify`
+entra no MVP. Texto de conversas diretas é normalizado, incluindo `fromMe`, e
+segue para a transação idempotente já existente. Grupos, status, newsletters,
+protocolo, mídia ainda sem contrato durável e LID sem identidade telefônica
+resolvida são ignorados. Não existe endpoint de envio.
+
+Falhas transitórias reiniciam o socket; logout, sessão inválida, substituição da
+conexão e proibição são terminais. O QR é retornado somente por rota
+autenticada com `cache-control: no-store`. Áudio real permanece como próximo
+bloco porque seus dados de download precisam ser criptografados e persistidos
+antes da publicação do job.

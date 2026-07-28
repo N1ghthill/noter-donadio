@@ -2,11 +2,15 @@
 set -euo pipefail
 
 reboot_if_required=0
+enable_baileys=0
 
 for argument in "$@"; do
   case "${argument}" in
     --reboot-if-required)
       reboot_if_required=1
+      ;;
+    --enable-baileys)
+      enable_baileys=1
       ;;
     *)
       printf 'Argumento desconhecido: %s\n' "${argument}" >&2
@@ -32,6 +36,51 @@ health_url="${HEALTH_URL:-${PUBLIC_ORIGIN:-http://127.0.0.1/}}"
 compose_arguments=(-f "${compose_file}")
 if test "${ENABLE_OBSERVABILITY:-0}" = "1"; then
   compose_arguments+=(-f "${OBSERVABILITY_COMPOSE_FILE:-compose.observability.yaml}")
+fi
+
+set_env_value() {
+  local key="$1"
+  local value="$2"
+  local temporary
+  temporary="$(mktemp "${project_directory}/.env.tmp.XXXXXX")"
+  awk -v key="${key}" -v value="${value}" '
+    BEGIN { replaced = 0 }
+    index($0, key "=") == 1 {
+      if (!replaced) print key "=" value
+      replaced = 1
+      next
+    }
+    { print }
+    END { if (!replaced) print key "=" value }
+  ' .env > "${temporary}"
+  chmod 600 "${temporary}"
+  mv "${temporary}" .env
+}
+
+if test "${enable_baileys}" = "1"; then
+  binding="$(
+    docker compose "${compose_arguments[@]}" exec -T postgres \
+      psql -U "${DB_USER}" -d "${DB_NAME:-noter_donadio}" -At -F '|' \
+      -c "SELECT account.workspace_id, account.id FROM whatsapp_accounts account WHERE account.identifier = 'primary' ORDER BY account.created_at LIMIT 2"
+  )"
+  binding_count="$(printf '%s\n' "${binding}" | sed '/^$/d' | wc -l)"
+  if test "${binding_count}" -ne 1; then
+    printf '%s\n' "A ativação Baileys exige exatamente uma conta primária existente; encontradas ${binding_count}."
+    exit 1
+  fi
+  baileys_workspace_id="${binding%%|*}"
+  baileys_account_id="${binding##*|}"
+  baileys_encryption_key="${BAILEYS_ENCRYPTION_KEY:-$(openssl rand -base64 32)}"
+  set_env_value WHATSAPP_ADAPTER baileys
+  set_env_value COMPOSE_PROFILES baileys
+  set_env_value BAILEYS_WORKSPACE_ID "${baileys_workspace_id}"
+  set_env_value BAILEYS_ACCOUNT_ID "${baileys_account_id}"
+  set_env_value BAILEYS_ENCRYPTION_KEY "${baileys_encryption_key}"
+  set_env_value BAILEYS_ENCRYPTION_KEY_VERSION "${BAILEYS_ENCRYPTION_KEY_VERSION:-1}"
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
 fi
 
 git rev-parse --is-inside-work-tree >/dev/null

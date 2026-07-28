@@ -7,9 +7,9 @@ Web Multi-Device. A API oficial da Meta não faz parte da arquitetura vigente:
 webhook, adapters, configuração e chamadas externas correspondentes foram
 removidos do runtime.
 
-O Baileys 7 está fixado como dependência de desenvolvimento do conector, mas o
-socket ainda não está habilitado. A VPS continua usando o adapter falso e
-nenhuma sessão real foi conectada.
+O Baileys 7 está fixado e o processo dedicado implementa socket, QR efêmero,
+reconexão, auth state criptografado e ingestão de novas mensagens de texto.
+Nenhuma mensagem é enviada pelo sistema.
 
 ## Jornada de demonstração
 
@@ -28,7 +28,7 @@ WHATSAPP_ADAPTER=fake
 
 Esse QR não autentica WhatsApp e serve somente à demonstração.
 
-## Jornada real planejada
+## Jornada real
 
 O processo dedicado do Baileys será vinculado a uma conta interna e:
 
@@ -38,12 +38,13 @@ O processo dedicado do Baileys será vinculado a uma conta interna e:
 4. normalizará eventos `messages.upsert`, incluindo `fromMe`;
 5. descartará grupos, status, newsletters e protocolo antes da ingestão;
 6. persistirá texto recebido ou enviado antes de qualquer processamento;
-7. tratará áudio por referência durável e download pós-commit;
+7. tratará áudio por referência durável e download pós-commit em uma entrega
+   posterior;
 8. reconectará com backoff, sem recriar sessão após logout explícito.
 
-A fronteira pura para texto já diferencia `inbound` e `outbound`, preserva o ID
-externo e não aceita workspace ou conta vindos do evento. O processo de socket,
-o auth state e o download real ainda serão implementados.
+A fronteira pura para texto diferencia `inbound` e `outbound`, preserva o ID
+externo e não aceita workspace ou conta vindos do evento. Somente eventos
+`notify` são ingeridos, evitando importar histórico completo.
 
 ## Segurança obrigatória
 
@@ -62,8 +63,8 @@ o auth state e o download real ainda serão implementados.
 As tabelas de autenticação criptografada já existem. O primeiro adapter de auth
 state persiste credenciais e Signal keys de forma atômica, com isolamento
 explícito por workspace e AES-256-GCM vinculado à conta por AAD. Ele suporta
-leitura de versões anteriores da chave para rotação, mas ainda não está ligado
-a um socket.
+leitura de versões anteriores da chave para rotação e está ligado somente ao
+processo dedicado.
 
 Colunas históricas criadas
 para o experimento removido com outro provedor permanecem sem uso porque
@@ -73,10 +74,7 @@ destrutiva autorizada separadamente.
 ## Portões antes de conectar
 
 - concluir a auditoria da versão 7 fixada e acompanhar a saída do estado RC;
-- ligar o auth state PostgreSQL ao processo dedicado e testar concorrência do
-  socket;
-- implementar processo dedicado e health state;
 - fechar o contrato durável de mídia do Baileys;
 - validar termos de uso e aceitar formalmente o risco de bloqueio;
 - definir número controlado para homologação;
-- obter autorização explícita antes de conectar ou desconectar a sessão real.
+- obter autorização explícita antes de desconectar a sessão real.

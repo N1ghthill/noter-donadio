@@ -13,7 +13,7 @@ export class FakeWhatsappGateway implements WhatsappGateway {
   public readonly canSimulate = true;
   private readonly qrCodes = new Map<string, EphemeralQrCode>();
 
-  public async createQrCode(workspaceId: string): Promise<EphemeralQrCode> {
+  public async createQrCode(workspaceId: string, _accountId: string): Promise<EphemeralQrCode> {
     const qrCode = {
       payload: `noter-demo:${randomBytes(24).toString('base64url')}`,
       expiresAt: new Date(Date.now() + QR_LIFETIME_MS).toISOString(),
@@ -22,7 +22,7 @@ export class FakeWhatsappGateway implements WhatsappGateway {
     return qrCode;
   }
 
-  public async currentQrCode(workspaceId: string): Promise<EphemeralQrCode | null> {
+  public async currentQrCode(workspaceId: string, _accountId: string): Promise<EphemeralQrCode | null> {
     const qrCode = this.qrCodes.get(workspaceId);
     if (!qrCode || Date.parse(qrCode.expiresAt) <= Date.now()) {
       this.qrCodes.delete(workspaceId);
@@ -32,7 +32,7 @@ export class FakeWhatsappGateway implements WhatsappGateway {
   }
 
   public async simulateScan(workspaceId: string): Promise<{ phoneNumber: string }> {
-    if (!await this.currentQrCode(workspaceId)) throw new QrCodeUnavailableError();
+    if (!await this.currentQrCode(workspaceId, 'demo')) throw new QrCodeUnavailableError();
     this.qrCodes.delete(workspaceId);
     return { phoneNumber: '5571000000001' };
   }

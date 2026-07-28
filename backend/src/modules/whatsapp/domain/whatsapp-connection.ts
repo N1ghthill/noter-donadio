@@ -26,13 +26,18 @@ export interface WhatsappConnectionRepository {
   find(workspaceId: string): Promise<StoredWhatsappConnection | null>;
   markSetupStarted(workspaceId: string): Promise<StoredWhatsappConnection>;
   markConnected(workspaceId: string, phoneNumber: string): Promise<StoredWhatsappConnection>;
+  markStatus(
+    workspaceId: string,
+    accountId: string,
+    status: Extract<WhatsappConnectionStatus, 'disconnected' | 'qr_generated' | 'connecting' | 'timeout'>,
+  ): Promise<StoredWhatsappConnection>;
 }
 
 export interface WhatsappGateway {
   readonly adapter: 'fake' | 'baileys';
   readonly canSimulate: boolean;
-  createQrCode(workspaceId: string): Promise<EphemeralQrCode>;
-  currentQrCode(workspaceId: string): Promise<EphemeralQrCode | null>;
+  createQrCode(workspaceId: string, accountId: string): Promise<EphemeralQrCode>;
+  currentQrCode(workspaceId: string, accountId: string): Promise<EphemeralQrCode | null>;
   simulateScan?(workspaceId: string): Promise<{ phoneNumber: string }>;
 }
 
@@ -52,8 +57,8 @@ export class WhatsappConnectionService {
   }
 
   public async startSetup(workspaceId: string): Promise<WhatsappConnectionView> {
-    const qrCode = await this.gateway.createQrCode(workspaceId);
     const stored = await this.repository.markSetupStarted(workspaceId);
+    const qrCode = await this.gateway.createQrCode(workspaceId, stored.accountId);
     return { ...toStoredView(stored), qrCode, ...this.gatewayCapabilities() };
   }
 
@@ -69,7 +74,7 @@ export class WhatsappConnectionService {
     stored: StoredWhatsappConnection,
   ): Promise<WhatsappConnectionView> {
     const qrCode = stored.status === 'qr_generated'
-      ? await this.gateway.currentQrCode(workspaceId)
+      ? await this.gateway.currentQrCode(workspaceId, stored.accountId)
       : null;
     return { ...toStoredView(stored), qrCode, ...this.gatewayCapabilities() };
   }

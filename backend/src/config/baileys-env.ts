@@ -4,6 +4,7 @@ import { parseBase64EncryptionKey } from '../modules/whatsapp/infrastructure/aut
 
 const baileysEnvironmentSchema = z.object({
   DATABASE_URL: z.url(),
+  REDIS_URL: z.url(),
   BAILEYS_WORKSPACE_ID: z.uuid(),
   BAILEYS_ACCOUNT_ID: z.uuid(),
   BAILEYS_ENCRYPTION_KEY: z.string().transform((value, context) => {

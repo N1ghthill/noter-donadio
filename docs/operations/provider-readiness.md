@@ -2,9 +2,9 @@
 
 ## Estado
 
-Nenhum provedor externo está configurado ou autorizado a receber conversas. A
-VPS usa apenas adapters falsos. O runtime e toda configuração da API oficial da
-Meta foram removidos por decisão do produto.
+O Baileys foi autorizado para a fase de implementação na VPS. O runtime e toda
+configuração da API oficial da Meta foram removidos por decisão do produto.
+Transcrição e análise continuam usando adapters falsos.
 
 ## WhatsApp via Baileys
 
@@ -20,20 +20,17 @@ Estado implementado:
   isolamento explícito por workspace e suporte a rotação;
 - ingestão idempotente e isolada por workspace;
 - fronteira pura para texto Baileys recebido e enviado;
+- processo dedicado, reconexão, QR efêmero autenticado e logger silencioso;
+- adaptação somente de `messages.upsert` novos, sem sincronização de histórico;
 - pipeline genérico de mídia, filas e retenção;
 - filtros de grupos, status, newsletters e protocolo no domínio.
 
-Antes de instalar e habilitar:
+Antes de promover para uso amplo:
 
 1. concluir a auditoria da release 7 fixada e acompanhar sua estabilização;
-2. ligar o `AuthenticationState` implementado ao socket e validar concorrência;
-3. criar processo dedicado para socket, reconexão e health state;
-4. manter o logger da biblioteca silencioso e redigir logs da aplicação;
-5. implementar QR efêmero autenticado e `Cache-Control: no-store`;
-6. adaptar `messages.upsert` sem sincronizar histórico completo;
-7. implementar referência e download duráveis para áudio;
-8. testar apenas com número controlado e dados sintéticos;
-9. documentar aceite do risco de bloqueio e dos termos de uso.
+2. implementar referência e download duráveis para áudio;
+3. testar apenas com número controlado e dados sintéticos;
+4. documentar aceite do risco de bloqueio e dos termos de uso.
 
 `useMultiFileAuthState` não será usado na VPS. A própria documentação do
 Baileys recomenda auth state próprio para produção; o diretório de autenticação

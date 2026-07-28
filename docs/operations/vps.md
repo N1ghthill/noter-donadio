@@ -60,6 +60,17 @@ sudo /opt/noter-donadio/scripts/deploy-vps.sh
 sudo /opt/noter-donadio/scripts/status-vps.sh
 ```
 
+Na primeira ativação autorizada do conector Baileys, use:
+
+```bash
+sudo /opt/noter-donadio/scripts/deploy-vps.sh --enable-baileys
+```
+
+O script exige exatamente uma conta interna `primary`, resolve os UUIDs no
+PostgreSQL e grava no `.env` da VPS uma chave AES-256 aleatória sem imprimi-la.
+Execuções posteriores preservam a chave existente e mantêm o profile
+`baileys`. O comando não lê o QR nem envia mensagens.
+
 Quando o sistema operacional indicar que um novo kernel exige reinicialização,
 execute o deploy com reinicialização condicionada ao health check:
 

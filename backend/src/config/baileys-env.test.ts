@@ -5,6 +5,7 @@ import { readBaileysEnvironment } from './baileys-env.js';
 
 const required = {
   DATABASE_URL: 'postgresql://noter:noter@127.0.0.1:5432/noter',
+  REDIS_URL: 'redis://127.0.0.1:6379',
   BAILEYS_WORKSPACE_ID: '0e723f84-ec81-441e-b816-f3f179f25fe2',
   BAILEYS_ACCOUNT_ID: '8ab0841d-234e-477c-9f3e-4ac9f3d9f7eb',
   BAILEYS_ENCRYPTION_KEY: Buffer.alloc(32, 3).toString('base64'),
