@@ -1,6 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+reboot_if_required=0
+
+for argument in "$@"; do
+  case "${argument}" in
+    --reboot-if-required)
+      reboot_if_required=1
+      ;;
+    *)
+      printf 'Argumento desconhecido: %s\n' "${argument}" >&2
+      exit 2
+      ;;
+  esac
+done
+
 project_directory="${PROJECT_DIRECTORY:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 compose_file="${COMPOSE_FILE:-compose.vps-demo.yaml}"
 
@@ -48,3 +62,13 @@ git rev-parse HEAD > .deployed-commit
 chmod 600 .deployed-commit
 
 printf '%s\n' "Deploy concluído no commit $(git rev-parse --short=12 HEAD)."
+
+if test "${reboot_if_required}" = "1"; then
+  if test -f /var/run/reboot-required; then
+    printf '%s\n' "Reinicialização requerida pelo sistema; reiniciando a VPS."
+    sync
+    systemctl reboot
+  else
+    printf '%s\n' "O sistema não requer reinicialização."
+  fi
+fi

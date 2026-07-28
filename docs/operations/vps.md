@@ -60,6 +60,15 @@ sudo /opt/noter-donadio/scripts/deploy-vps.sh
 sudo /opt/noter-donadio/scripts/status-vps.sh
 ```
 
+Quando o sistema operacional indicar que um novo kernel exige reinicialização,
+execute o deploy com reinicialização condicionada ao health check:
+
+```bash
+sudo /opt/noter-donadio/scripts/deploy-vps.sh --reboot-if-required
+```
+
+A opção não reinicia a VPS quando `/var/run/reboot-required` estiver ausente.
+
 O `.env` remoto permanece fora do Git, com permissão `600`. Segredos não devem aparecer em comandos versionados, tickets ou logs. Para este perfil, mantenha:
 
 ```dotenv
