@@ -66,6 +66,7 @@ export class PrismaWorkspaceExportRepository implements WorkspaceExportRepositor
         } }),
         transaction.mediaAsset.findMany({ where, orderBy: { createdAt: 'asc' }, select: {
           id: true, messageId: true, fileSizeBytes: true, durationSeconds: true, mimeType: true,
+          downloadState: true, downloadFailureCode: true,
           transcriptionState: true, transcriptionText: true, transcriptionConfidence: true,
           transcriptionLanguage: true, transcriptionModel: true, failureCode: true,
           retentionUntil: true, removedAt: true, transcribedAt: true, createdAt: true, updatedAt: true,

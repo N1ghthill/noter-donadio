@@ -10,6 +10,12 @@ test('áudio mantém retries suficientes para recuperar um lease abandonado', ()
   assert.deepEqual(options.backoff, { type: 'fixed', delay: 30_000 });
 });
 
+test('download de mídia usa política longa sem transportar conteúdo', () => {
+  const options = eventJobOptions('message.audio.download_requested', 'event-download');
+  assert.equal(options.attempts, 12);
+  assert.deepEqual(options.backoff, { type: 'fixed', delay: 30_000 });
+});
+
 test('análise de texto e de áudio transcrito usa a mesma janela de recuperação', () => {
   for (const eventType of ['message.text.ingested', 'message.audio.ready_for_analysis']) {
     const options = eventJobOptions(eventType, 'event-analysis');

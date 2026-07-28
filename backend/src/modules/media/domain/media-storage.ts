@@ -6,6 +6,11 @@ export interface StoredMediaDescriptor {
   readonly retentionUntil: Date;
 }
 
+export interface PendingMediaReference {
+  readonly externalMediaId: string;
+  readonly mimeType?: string | undefined;
+}
+
 export interface MediaStorage {
   write(storageKey: string, bytes: Uint8Array): Promise<void>;
   read(storageKey: string): Promise<Buffer>;

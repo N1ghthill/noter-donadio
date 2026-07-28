@@ -30,9 +30,11 @@ test('coleta contagens persistidas e filas isoladas sem dados de negócio', asyn
   const snapshot = await collector.collect();
 
   assert.equal(snapshot.queues['ai-processing'].waiting, 1);
+  assert.equal(snapshot.queues['media-download'].waiting, 0);
   assert.equal(snapshot.queues['audio-transcription'].waiting, 0);
   assert.equal(Number.isInteger(snapshot.mediaDeletionTasks), true);
   assert.equal(Object.keys(snapshot.outbox).length, 4);
+  assert.equal(Object.keys(snapshot.mediaDownloads).length, 4);
   assert.equal(Object.keys(snapshot.transcriptions).length, 4);
   assert.equal(Object.keys(snapshot.analyses).length, 4);
 });

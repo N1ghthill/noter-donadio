@@ -39,13 +39,14 @@ A fronteira implementada:
 - não preserva o payload original nem importa SDK da Meta.
 
 Não existem credenciais versionadas, conta real mapeada ou chamada externa.
-Áudio assinado retorna `503` antes de qualquer persistência enquanto não
-existirem referência durável e download privado pós-commit; isso força retry
-do provedor sem produzir transcrição falsa ou perder a mensagem original.
+Áudio assinado ainda retorna `503` antes de qualquer persistência. O pipeline
+durável de referência, download pós-commit e liberação posterior da transcrição
+já existe, mas somente possui adapter falso para testes; isso força retry do
+provedor sem produzir transcrição falsa.
 
 Antes da ativação ainda faltam credenciais injetadas externamente, cadastro da
-conta controlada, métricas específicas, persistência da referência de mídia,
-download privado pós-commit e homologação com payload sintético assinado.
+conta controlada, adapter autenticado de download da Meta, homologação da
+retenção e teste com payload sintético assinado.
 
 ## Transcrição
 

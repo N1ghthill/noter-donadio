@@ -10,7 +10,7 @@ export class FakeDemoAudioProvisioner implements DemoAudioProvisioner {
   ) {}
 
   public async provision(workspaceId: string, clientMessageId: string, now: Date) {
-    const bytes = silentWav();
+    const bytes = createSyntheticSilentWav();
     const storageKey = `${workspaceId}/${clientMessageId}.wav`;
     await this.storage.write(storageKey, bytes);
     return {
@@ -23,7 +23,7 @@ export class FakeDemoAudioProvisioner implements DemoAudioProvisioner {
   }
 }
 
-function silentWav(): Buffer {
+export function createSyntheticSilentWav(): Buffer {
   const dataLength = SAMPLE_RATE * DURATION_SECONDS * 2;
   const buffer = Buffer.alloc(44 + dataLength);
   buffer.write('RIFF', 0);

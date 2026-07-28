@@ -95,14 +95,17 @@ test('métricas operacionais exigem token e usam formato Prometheus sem cache', 
       async collect() {
         return {
           outbox: { pending: 1, processing: 0, published: 2, failed: 0 },
+          mediaDownloads: { pending: 0, processing: 0, completed: 1, failed: 0 },
           transcriptions: { pending: 0, processing: 0, completed: 1, failed: 0 },
           analyses: { pending: 0, processing: 0, completed: 1, failed: 0 },
           mediaDeletionTasks: 0,
           oldestPendingOutboxAgeSeconds: 5,
+          oldestPendingMediaDownloadAgeSeconds: 0,
           oldestPendingTranscriptionAgeSeconds: 0,
           oldestPendingAnalysisAgeSeconds: 0,
           queues: {
             'ai-processing': { waiting: 0, active: 0, delayed: 0, failed: 0, paused: 0 },
+            'media-download': { waiting: 0, active: 0, delayed: 0, failed: 0, paused: 0 },
             'audio-transcription': { waiting: 0, active: 0, delayed: 0, failed: 0, paused: 0 },
             'realtime-events': { waiting: 0, active: 0, delayed: 0, failed: 0, paused: 0 },
           },

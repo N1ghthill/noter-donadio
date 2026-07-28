@@ -5,7 +5,10 @@
 O MVP possui um worker BullMQ separado para transcrição, habilitado por `TRANSCRIPTION_ADAPTER=fake`. O adapter atual não lê os bytes armazenados nem chama serviços externos: ele retorna um texto explicitamente fictício para validar orquestração, retries, persistência e interface.
 
 ```text
-mensagem de áudio + mídia pending + outbox
+mensagem de áudio + referência de mídia pending + outbox
+  → fila media-download
+  → lease e download para armazenamento privado
+  → download completed + outbox
   → dispatcher
   → fila audio-transcription
   → validação estrita do job com IDs
@@ -17,9 +20,10 @@ mensagem de áudio + mídia pending + outbox
   → reconciliação REST
 ```
 
-Inicie o processo local depois da API, outbox e Redis:
+Inicie os processos locais depois da API, outbox e Redis:
 
 ```bash
+npm run start:media-download -w @noter/backend
 npm run start:transcription -w @noter/backend
 ```
 
@@ -38,4 +42,4 @@ Falhas persistem somente o código sanitizado `TRANSCRIPTION_PROCESSING_FAILED` 
 - somente uma transcrição concluída produz `message.audio.ready_for_analysis`, contendo IDs;
 - o formulário local de áudio ignora qualquer texto enviado pelo navegador;
 - o áudio de demonstração é um WAV local fictício; o armazenamento privado, a URL curta assinada, o player e a retenção estão descritos em [`media.md`](media.md);
-- um adapter real ainda exigirá download autenticado, validação de formato/duração e contrato com o provedor.
+- o adapter real de download ainda exigirá autenticação Meta, limites confirmados e contrato com o provedor.

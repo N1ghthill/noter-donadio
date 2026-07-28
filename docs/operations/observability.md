@@ -109,7 +109,7 @@ Antes de qualquer intervenção, registre horário, alerta e resultado. Use some
 4. Determine se houve publicação repetida; consumidores devem manter idempotência.
 5. Não apague nem altere eventos diretamente. Retry ou reparo manual exige causa identificada, registro da ação e verificação do efeito no PostgreSQL.
 
-### Transcrição ou análise atrasada
+### Download, transcrição ou análise atrasada
 
 1. Confirme se o adapter e o worker esperados estão habilitados no ambiente em questão. Na composição local eles permanecem desabilitados.
 2. Verifique Redis, fila correspondente e idade do lease persistido.

@@ -3,7 +3,10 @@ import { createHash } from 'node:crypto';
 import type { MessageDirection, MessageType } from '@noter/contracts';
 
 import { normalizePhoneNumber } from '../../../shared/domain/phone.js';
-import type { StoredMediaDescriptor } from '../../media/domain/media-storage.js';
+import type {
+  PendingMediaReference,
+  StoredMediaDescriptor,
+} from '../../media/domain/media-storage.js';
 
 export type IngestibleMessageType = Extract<MessageType, 'text' | 'audio'>;
 
@@ -20,6 +23,7 @@ export interface IngestMessageCommand {
   readonly occurredAt: Date;
   readonly metadata?: Readonly<Record<string, unknown>> | undefined;
   readonly media?: StoredMediaDescriptor | undefined;
+  readonly pendingMedia?: PendingMediaReference | undefined;
 }
 
 export interface PersistMessageCommand extends IngestMessageCommand {
@@ -44,6 +48,12 @@ export class MessageIngestionService {
     if (!isDirectChatJid(command.remoteJid)) {
       throw new UnsupportedChatError();
     }
+    if (
+      (command.messageType === 'text' && (command.media || command.pendingMedia))
+      || (command.media && command.pendingMedia)
+    ) {
+      throw new InvalidMediaSourceError();
+    }
 
     const phoneNumber = normalizePhoneNumber(command.phoneNumber);
 
@@ -59,6 +69,13 @@ export class UnsupportedChatError extends Error {
   public constructor() {
     super('Tipo de conversa não suportado pelo MVP');
     this.name = 'UnsupportedChatError';
+  }
+}
+
+export class InvalidMediaSourceError extends Error {
+  public constructor() {
+    super('Origem de mídia inválida');
+    this.name = 'InvalidMediaSourceError';
   }
 }
 

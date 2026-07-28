@@ -97,3 +97,50 @@ test('recusa áudio antes de resolver conta ou publicar processamento', async ()
   );
   assert.equal(accountCalls, 0);
 });
+
+test('modo de áudio preparado encaminha somente referência durável', async () => {
+  const commands: unknown[] = [];
+  const service = new MetaCloudIngestionService(
+    {
+      async resolve() {
+        return { workspaceId: 'workspace-synthetic', whatsappAccountId: 'account-synthetic' };
+      },
+    },
+    {
+      async ingest(command) {
+        commands.push(command);
+        return { duplicate: false };
+      },
+    },
+    true,
+  );
+
+  await service.execute([{
+    ...textMessage,
+    messageType: 'audio',
+    content: undefined,
+    providerMediaId: 'media-synthetic',
+    mediaMimeType: 'audio/ogg',
+  }]);
+
+  assert.deepEqual(commands, [{
+    workspaceId: 'workspace-synthetic',
+    whatsappAccountId: 'account-synthetic',
+    externalMessageId: 'wamid.synthetic',
+    remoteJid: '5571000000101@s.whatsapp.net',
+    phoneNumber: '5571000000101',
+    displayName: 'Contato Fictício',
+    direction: 'inbound',
+    messageType: 'audio',
+    occurredAt: new Date('2026-07-28T05:00:00.000Z'),
+    metadata: {
+      source: 'meta_cloud_api',
+      businessAccountId: 'waba-synthetic',
+      phoneNumberId: 'phone-synthetic',
+    },
+    pendingMedia: {
+      externalMediaId: 'media-synthetic',
+      mimeType: 'audio/ogg',
+    },
+  }]);
+});

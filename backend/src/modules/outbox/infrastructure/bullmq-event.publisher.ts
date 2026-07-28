@@ -12,6 +12,7 @@ export class BullMqEventPublisher implements EventPublisher {
   private readonly connection: Redis;
   private readonly textQueue: Queue;
   private readonly audioQueue: Queue;
+  private readonly mediaDownloadQueue: Queue;
   private readonly realtimeQueue: Queue;
 
   public constructor(redisUrl: string, logger?: ErrorLogger, prefix?: string) {
@@ -25,6 +26,7 @@ export class BullMqEventPublisher implements EventPublisher {
     const queueOptions = { connection: this.connection, ...(prefix ? { prefix } : {}) };
     this.textQueue = new Queue('ai-processing', queueOptions);
     this.audioQueue = new Queue('audio-transcription', queueOptions);
+    this.mediaDownloadQueue = new Queue('media-download', queueOptions);
     this.realtimeQueue = new Queue('realtime-events', queueOptions);
   }
 
@@ -37,12 +39,14 @@ export class BullMqEventPublisher implements EventPublisher {
     await Promise.all([
       this.textQueue.close(),
       this.audioQueue.close(),
+      this.mediaDownloadQueue.close(),
       this.realtimeQueue.close(),
     ]);
     await this.connection.quit();
   }
 
   private queueFor(eventType: string): Queue {
+    if (eventType === 'message.audio.download_requested') return this.mediaDownloadQueue;
     if (eventType === 'message.audio.ingested') return this.audioQueue;
     if (eventType === 'message.text.ingested' || eventType === 'message.audio.ready_for_analysis') {
       return this.textQueue;
@@ -52,7 +56,8 @@ export class BullMqEventPublisher implements EventPublisher {
 }
 
 export function eventJobOptions(eventType: string, eventId: string): JobsOptions {
-  const longRunning = eventType === 'message.audio.ingested'
+  const longRunning = eventType === 'message.audio.download_requested'
+    || eventType === 'message.audio.ingested'
     || eventType === 'message.text.ingested'
     || eventType === 'message.audio.ready_for_analysis';
   return {

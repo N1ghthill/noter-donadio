@@ -34,7 +34,9 @@ export class LocalMediaStorage implements MediaStorage {
   }
 
   private pathFor(storageKey: string): string {
-    if (!/^[a-f0-9-]{36}\/[a-f0-9-]{36}\.wav$/.test(storageKey)) throw new InvalidStorageKeyError();
+    if (!/^[a-f0-9-]{36}\/[a-f0-9-]{36}\.(?:wav|media)$/.test(storageKey)) {
+      throw new InvalidStorageKeyError();
+    }
     const path = resolve(this.root, storageKey);
     if (!path.startsWith(`${this.root}${sep}`)) throw new InvalidStorageKeyError();
     return path;

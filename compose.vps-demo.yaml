@@ -28,6 +28,7 @@ x-backend: &backend
     META_WEBHOOK_ENABLED: ${META_WEBHOOK_ENABLED:-0}
     META_WEBHOOK_VERIFY_TOKEN: ${META_WEBHOOK_VERIFY_TOKEN:-}
     META_APP_SECRET: ${META_APP_SECRET:-}
+    MEDIA_DOWNLOAD_ADAPTER: fake
     TRANSCRIPTION_ADAPTER: fake
     AI_ADAPTER: fake
   depends_on:
@@ -101,6 +102,10 @@ services:
   transcription:
     <<: *backend
     command: ["node", "dist/transcription.main.js"]
+
+  media-download:
+    <<: *backend
+    command: ["node", "dist/media-download.main.js"]
 
   analysis:
     <<: *backend

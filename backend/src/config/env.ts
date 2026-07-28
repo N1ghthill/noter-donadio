@@ -16,6 +16,7 @@ const environmentSchema = z.object({
   META_WEBHOOK_ENABLED: z.enum(['0', '1']).default('0').transform((value) => value === '1'),
   META_WEBHOOK_VERIFY_TOKEN: optionalSecret,
   META_APP_SECRET: optionalSecret,
+  MEDIA_DOWNLOAD_ADAPTER: z.enum(['disabled', 'fake']).default('disabled'),
   TRANSCRIPTION_ADAPTER: z.enum(['disabled', 'fake']).default('disabled'),
   AI_ADAPTER: z.enum(['disabled', 'fake']).default('disabled'),
   MEDIA_STORAGE_PATH: z.string().trim().min(1).default('storage/media'),

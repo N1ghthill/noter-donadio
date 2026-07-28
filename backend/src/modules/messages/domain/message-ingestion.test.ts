@@ -63,6 +63,32 @@ test('não cria hash artificial para mídia sem conteúdo textual', async () => 
   assert.equal(repository.received?.contentHash, undefined);
 });
 
+test('preserva somente a referência externa da mídia pendente', async () => {
+  const repository = new RecordingRepository();
+  const service = new MessageIngestionService(repository);
+
+  await service.execute({
+    workspaceId: '0e723f84-ec81-441e-b816-f3f179f25fe2',
+    whatsappAccountId: '8ab0841d-234e-477c-9f3e-4ac9f3d9f7eb',
+    externalMessageId: 'audio-reference-123',
+    remoteJid: '5571999999999@s.whatsapp.net',
+    phoneNumber: '5571999999999',
+    direction: 'inbound',
+    messageType: 'audio',
+    occurredAt: new Date('2026-07-20T12:00:00.000Z'),
+    pendingMedia: {
+      externalMediaId: 'media-synthetic',
+      mimeType: 'audio/ogg',
+    },
+  });
+
+  assert.deepEqual(repository.received?.pendingMedia, {
+    externalMediaId: 'media-synthetic',
+    mimeType: 'audio/ogg',
+  });
+  assert.equal(repository.received?.media, undefined);
+});
+
 test('normaliza telefone antes da persistência', async () => {
   const repository = new RecordingRepository();
   const service = new MessageIngestionService(repository);

@@ -19,6 +19,8 @@ export class PrismaAudioTranscriptionRepository implements AudioTranscriptionRep
         where: {
           workspaceId: input.workspaceId,
           messageId: input.messageId,
+          downloadState: 'completed',
+          storageKey: { not: null },
           OR: [
             { transcriptionState: { in: ['pending', 'failed'] } },
             {

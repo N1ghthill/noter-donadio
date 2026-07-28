@@ -62,7 +62,7 @@
       "gridPos": {"h": 8, "w": 16, "x": 0, "y": 14},
       "id": 6,
       "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"hideZeros": false, "mode": "multi", "sort": "desc"}},
-      "targets": [{"editorMode": "code", "expr": "noter_transcriptions", "legendFormat": "transcrição / {{state}}", "range": true, "refId": "A"}, {"editorMode": "code", "expr": "noter_analyses", "legendFormat": "análise / {{state}}", "range": true, "refId": "B"}],
+      "targets": [{"editorMode": "code", "expr": "noter_transcriptions", "legendFormat": "transcrição / {{state}}", "range": true, "refId": "A"}, {"editorMode": "code", "expr": "noter_analyses", "legendFormat": "análise / {{state}}", "range": true, "refId": "B"}, {"editorMode": "code", "expr": "noter_media_downloads", "legendFormat": "download / {{state}}", "range": true, "refId": "C"}],
       "title": "Processamento assistivo",
       "type": "timeseries"
     },

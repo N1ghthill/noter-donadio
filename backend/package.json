@@ -12,6 +12,7 @@
     "start:transcription": "node dist/transcription.main.js",
     "start:analysis": "node dist/analysis.main.js",
     "start:retention": "node dist/media-retention.main.js",
+    "start:media-download": "node dist/media-download.main.js",
     "bootstrap:admin": "node dist/bootstrap-admin.js",
     "seed:demo": "node dist/seed-demo.js",
     "pretypecheck": "npm run build -w @noter/contracts",

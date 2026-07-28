@@ -42,25 +42,25 @@ groups:
           runbook: docs/operations/observability.md#outbox-atrasado-ou-com-falha
 
       - alert: NoterProcessingBacklogWarning
-        expr: noter_oldest_pending_age_seconds{pipeline=~"transcription|analysis"} > 600
+        expr: noter_oldest_pending_age_seconds{pipeline=~"media_download|transcription|analysis"} > 600
         for: 5m
         labels:
           severity: warning
           component: processing
           alert_class: backlog
         annotations:
-          summary: Pipeline assistivo aguarda processamento há mais de 10 minutos
+          summary: Pipeline de mídia ou análise aguarda processamento há mais de 10 minutos
           runbook: docs/operations/observability.md#transcricao-ou-analise-atrasada
 
       - alert: NoterProcessingBacklogCritical
-        expr: noter_oldest_pending_age_seconds{pipeline=~"transcription|analysis"} > 1800
+        expr: noter_oldest_pending_age_seconds{pipeline=~"media_download|transcription|analysis"} > 1800
         for: 5m
         labels:
           severity: critical
           component: processing
           alert_class: backlog
         annotations:
-          summary: Pipeline assistivo aguarda processamento há mais de 30 minutos
+          summary: Pipeline de mídia ou análise aguarda processamento há mais de 30 minutos
           runbook: docs/operations/observability.md#transcricao-ou-analise-atrasada
 
       - alert: NoterMediaDeletionBacklog

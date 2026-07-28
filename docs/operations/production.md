@@ -45,7 +45,7 @@ O Nginx sobrescreve `X-Forwarded-For`, e o backend confia nesse salto somente em
 As séries disponíveis são:
 
 - `noter_outbox_events{status}`;
-- `noter_transcriptions{state}` e `noter_analyses{state}`;
+- `noter_media_downloads{state}`, `noter_transcriptions{state}` e `noter_analyses{state}`;
 - `noter_media_deletion_tasks`;
 - `noter_oldest_pending_age_seconds{pipeline}`;
 - `noter_queue_jobs{queue,state}`.
@@ -54,7 +54,7 @@ Ponto inicial para alertas, a ajustar depois de medir carga real:
 
 - scrape ou readiness indisponível por dois minutos: crítico;
 - outbox pendente mais antiga acima de 120 segundos: aviso; acima de 300: crítico;
-- transcrição ou análise pendente acima de 10 minutos: aviso; acima de 30: crítico;
+- download, transcrição ou análise pendente acima de 10 minutos: aviso; acima de 30: crítico;
 - qualquer outbox com estado `failed`: crítico até investigação;
 - tarefa de exclusão de mídia pendente por mais de 15 minutos: aviso;
 - jobs `failed` em qualquer fila: aviso e inspeção antes de retry ou remoção.

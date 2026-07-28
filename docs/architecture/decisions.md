@@ -298,3 +298,28 @@ item do lote. A condição de remoção é persistir a referência de mídia jun
 mensagem e implementar download privado posterior ao commit antes de publicar
 transcrição. Não existe endpoint de envio, credencial versionada, conta real
 ou chamada à Meta nesta decisão.
+
+## ADR-045 — Download de mídia antecede a transcrição e possui lease próprio
+
+Áudio externo cria a mensagem, um `MediaAsset` com referência externa e estado
+de download `pending`, além de `message.audio.download_requested`, na mesma
+transação. A outbox publica somente IDs internos na fila `media-download`. O
+worker resolve a referência no PostgreSQL, adquire lease por tentativa e grava
+a mídia privada antes de concluir o estado de download.
+
+Somente a conclusão condicional da tentativa cria `message.audio.ingested`,
+que libera a fila de transcrição. Assim, reentrega não baixa nem transcreve
+novamente e uma transcrição não pode reivindicar mídia sem download concluído
+e chave privada presente. Falhas usam código sanitizado e permanecem visíveis
+por estado, idade e métricas agregadas.
+
+O adapter falso gera apenas áudio sintético e serve à homologação do pipeline.
+O webhook Meta mantém áudio desligado até existir adapter autenticado, limites
+confirmados e revisão de retenção. Jobs não carregam referência externa,
+telefone, bytes ou conteúdo.
+
+Uma falha indeterminada entre a gravação privada e a confirmação no banco pode
+deixar um objeto órfão identificado pela tentativa, sem sobrescrever mídia já
+confirmada. Essa dívida é aceita somente com dados fictícios; antes do adapter
+real, uma rotina de reconciliação deve remover objetos sem referência após uma
+janela segura e preservar os objetos ligados a tentativas concluídas.

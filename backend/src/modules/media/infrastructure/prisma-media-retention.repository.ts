@@ -31,6 +31,7 @@ export class PrismaMediaRetentionRepository implements MediaRetentionRepository 
       },
       data: {
         storageKey: null,
+        externalMediaId: null,
         fileSizeBytes: null,
         removedAt,
       },

@@ -29,6 +29,7 @@ export class PrismaBullMqOperationalMetricsCollector implements OperationalMetri
     const options = { connection: this.connection, ...(prefix ? { prefix } : {}) };
     this.queues = {
       'ai-processing': new Queue('ai-processing', options),
+      'media-download': new Queue('media-download', options),
       'audio-transcription': new Queue('audio-transcription', options),
       'realtime-events': new Queue('realtime-events', options),
     };
@@ -36,9 +37,11 @@ export class PrismaBullMqOperationalMetricsCollector implements OperationalMetri
 
   public async collect(): Promise<OperationalMetricsSnapshot> {
     const now = new Date();
-    const [outboxGroups, transcriptionGroups, analysisGroups, mediaDeletionTasks,
-      oldestOutbox, oldestTranscription, oldestAnalysis, ...queueCounts] = await Promise.all([
+    const [outboxGroups, mediaDownloadGroups, transcriptionGroups, analysisGroups,
+      mediaDeletionTasks, oldestOutbox, oldestMediaDownload, oldestTranscription,
+      oldestAnalysis, ...queueCounts] = await Promise.all([
       this.prisma.outboxEvent.groupBy({ by: ['status'], _count: { _all: true } }),
+      this.prisma.mediaAsset.groupBy({ by: ['downloadState'], _count: { _all: true } }),
       this.prisma.mediaAsset.groupBy({ by: ['transcriptionState'], _count: { _all: true } }),
       this.prisma.aiAnalysis.groupBy({ by: ['state'], _count: { _all: true } }),
       this.prisma.mediaDeletionTask.count(),
@@ -47,7 +50,14 @@ export class PrismaBullMqOperationalMetricsCollector implements OperationalMetri
         orderBy: { createdAt: 'asc' }, select: { createdAt: true },
       }),
       this.prisma.mediaAsset.findFirst({
-        where: { transcriptionState: { in: ['pending', 'processing'] } },
+        where: { downloadState: { in: ['pending', 'processing'] } },
+        orderBy: { createdAt: 'asc' }, select: { createdAt: true },
+      }),
+      this.prisma.mediaAsset.findFirst({
+        where: {
+          downloadState: 'completed',
+          transcriptionState: { in: ['pending', 'processing'] },
+        },
         orderBy: { createdAt: 'asc' }, select: { createdAt: true },
       }),
       this.prisma.aiAnalysis.findFirst({
@@ -59,10 +69,12 @@ export class PrismaBullMqOperationalMetricsCollector implements OperationalMetri
 
     return {
       outbox: countGroups(OUTBOX_STATUSES, outboxGroups.map((group) => [group.status, group._count._all])),
+      mediaDownloads: countGroups(PROCESSING_STATES, mediaDownloadGroups.map((group) => [group.downloadState, group._count._all])),
       transcriptions: countGroups(PROCESSING_STATES, transcriptionGroups.map((group) => [group.transcriptionState, group._count._all])),
       analyses: countGroups(PROCESSING_STATES, analysisGroups.map((group) => [group.state, group._count._all])),
       mediaDeletionTasks,
       oldestPendingOutboxAgeSeconds: ageSeconds(oldestOutbox?.createdAt, now),
+      oldestPendingMediaDownloadAgeSeconds: ageSeconds(oldestMediaDownload?.createdAt, now),
       oldestPendingTranscriptionAgeSeconds: ageSeconds(oldestTranscription?.createdAt, now),
       oldestPendingAnalysisAgeSeconds: ageSeconds(oldestAnalysis?.createdAt, now),
       queues: Object.fromEntries(QUEUE_NAMES.map((name, index) => [

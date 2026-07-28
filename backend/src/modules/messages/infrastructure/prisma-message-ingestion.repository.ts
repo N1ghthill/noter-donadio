@@ -129,47 +129,63 @@ export class PrismaMessageIngestionRepository implements MessageIngestionReposit
         });
 
         if (command.messageType === 'audio') {
+          const hasStoredMedia = command.media !== undefined;
+          const hasPendingMedia = command.pendingMedia !== undefined;
           await transaction.mediaAsset.create({
             data: {
               workspaceId: command.workspaceId,
               messageId: message.id,
+              downloadState: hasStoredMedia ? 'completed' : hasPendingMedia ? 'pending' : 'failed',
+              externalMediaId: command.pendingMedia?.externalMediaId ?? null,
+              downloadFailureCode: hasStoredMedia || hasPendingMedia
+                ? null
+                : 'MEDIA_REFERENCE_MISSING',
               transcriptionState: 'pending',
               storageKey: command.media?.storageKey ?? null,
               fileSizeBytes: command.media ? BigInt(command.media.fileSizeBytes) : null,
               durationSeconds: command.media?.durationSeconds ?? null,
-              mimeType: command.media?.mimeType ?? null,
+              mimeType: command.media?.mimeType ?? command.pendingMedia?.mimeType ?? null,
               retentionUntil: command.media?.retentionUntil ?? null,
             },
           });
         }
 
+        const processingEventType = command.messageType === 'text'
+          ? 'message.text.ingested'
+          : command.media
+            ? 'message.audio.ingested'
+            : command.pendingMedia
+              ? 'message.audio.download_requested'
+              : null;
+        const outboxEvents: Prisma.OutboxEventCreateManyInput[] = [
+          {
+            workspaceId: command.workspaceId,
+            aggregateType: 'message',
+            aggregateId: message.id,
+            eventType: 'message.persisted',
+            payload: {
+              messageId: message.id,
+              workspaceId: command.workspaceId,
+              contactId: contact.id,
+              negotiationId: negotiation.id,
+            },
+          },
+        ];
+        if (processingEventType) {
+          outboxEvents.unshift({
+            workspaceId: command.workspaceId,
+            aggregateType: 'message',
+            aggregateId: message.id,
+            eventType: processingEventType,
+            payload: {
+              messageId: message.id,
+              workspaceId: command.workspaceId,
+              negotiationId: negotiation.id,
+            },
+          });
+        }
         await transaction.outboxEvent.createMany({
-          data: [
-            {
-              workspaceId: command.workspaceId,
-              aggregateType: 'message',
-              aggregateId: message.id,
-              eventType:
-                command.messageType === 'audio' ? 'message.audio.ingested' : 'message.text.ingested',
-              payload: {
-                messageId: message.id,
-                workspaceId: command.workspaceId,
-                negotiationId: negotiation.id,
-              },
-            },
-            {
-              workspaceId: command.workspaceId,
-              aggregateType: 'message',
-              aggregateId: message.id,
-              eventType: 'message.persisted',
-              payload: {
-                messageId: message.id,
-                workspaceId: command.workspaceId,
-                contactId: contact.id,
-                negotiationId: negotiation.id,
-              },
-            },
-          ],
+          data: outboxEvents,
         });
 
         return {
