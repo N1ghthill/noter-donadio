@@ -24,8 +24,8 @@
     "@fastify/cookie": "^11.1.2",
     "@fastify/rate-limit": "^11.1.0",
     "@noter/contracts": "*",
-    "@prisma/adapter-pg": "^7.9.0",
-    "@prisma/client": "^7.9.0",
+    "@prisma/adapter-pg": "^7.9.1",
+    "@prisma/client": "^7.9.1",
     "@socket.io/redis-adapter": "^8.3.0",
     "@socket.io/redis-emitter": "^5.1.0",
     "bullmq": "^5.80.9",
@@ -38,7 +38,7 @@
   },
   "devDependencies": {
     "@types/pg": "^8.15.0",
-    "prisma": "^7.9.0",
+    "prisma": "^7.9.1",
     "socket.io-client": "^4.8.3"
   }
 }

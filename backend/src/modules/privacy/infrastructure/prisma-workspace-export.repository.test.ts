@@ -41,7 +41,9 @@ test('exporta dados do workspace e exclui credenciais e chaves internas', async 
     },
   });
   await prisma.session.create({ data: {
-    workspaceId, userId, tokenHash: 'a'.repeat(64), expiresAt: new Date('2026-07-22T12:00:00.000Z'),
+    workspaceId, userId, tokenHash: 'a'.repeat(64),
+    createdAt: new Date('2026-07-21T04:00:00.000Z'),
+    expiresAt: new Date('2026-07-21T12:00:00.000Z'),
   } });
   await prisma.negotiation.create({ data: {
     id: negotiationId, workspaceId, contactId, title: 'Negociação fictícia', value: '1200.50',

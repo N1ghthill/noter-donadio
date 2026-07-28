@@ -29,6 +29,7 @@ import type { OperationalMetricsCollector } from './modules/health/domain/operat
 import { registerHealthRoutes } from './modules/health/http/health.routes.js';
 
 interface AppOptions {
+  readonly trustProxy?: boolean;
   readonly ingestionService?: MessageIngestionService;
   readonly internalIngestionToken?: string;
   readonly crmRepository?: CrmRepository;
@@ -49,6 +50,7 @@ interface AppOptions {
 
 export function buildApp(options: AppOptions = {}): FastifyInstance {
   const app = Fastify({
+    trustProxy: options.trustProxy ?? false,
     logger: {
       redact: [
         'req.headers.authorization',

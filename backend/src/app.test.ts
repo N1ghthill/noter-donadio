@@ -16,6 +16,21 @@ test('health check expõe somente o estado público mínimo', async (context) =>
   });
 });
 
+test('proxy confiável usa o endereço encaminhado para controles por origem', async (context) => {
+  const app = buildApp({ trustProxy: true });
+  context.after(async () => app.close());
+  app.get('/test/client-address', async (request) => ({ ip: request.ip }));
+
+  const response = await app.inject({
+    method: 'GET',
+    url: '/test/client-address',
+    headers: { 'x-forwarded-for': '203.0.113.10' },
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(response.json(), { ip: '203.0.113.10' });
+});
+
 test('readiness detalhado exige token interno e reporta dependências', async (context) => {
   const app = buildApp({
     internalIngestionToken: 'token-interno-de-teste',

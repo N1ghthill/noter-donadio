@@ -52,6 +52,7 @@ const whatsappService = environment.WHATSAPP_ADAPTER === 'fake'
     )
   : undefined;
 const app = buildApp({
+  trustProxy: environment.NODE_ENV === 'production',
   ingestionService,
   internalIngestionToken: environment.INTERNAL_INGESTION_TOKEN,
   crmRepository: new PrismaCrmRepository(prisma),
