@@ -27,9 +27,9 @@ test('conclusão do download libera transcrição pela outbox na mesma transaç�
       id: accountId,
       workspaceId,
       identifier: 'download-synthetic',
-      provider: 'meta_cloud_api',
-      providerBusinessAccountId: 'waba-download-synthetic',
-      providerPhoneNumberId: 'phone-download-synthetic',
+      provider: 'synthetic_provider',
+      providerBusinessAccountId: 'business-download-synthetic',
+      providerPhoneNumberId: 'account-download-synthetic',
       connectionStatus: 'connected',
     },
   });
@@ -83,8 +83,8 @@ test('conclusão do download libera transcrição pela outbox na mesma transaç�
   });
   assert.equal(claim.status, 'claimed');
   if (claim.status === 'claimed') {
-    assert.equal(claim.target.provider, 'meta_cloud_api');
-    assert.equal(claim.target.providerPhoneNumberId, 'phone-download-synthetic');
+    assert.equal(claim.target.provider, 'synthetic_provider');
+    assert.equal(claim.target.providerPhoneNumberId, 'account-download-synthetic');
   }
 
   assert.equal(await repository.complete({

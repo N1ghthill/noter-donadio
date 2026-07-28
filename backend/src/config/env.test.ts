@@ -28,12 +28,10 @@ test('recusa URL com caminho na configuração de Origin', () => {
   }));
 });
 
-test('webhook Meta permanece desligado por padrão', () => {
+test('adapters externos permanecem desligados por padrão', () => {
   const environment = readEnvironment(required);
-  assert.equal(environment.META_WEBHOOK_ENABLED, false);
-  assert.equal(environment.META_WEBHOOK_AUDIO_ENABLED, false);
-  assert.equal(environment.META_WEBHOOK_VERIFY_TOKEN, undefined);
-  assert.equal(environment.META_APP_SECRET, undefined);
+  assert.equal(environment.WHATSAPP_ADAPTER, 'disabled');
+  assert.equal(environment.MEDIA_DOWNLOAD_ADAPTER, 'disabled');
   assert.equal(environment.MEDIA_ORPHAN_GRACE_HOURS, 24);
 });
 
@@ -48,54 +46,13 @@ test('limita a janela de segurança para reconciliação de mídia órfã', () =
   }).MEDIA_ORPHAN_GRACE_HOURS, 48);
 });
 
-test('webhook Meta ativo exige ambos os segredos', () => {
+test('recusa adapters externos ainda não implementados', () => {
   assert.throws(() => readEnvironment({
     ...required,
-    META_WEBHOOK_ENABLED: '1',
-  }));
-
-  const environment = readEnvironment({
-    ...required,
-    META_WEBHOOK_ENABLED: '1',
-    META_WEBHOOK_VERIFY_TOKEN: 'token-de-verificacao-com-mais-de-trinta-e-dois-caracteres',
-    META_APP_SECRET: 'segredo-do-aplicativo-com-mais-de-trinta-e-dois-caracteres',
-  });
-  assert.equal(environment.META_WEBHOOK_ENABLED, true);
-});
-
-test('áudio Meta exige webhook ativo e permanece opt-in', () => {
-  assert.throws(() => readEnvironment({
-    ...required,
-    META_WEBHOOK_AUDIO_ENABLED: '1',
-  }));
-  const environment = readEnvironment({
-    ...required,
-    META_WEBHOOK_ENABLED: '1',
-    META_WEBHOOK_AUDIO_ENABLED: '1',
-    META_WEBHOOK_VERIFY_TOKEN: 'token-de-verificacao-com-mais-de-trinta-e-dois-caracteres',
-    META_APP_SECRET: 'segredo-do-aplicativo-com-mais-de-trinta-e-dois-caracteres',
-  });
-  assert.equal(environment.META_WEBHOOK_AUDIO_ENABLED, true);
-});
-
-test('download Meta exige token e versão explícita da Graph API', () => {
-  assert.throws(() => readEnvironment({
-    ...required,
-    MEDIA_DOWNLOAD_ADAPTER: 'meta',
+    WHATSAPP_ADAPTER: 'baileys',
   }));
   assert.throws(() => readEnvironment({
     ...required,
-    MEDIA_DOWNLOAD_ADAPTER: 'meta',
-    META_ACCESS_TOKEN: 'token-meta-sintetico-com-mais-de-trinta-e-dois-caracteres',
-    META_GRAPH_API_VERSION: 'latest',
+    MEDIA_DOWNLOAD_ADAPTER: 'baileys',
   }));
-
-  const environment = readEnvironment({
-    ...required,
-    MEDIA_DOWNLOAD_ADAPTER: 'meta',
-    META_ACCESS_TOKEN: 'token-meta-sintetico-com-mais-de-trinta-e-dois-caracteres',
-    META_GRAPH_API_VERSION: 'v99.0',
-  });
-  assert.equal(environment.MEDIA_DOWNLOAD_ADAPTER, 'meta');
-  assert.equal(environment.META_GRAPH_API_VERSION, 'v99.0');
 });

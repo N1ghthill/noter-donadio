@@ -14,9 +14,6 @@ import { attachRealtimeServer } from './modules/realtime/http/realtime.server.js
 import { WhatsappConnectionService } from './modules/whatsapp/domain/whatsapp-connection.js';
 import { FakeWhatsappGateway } from './modules/whatsapp/infrastructure/fake-whatsapp.gateway.js';
 import { PrismaWhatsappConnectionRepository } from './modules/whatsapp/infrastructure/prisma-whatsapp.repository.js';
-import { MetaCloudIngestionService } from './modules/whatsapp/domain/meta-cloud-ingestion.js';
-import { PrismaMetaCloudAccountMappingRepository } from './modules/whatsapp/infrastructure/prisma-meta-cloud-account.repository.js';
-import type { MetaCloudWebhookRouteOptions } from './modules/whatsapp/http/meta-cloud-webhook.routes.js';
 import { LocalMediaStorage } from './modules/media/infrastructure/local-media-storage.js';
 import { FakeDemoAudioProvisioner } from './modules/media/infrastructure/fake-demo-audio.provisioner.js';
 import { MediaAccessService } from './modules/media/domain/media-access.js';
@@ -54,24 +51,6 @@ const whatsappService = environment.WHATSAPP_ADAPTER === 'fake'
       new FakeWhatsappGateway(),
     )
   : undefined;
-let metaCloudWebhook: MetaCloudWebhookRouteOptions | undefined;
-if (environment.META_WEBHOOK_ENABLED) {
-  if (!environment.META_WEBHOOK_VERIFY_TOKEN || !environment.META_APP_SECRET) {
-    throw new Error('Configuração do webhook Meta incompleta');
-  }
-  const metaCloudIngestion = new MetaCloudIngestionService(
-    new PrismaMetaCloudAccountMappingRepository(prisma),
-    {
-      ingest: (command) => ingestionService.execute(command),
-    },
-    environment.META_WEBHOOK_AUDIO_ENABLED,
-  );
-  metaCloudWebhook = {
-    verifyToken: environment.META_WEBHOOK_VERIFY_TOKEN,
-    appSecret: environment.META_APP_SECRET,
-    ingestionService: metaCloudIngestion,
-  };
-}
 const app = buildApp({
   trustProxy: environment.NODE_ENV === 'production',
   ingestionService,
@@ -93,7 +72,6 @@ const app = buildApp({
   metricsCollector,
   ...(demoMessageService ? { demoMessageService } : {}),
   ...(whatsappService ? { whatsappService } : {}),
-  ...(metaCloudWebhook ? { metaCloudWebhook } : {}),
 });
 attachRealtimeServer(app, { sessionAuthenticator: authService, redisUrl: environment.REDIS_URL });
 

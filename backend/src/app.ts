@@ -2,8 +2,6 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import cookie from '@fastify/cookie';
 import rateLimit from '@fastify/rate-limit';
 
-import { NEGOTIATION_STAGES } from '@noter/contracts';
-
 import type { MessageIngestionService } from './modules/messages/domain/message-ingestion.js';
 import { registerMessageIngestionRoute } from './modules/messages/http/message-ingestion.route.js';
 import type { ConversationRepository } from './modules/messages/domain/conversation.repository.js';
@@ -16,10 +14,6 @@ import { registerAuthRoutes } from './modules/auth/http/auth.routes.js';
 import { registerOriginProtection } from './modules/auth/http/origin-protection.js';
 import type { WhatsappConnectionService } from './modules/whatsapp/domain/whatsapp-connection.js';
 import { registerWhatsappRoutes } from './modules/whatsapp/http/whatsapp.routes.js';
-import {
-  registerMetaCloudWebhookRoutes,
-  type MetaCloudWebhookRouteOptions,
-} from './modules/whatsapp/http/meta-cloud-webhook.routes.js';
 import type { MediaAccessService } from './modules/media/domain/media-access.js';
 import { registerMediaRoutes } from './modules/media/http/media.routes.js';
 import type { ContactDeletionService } from './modules/privacy/domain/contact-deletion.js';
@@ -41,7 +35,6 @@ interface AppOptions {
   readonly sessionAuthenticator?: SessionAuthenticator;
   readonly secureCookie?: boolean;
   readonly whatsappService?: WhatsappConnectionService;
-  readonly metaCloudWebhook?: MetaCloudWebhookRouteOptions;
   readonly conversationRepository?: ConversationRepository;
   readonly demoMessageService?: DemoMessageService;
   readonly mediaAccessService?: MediaAccessService;
@@ -116,10 +109,6 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
     });
   }
 
-  app.get('/api/meta/negotiation-stages', async () => ({
-    stages: NEGOTIATION_STAGES,
-  }));
-
   if (options.ingestionService && options.internalIngestionToken) {
     registerMessageIngestionRoute(app, {
       ingestionService: options.ingestionService,
@@ -168,10 +157,6 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
       service: options.whatsappService,
       sessionAuthenticator,
     });
-  }
-
-  if (options.metaCloudWebhook) {
-    registerMetaCloudWebhookRoutes(app, options.metaCloudWebhook);
   }
 
   if (options.conversationRepository && sessionAuthenticator) {
