@@ -33,6 +33,18 @@ test('webhook Meta permanece desligado por padrão', () => {
   assert.equal(environment.META_WEBHOOK_ENABLED, false);
   assert.equal(environment.META_WEBHOOK_VERIFY_TOKEN, undefined);
   assert.equal(environment.META_APP_SECRET, undefined);
+  assert.equal(environment.MEDIA_ORPHAN_GRACE_HOURS, 24);
+});
+
+test('limita a janela de segurança para reconciliação de mídia órfã', () => {
+  assert.throws(() => readEnvironment({
+    ...required,
+    MEDIA_ORPHAN_GRACE_HOURS: '0',
+  }));
+  assert.equal(readEnvironment({
+    ...required,
+    MEDIA_ORPHAN_GRACE_HOURS: '48',
+  }).MEDIA_ORPHAN_GRACE_HOURS, 48);
 });
 
 test('webhook Meta ativo exige ambos os segredos', () => {

@@ -1,7 +1,9 @@
 import { readEnvironment } from './config/env.js';
 import { createPrismaClient } from './config/database.js';
 import { MediaRetentionService } from './modules/media/domain/media-retention.js';
+import { MediaOrphanReconciliationService } from './modules/media/domain/media-orphan-reconciliation.js';
 import { LocalMediaStorage } from './modules/media/infrastructure/local-media-storage.js';
+import { PrismaMediaReferenceRepository } from './modules/media/infrastructure/prisma-media-reference.repository.js';
 import { PrismaMediaRetentionRepository } from './modules/media/infrastructure/prisma-media-retention.repository.js';
 import { ContactDeletionService } from './modules/privacy/domain/contact-deletion.js';
 import { PrismaContactDeletionRepository } from './modules/privacy/infrastructure/prisma-contact-deletion.repository.js';
@@ -13,13 +15,19 @@ const INTERVAL_MS = 60 * 60 * 1_000;
 const environment = readEnvironment();
 const logger = createAppLogger('media-retention');
 const prisma = createPrismaClient(environment.DATABASE_URL);
+const mediaStorage = new LocalMediaStorage(environment.MEDIA_STORAGE_PATH, environment.MEDIA_MAX_BYTES);
 const service = new MediaRetentionService(
   new PrismaMediaRetentionRepository(prisma),
-  new LocalMediaStorage(environment.MEDIA_STORAGE_PATH, environment.MEDIA_MAX_BYTES),
+  mediaStorage,
+);
+const orphanReconciliationService = new MediaOrphanReconciliationService(
+  new PrismaMediaReferenceRepository(prisma),
+  mediaStorage,
+  environment.MEDIA_ORPHAN_GRACE_HOURS * 60 * 60 * 1_000,
 );
 const pendingDeletionService = new ContactDeletionService(
   new PrismaContactDeletionRepository(prisma),
-  new LocalMediaStorage(environment.MEDIA_STORAGE_PATH, environment.MEDIA_MAX_BYTES),
+  mediaStorage,
 );
 
 let stopping = false;
@@ -41,6 +49,13 @@ async function sweep(): Promise<void> {
     let result = await service.runBatch(new Date(), BATCH_SIZE);
     while (!stopping && result.selected === BATCH_SIZE) {
       result = await service.runBatch(new Date(), BATCH_SIZE);
+    }
+    const reconciliation = await orphanReconciliationService.runBatch(new Date(), BATCH_SIZE);
+    if (reconciliation.removed > 0) {
+      logger.info(
+        { removedMedia: reconciliation.removed },
+        'Mídias órfãs antigas foram removidas do armazenamento privado',
+      );
     }
   } catch (error: unknown) {
     logger.error(

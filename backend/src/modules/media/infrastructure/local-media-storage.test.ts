@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, stat, symlink, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -38,4 +38,27 @@ test('bloqueia travessia de diretório e arquivos acima do limite', async (conte
     storage.write(`${WORKSPACE_ID}/${MESSAGE_ID}.wav`, Buffer.alloc(1_025)),
     MediaTooLargeError,
   );
+});
+
+test('lista somente tentativas .media regulares para reconciliação', async (context) => {
+  const root = await mkdtemp(join(tmpdir(), 'noter-media-'));
+  context.after(async () => rm(root, { recursive: true, force: true }));
+  const storage = new LocalMediaStorage(root, 20_000);
+  const mediaKey = `${WORKSPACE_ID}/${MESSAGE_ID}.media`;
+  const wavKey = `${WORKSPACE_ID}/${MESSAGE_ID}.wav`;
+  await storage.write(mediaKey, Buffer.from('media'));
+  await storage.write(wavKey, Buffer.from('wav'));
+  const modifiedAt = new Date('2026-07-26T10:00:00.000Z');
+  await utimes(join(root, mediaKey), modifiedAt, modifiedAt);
+
+  const invalidDirectory = join(root, 'not-a-workspace');
+  await mkdir(invalidDirectory);
+  await writeFile(join(invalidDirectory, `${MESSAGE_ID}.media`), 'ignored');
+  await symlink(join(root, mediaKey), join(root, WORKSPACE_ID, '22b3f58b-4f89-47f2-93bc-89be57028a48.media'));
+
+  const candidates = await storage.listOrphanCandidates(10);
+
+  assert.equal(candidates.length, 1);
+  assert.equal(candidates[0]?.storageKey, mediaKey);
+  assert.equal(candidates[0]?.modifiedAt.toISOString(), modifiedAt.toISOString());
 });
