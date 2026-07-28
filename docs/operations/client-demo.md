@@ -24,7 +24,7 @@ echo
 ACCEPTANCE_WORKSPACE='demo-cliente' \
 ACCEPTANCE_EMAIL='demo@example.com' \
 ACCEPTANCE_PASSWORD="${demo_password}" \
-node scripts/acceptance-vps.mjs
+scripts/run-acceptance-vps.sh
 unset demo_password
 ```
 
@@ -37,11 +37,13 @@ ACCEPTANCE_WORKSPACE='demo-cliente' \
 ACCEPTANCE_EMAIL='demo@example.com' \
 ACCEPTANCE_PASSWORD="${demo_password}" \
 ACCEPTANCE_MUTATIONS=1 \
-node scripts/acceptance-vps.mjs
+scripts/run-acceptance-vps.sh
 unset demo_password
 ```
 
 O modo mutável cria ou atualiza `Empresa Aurora — cenário fictício`, deixa sua negociação `Implantação CRM — homologação` em `proposal_sent` e acrescenta mensagens simuladas à caixa de conversas. Ele nunca apaga dados.
+
+O wrapper usa Node 24 quando disponível. Na VPS, onde Node não é instalado no host, ele executa o mesmo arquivo em um container temporário e não altera os containers da aplicação.
 
 ## Roteiro de 10 a 15 minutos
 
