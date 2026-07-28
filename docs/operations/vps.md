@@ -27,6 +27,8 @@ Os dados duráveis ficam nos volumes `noter_postgres`, `noter_redis` e `noter_me
 
 O dimensionamento inicial de 1 vCPU, 4 GB de RAM e 50 GB de disco suporta a carga de desenvolvimento e demonstração, mas não oferece alta disponibilidade. Builds devem ocorrer de forma serial. Logs Docker possuem rotação de 10 MB por arquivo e cinco arquivos por container.
 
+A VPS atual mantém 2 GB de swap para absorver picos transitórios. Swap não substitui memória: uso persistente ou latência de fila exige reduzir processos concorrentes ou ampliar a VPS.
+
 Antes de aumentar tráfego ou habilitar provedores:
 
 - medir CPU, memória, disco, filas e conexões do PostgreSQL;
@@ -57,6 +59,8 @@ scripts/status-vps.sh
 ```
 
 O `.env` remoto permanece fora do Git, com permissão `600`. Segredos não devem aparecer em comandos versionados, tickets ou logs.
+
+Defina `ENABLE_OBSERVABILITY=1` no `.env` quando o deploy também deva preservar e reconciliar Prometheus, Alertmanager e Grafana.
 
 ## Backup e restauração
 
@@ -98,6 +102,8 @@ docker compose \
 ```
 
 Os receivers atuais não notificam pessoas. Um destino externo exige aprovação separada e deve receber apenas métricas agregadas.
+
+Na VPS atual, autenticação SSH por senha e interação de teclado estão desabilitadas. O acesso `root` permanece temporariamente permitido somente por chave; criar um usuário operacional com privilégios mínimos continua sendo um portão para dados reais.
 
 ## Promoção para dados reais
 

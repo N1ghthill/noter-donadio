@@ -14,20 +14,25 @@ if test -f .env; then
   set +a
 fi
 
+compose_arguments=(-f "${compose_file}")
+if test "${ENABLE_OBSERVABILITY:-0}" = "1"; then
+  compose_arguments+=(-f "${OBSERVABILITY_COMPOSE_FILE:-compose.observability.yaml}")
+fi
+
 git rev-parse --is-inside-work-tree >/dev/null
 if test -n "$(git status --porcelain)"; then
   printf '%s\n' "O checkout da VPS possui alterações locais; deploy cancelado."
   exit 1
 fi
 
-docker compose -f "${compose_file}" config --quiet
+docker compose "${compose_arguments[@]}" config --quiet
 
 if test "${SKIP_BACKUP:-0}" != "1"; then
   COMPOSE_FILE="${compose_file}" scripts/backup-vps.sh
 fi
 
-docker compose -f "${compose_file}" build backend frontend
-docker compose -f "${compose_file}" up -d --remove-orphans
+docker compose "${compose_arguments[@]}" build backend frontend
+docker compose "${compose_arguments[@]}" up -d --remove-orphans
 
 for _attempt in $(seq 1 60); do
   if curl --fail --silent --show-error "${health_url}" >/dev/null; then
@@ -37,7 +42,7 @@ for _attempt in $(seq 1 60); do
 done
 
 curl --fail --silent --show-error "${health_url}" >/dev/null
-docker compose -f "${compose_file}" ps
+docker compose "${compose_arguments[@]}" ps
 git rev-parse HEAD > .deployed-commit
 chmod 600 .deployed-commit
 
