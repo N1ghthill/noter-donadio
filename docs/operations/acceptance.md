@@ -18,6 +18,21 @@ Evidências automatizadas repetidas sobre a candidata da fase VPS em 28/07/2026:
 - Prisma CLI, client e adapter atualizados e sem achados próprios no `npm audit`;
 - o `npm audit --omit=dev` ainda reporta o advisory de React Router restrito ao modo RSC, que não é usado pela SPA atual; o achado permanece registrado e bloqueia tratar o perfil HTTP da VPS como produção real.
 
+Evidências executadas no ambiente publicado em `https://leadcontrol.online` em 28/07/2026:
+
+- certificado TLS válido, redirecionamento de HTTP e cookie `Secure`;
+- leituras autenticadas de dashboard, contatos, pipeline, conversas e auditoria;
+- segunda sessão criada, listada e revogada;
+- contato e negociação fictícios criados, editados, movidos, fechados com motivo e reabertos;
+- próxima ação concluída com histórico persistido;
+- QR e conexão simulados, mensagem idempotente e análise falsa concluída;
+- sugestão aceita apenas por decisão explícita;
+- áudio fictício transcrito, analisado e lido por URL curta assinada e sessão autenticada;
+- exportação `workspace-export-v1` e auditoria minimizada validadas;
+- PostgreSQL, Redis, workers, proxy TLS e observabilidade permaneceram saudáveis.
+
+O procedimento reproduzível e o roteiro da reunião estão em [`client-demo.md`](client-demo.md).
+
 ## Jornadas cobertas
 
 - login, sessão opaca, listagem e revogação de sessões;
