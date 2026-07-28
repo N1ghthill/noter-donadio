@@ -20,6 +20,19 @@ Primeira fase permitida pelo desenho:
 
 A assinatura e os exemplos devem seguir a [coleção oficial de webhooks](https://www.postman.com/meta/whatsapp-business-platform/folder/lboq68h/webhooks) e os [exemplos mantidos pela Meta](https://github.com/fbsamples/whatsapp-api-examples). SDKs e payloads não atravessam a porta do domínio.
 
+### Preparação implementada, ainda inativa
+
+O módulo `meta-cloud-webhook.ts` prepara a fronteira sem publicar endpoint:
+
+- valida `X-Hub-Signature-256` por HMAC-SHA256 sobre os bytes originais e comparação em tempo constante;
+- valida modo, token e desafio da inscrição sem registrar o token;
+- aceita envelopes `whatsapp_business_account` e normaliza somente texto e áudio recebidos;
+- preserva IDs da WABA, número empresarial, mensagem e mídia para resolução posterior;
+- ignora status e tipos não suportados, e recusa mensagens suportadas fora do contrato;
+- não preserva o payload original nem importa SDK da Meta.
+
+Essa preparação não altera `WHATSAPP_ADAPTER`, não cria rota, não recebe eventos e não faz chamadas externas. Antes da ativação ainda faltam captura limitada do corpo bruto, resolução atômica de workspace/conta, persistência do identificador de mídia, download privado posterior ao commit, rate limit, métricas e kill switch.
+
 ## Transcrição
 
 O adapter futuro pode usar a API de transcrições da OpenAI, mas só será implementado após disponibilização segura da credencial e aprovação do tratamento de áudio. O contrato atual permite trocar o adapter sem mudar mensagem, lease ou job.

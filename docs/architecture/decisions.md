@@ -271,3 +271,9 @@ A exceção termina antes de qualquer dado real. A condição de remoção é co
 A VPS aceita SSH somente por chave para o usuário `noterops`; senha, interação de teclado e login remoto de `root` ficam desabilitados. O usuário não pertence aos grupos `sudo` ou `docker`. O sudoers permite apenas atualizar `/opt/noter-donadio` por fast-forward e executar os scripts versionados de deploy, status, backup e homologação.
 
 O firewall persistente usa uma tabela `nftables` própria, sem limpar regras administradas pelo Docker. A entrada do host fica fechada por padrão e permite somente conexões estabelecidas, loopback, ICMP, SSH e web. Alterações futuras devem validar uma segunda sessão antes de recarregar SSH ou firewall.
+
+## ADR-043 — A fronteira da Meta é preparada antes de publicar o webhook
+
+A primeira unidade da WhatsApp Cloud API é um adapter puro que valida assinatura HMAC-SHA256 sobre o corpo bruto, valida o desafio de inscrição e normaliza somente mensagens recebidas de texto e áudio. Payload, SDK e nomenclatura da Meta não atravessam essa fronteira; eventos de status e tipos fora do MVP não geram mensagens.
+
+O módulo permanece sem rota e sem configuração de ativação. Publicar o webhook exige primeiro garantir captura limitada dos bytes originais, resolução inequívoca entre número empresarial, conta e workspace, persistência atômica da mensagem e da referência de mídia, download somente após commit, observabilidade agregada e segredo externo. Nenhuma credencial ou chamada real é introduzida por esta decisão.
