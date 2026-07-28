@@ -40,13 +40,17 @@ A fronteira implementada:
 
 Não existem credenciais versionadas, conta real mapeada ou chamada externa.
 Áudio assinado ainda retorna `503` antes de qualquer persistência. O pipeline
-durável e o adapter autenticado de download já existem, mas o perfil da VPS
-mantém somente o adapter falso.
+durável, o adapter autenticado de download e a reconciliação tardia de arquivos
+órfãos já existem, mas o perfil da VPS mantém somente o adapter falso.
 
 Antes da ativação ainda faltam credenciais injetadas externamente, cadastro da
-conta controlada, homologação do escopo do token, hosts retornados, retenção,
-reconciliação de objetos órfãos e teste controlado com payload sintético
-assinado.
+conta controlada, homologação do escopo do token, hosts retornados, retenção e
+teste controlado com payload sintético assinado.
+
+A primeira ativação continua somente de entrada. A captura de mensagens
+enviadas pelo usuário é requisito do MVP, mas ainda depende de uma fonte oficial
+e de decisão arquitetural própria; status de entrega não será convertido em
+mensagem para preencher essa lacuna.
 
 ## Transcrição
 

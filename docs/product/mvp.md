@@ -2,12 +2,12 @@
 
 ## Resultado esperado
 
-O usuário conecta uma conta do WhatsApp, recebe novas conversas diretas no noter.donadio, organiza contatos e negociações em um Kanban e consulta sugestões produzidas por IA. Mensagens de áudio podem ser ouvidas e transcritas.
+O usuário conecta uma conta oficial do WhatsApp Business, recebe novas conversas diretas no noter.donadio, organiza contatos e negociações em um Kanban e consulta sugestões produzidas por IA. Mensagens de áudio podem ser ouvidas e transcritas.
 
 ## Dentro do MVP
 
 - login de um usuário administrador;
-- setup da conexão com exibição de QR e estado da sessão;
+- onboarding e estado da conta oficial da Meta; o QR atual existe somente no adapter de demonstração;
 - ingestão de conversas individuais de texto e áudio;
 - captura correta de mensagens recebidas e enviadas pelo próprio usuário;
 - criação automática de contato e negociação inicial;
@@ -88,6 +88,18 @@ O usuário conecta uma conta do WhatsApp, recebe novas conversas diretas no note
 3. API REST com autenticação e dados de demonstração.
 4. Frontend navegável com Dashboard, Contatos, Kanban e Detalhe.
 5. Eventos transacionais, BullMQ e atualização em tempo real.
-6. Adapter do WhatsApp e fluxo de QR.
+6. Adapter oficial do WhatsApp; o fluxo de QR permanece como simulador de demonstração.
 7. Transcrição e análise por IA.
 8. Segurança, retenção, observabilidade e empacotamento de produção.
+
+## Estado da integração real
+
+A direção de produção é a WhatsApp Cloud API oficial da Meta. A fronteira do
+webhook e o download autenticado de mídia estão implementados atrás de kill
+switches e continuam desligados na VPS. A ativação inicial planejada aceita
+somente mensagens recebidas.
+
+A captura de mensagens enviadas pelo próprio usuário continua requisito do MVP,
+mas ainda não possui uma origem real aprovada. Ela não será simulada nem inferida
+a partir de status do provedor. É necessária uma decisão separada sobre o
+mecanismo oficial antes de considerar completa a integração real.

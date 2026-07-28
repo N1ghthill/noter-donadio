@@ -2,7 +2,15 @@
 
 ## Estado desta fatia
 
-O projeto possui o fluxo completo de interface e domínio para configurar uma conta, mas usa exclusivamente um adapter falso local. Nenhuma biblioteca não oficial, conta real ou serviço da Meta é acessado.
+Há dois caminhos isolados:
+
+- o adapter falso implementa QR, conexão e caixa de entrada exclusivamente para
+  demonstração;
+- a WhatsApp Cloud API oficial da Meta possui webhook de entrada e adapter de
+  download compilados, mas desligados por padrão e sem credenciais versionadas.
+
+A VPS usa somente o primeiro caminho. Nenhuma conta real ou chamada à Meta faz
+parte da homologação atual.
 
 Ative o simulador explicitamente:
 
@@ -11,6 +19,25 @@ WHATSAPP_ADAPTER=fake
 ```
 
 Com `disabled`, que é o padrão quando a variável está ausente, as rotas de setup não são registradas.
+
+## Fronteira oficial da Meta
+
+`GET|POST /api/whatsapp/webhook` é registrado somente com
+`META_WEBHOOK_ENABLED=1`, `META_WEBHOOK_VERIFY_TOKEN` e `META_APP_SECRET`
+válidos. O POST valida a assinatura sobre os bytes originais antes do parse,
+limita o corpo, resolve WABA e número empresarial para uma conta conectada e
+normaliza somente texto e áudio recebidos. Status e tipos fora do MVP não criam
+mensagens.
+
+Texto já percorre a transação idempotente e a outbox existentes. Áudio possui
+persistência atômica da referência, fila própria e adapter autenticado de
+download, mas permanece recusado pelo webhook até uma ativação operacional
+explícita. O worker real também exige `MEDIA_DOWNLOAD_ADAPTER=meta`,
+`META_ACCESS_TOKEN` e uma versão fixa da Graph API.
+
+Não existe endpoint de envio. A integração inicial é somente de entrada e,
+portanto, ainda não atende ao requisito completo de capturar mensagens que o
+usuário enviou por uma origem real.
 
 ## Jornada local
 
@@ -38,14 +65,16 @@ A transação resolve contato e negociação, persiste a mensagem antes de qualq
 - não existe endpoint para enviar mensagens; a única mutação de conversa simula uma entrada local;
 - o adapter falso não deve ser habilitado em produção.
 
-## Porta para integração futura
+## Porta de domínio
 
-`WhatsappGateway` define criação e consulta do QR e conclusão da conexão. Um adapter real deverá implementar essa porta sem contaminar domínio, HTTP ou frontend com APIs do provedor.
+`WhatsappGateway` define criação e consulta do QR e conclusão da conexão do
+simulador. O adapter oficial mantém payloads e autenticação da Meta em sua
+própria fronteira e entrega ao domínio somente o contrato normalizado.
 
-Antes de habilitar um adapter real ainda será necessário:
+Antes de habilitar a integração real ainda será necessário:
 
 - criptografia autenticada das credenciais em repouso;
-- processo dedicado para manter a sessão;
-- tratamento de reconexão, logout e rotação de chaves;
+- provisionamento controlado da conta, rotação e revogação de credenciais;
+- decisão oficial para capturar mensagens enviadas pelo usuário;
 - revisão dos termos do provedor e do risco operacional;
 - testes com uma conta controlada, nunca com a conta principal do cliente.

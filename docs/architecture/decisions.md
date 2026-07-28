@@ -337,3 +337,41 @@ produção, o worker real é opt-in e recebe o token apenas em seu próprio
 processo. Habilitar webhook, worker ou credencial real exige uma mudança
 operacional separada, revisão do escopo `whatsapp_business_messaging`, teste
 controlado com fixture não sensível e confirmação da política de retenção.
+
+## ADR-047 — Audit de produção aceita uma única exceção semântica e temporária
+
+O CI continua executando `npm audit --omit=dev`, mas interpreta o relatório com
+uma allowlist fechada. A única exceção aceita é
+`GHSA-qwww-vcr4-c8h2` em `react-router` e sua propagação direta para
+`react-router-dom`, pois o advisory afeta as APIs instáveis de React Server
+Components e esta aplicação usa uma SPA com `BrowserRouter`, sem RSC.
+
+Qualquer outro pacote, advisory, formato inesperado ou falha de consulta reprova
+o CI. A exceção deve ser removida assim que existir versão compatível corrigida
+no registro usado pelo projeto, ou antes de introduzir RSC.
+
+## ADR-048 — Tentativas de mídia órfãs são removidas após janela segura
+
+O processo de retenção também lista somente arquivos regulares com chave
+`<workspace UUID>/<tentativa UUID>.media`. Um lote consulta o PostgreSQL e
+remove apenas chaves sem referência e com modificação anterior à janela de
+segurança, configurada em 24 horas por padrão. WAVs de demonstração, arquivos
+recentes, links e nomes fora do contrato são ignorados.
+
+A janela evita disputar com downloads e confirmações ainda em andamento. A
+varredura não registra chaves, workspaces ou nomes físicos; somente a contagem
+agregada de remoções. O PostgreSQL permanece a autoridade para distinguir mídia
+confirmada de tentativa abandonada.
+
+## ADR-049 — Entrada real não satisfaz a captura de mensagens enviadas
+
+A primeira ativação da Meta continua limitada a mensagens recebidas. Status de
+entrega, leitura ou template não serão transformados em mensagens enviadas,
+porque não preservam necessariamente o conteúdo original nem demonstram ação
+humana.
+
+Capturar mensagens enviadas pelo próprio usuário permanece requisito do MVP e
+gap explícito da integração real. Fechá-lo exige uma fonte oficial que preserve
+identidade, direção, conteúdo e ID externo, além de nova decisão sobre
+consentimento, auditoria e idempotência. Até lá, o fluxo completo existe apenas
+no domínio e nos testes, não na ativação Meta.

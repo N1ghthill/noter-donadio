@@ -4,7 +4,12 @@
 
 O repositório possui imagens reproduzíveis para backend e frontend e uma composição que separa API, outbox, eventos em tempo real, retenção, PostgreSQL e Redis. Isso permite validar o formato operacional sem publicar, fazer deploy ou conectar provedores reais.
 
-O sistema ainda não está liberado para conversas reais: WhatsApp, transcrição e IA possuem somente adapters falsos. Em `compose.production.yaml` eles ficam explicitamente `disabled`; os respectivos workers não são iniciados. Armazenamento local de mídia também deve ser substituído por objeto privado criptografado antes de produção real.
+O sistema ainda não está liberado para conversas reais. O webhook oficial da
+Meta e o adapter autenticado de download de mídia estão implementados atrás de
+kill switches; no perfil de produção permanecem `disabled` e o worker de mídia
+real é opt-in. Transcrição e IA ainda possuem somente adapters falsos.
+Armazenamento local de mídia também deve ser substituído por objeto privado
+criptografado antes de produção real.
 
 O perfil público por IP definido em `compose.vps-demo.yaml` é um ambiente transitório de desenvolvimento e demonstração, não uma variação de produção. Sua operação e seus portões estão documentados em [`vps.md`](vps.md).
 
@@ -86,6 +91,7 @@ A verificação confere o checksum quando disponível, restaura com `--exit-on-e
 ## Checklist pendente antes de dados reais
 
 - escolher e aprovar um provedor oficial de WhatsApp ou aceitar formalmente o risco da integração adotada;
+- decidir como capturar por fonte oficial as mensagens enviadas pelo próprio usuário;
 - implementar criptografia autenticada das credenciais do WhatsApp com chave fora do banco;
 - implementar adapters aprovados de transcrição e IA, com contratos, retenção e custos revisados;
 - substituir filesystem por armazenamento de objeto privado criptografado;

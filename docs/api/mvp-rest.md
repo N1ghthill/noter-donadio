@@ -36,6 +36,10 @@ Nenhum token, telefone ou conteúdo deve aparecer em logs ou exemplos versionado
 - `POST /api/whatsapp/setup`: inicia setup e retorna QR efêmero no adapter falso;
 - `POST /api/whatsapp/demo/connect`: simula a leitura do QR, disponível somente quando o adapter falso está habilitado;
 - `POST /api/whatsapp/demo/messages`: simula texto ou áudio recebido, somente no adapter falso e com conta conectada;
+- `GET|POST /api/whatsapp/webhook`: valida inscrição e recebe eventos assinados
+  da Meta somente quando o kill switch e os segredos estão configurados;
+- `GET /api/meta/negotiation-stages`: expõe a allowlist estável de etapas para
+  configuração da integração oficial;
 - `GET /api/media/:messageId/access`: cria URL relativa assinada por dois minutos para mídia acessível no workspace autenticado;
 - `GET /api/media/:messageId/content`: entrega a mídia somente com sessão ativa, workspace correspondente, prazo e assinatura válidos.
 
@@ -61,12 +65,19 @@ A auditoria global exige administrador e retorna por padrão os 50 eventos mais 
 npm run start -w @noter/backend
 npm run start:outbox -w @noter/backend
 npm run start:realtime -w @noter/backend
+npm run start:media-download -w @noter/backend
 npm run start:transcription -w @noter/backend
 npm run start:analysis -w @noter/backend
 npm run start:retention -w @noter/backend
 ```
 
-O processo da outbox publica `message.text.ingested`, `message.audio.ingested`, `message.audio.ready_for_analysis`, `message.persisted` e eventos de atualização do CRM nas filas correspondentes. Os jobs e notificações contêm IDs e metadados de roteamento, nunca o conteúdo integral da conversa.
+O processo da outbox publica `message.text.ingested`,
+`message.audio.download_requested`, `message.audio.ingested`,
+`message.audio.ready_for_analysis`, `message.persisted` e eventos de atualização
+do CRM nas filas correspondentes. Os jobs e notificações contêm IDs e metadados
+de roteamento, nunca o conteúdo integral da conversa. O processo
+`media-download` é obrigatório para áudio externo e permanece opt-in no perfil
+real.
 
 `GET /health` é somente um liveness público e não consulta nem revela dependências. Readiness e métricas são privados, desabilitam cache e não expõem URLs, credenciais, mensagens de erro ou labels com identificadores de negócio. O proxy de produção devolve `404` para `/api/internal/`; processos autorizados devem acessar essas rotas diretamente pela rede interna do backend.
 
