@@ -9,7 +9,7 @@ Os fluxos comerciais e administrativos implementados estão aceitos para demonst
 Evidências automatizadas repetidas sobre a candidata da fase VPS em 28/07/2026:
 
 - lint e TypeScript estrito sem erros;
-- 166 testes aprovados: 1 de contratos, 134 de backend e 31 de frontend;
+- 167 testes aprovados: 1 de contratos, 135 de backend e 31 de frontend;
 - build dos três workspaces aprovado;
 - 16 migrations aplicadas em PostgreSQL vazio;
 - fluxo integrado validado com PostgreSQL, Redis, BullMQ e adapters falsos;
@@ -20,6 +20,9 @@ Evidências automatizadas repetidas sobre a candidata da fase VPS em 28/07/2026:
   `GHSA-qwww-vcr4-c8h2`, restrito às APIs RSC não utilizadas pela SPA; formato
   inesperado, falha da consulta ou qualquer outro advisory continuam
   reprovando o CI. A exceção não libera a VPS para dados reais.
+- a configuração resolvida dos dois perfis mantém os segredos do webhook
+  somente na API e o token da Meta somente no worker de download; áudio possui
+  kill switch próprio, desligado por padrão.
 
 Evidências executadas no ambiente publicado em `https://leadcontrol.online` em 28/07/2026:
 

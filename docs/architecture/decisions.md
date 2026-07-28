@@ -375,3 +375,15 @@ gap explícito da integração real. Fechá-lo exige uma fonte oficial que prese
 identidade, direção, conteúdo e ID externo, além de nova decisão sobre
 consentimento, auditoria e idempotência. Até lá, o fluxo completo existe apenas
 no domínio e nos testes, não na ativação Meta.
+
+## ADR-050 — Segredos e áudio Meta seguem privilégios e kill switches separados
+
+O segredo de verificação e o segredo do aplicativo da Meta são necessários
+somente na API que recebe o webhook. Os demais processos recebem
+`META_WEBHOOK_ENABLED=0` e não recebem essas credenciais. O token de acesso e a
+versão da Graph API continuam exclusivos do worker `media-download`.
+
+Texto pode ser ativado sem habilitar áudio. Áudio exige adicionalmente
+`META_WEBHOOK_AUDIO_ENABLED=1` e deve ser ligado no mesmo deploy controlado que
+o worker real de download. Os dois switches permanecem desligados por padrão;
+uma configuração de áudio ativo com webhook desligado impede a inicialização.

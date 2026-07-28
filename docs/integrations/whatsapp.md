@@ -29,11 +29,16 @@ limita o corpo, resolve WABA e número empresarial para uma conta conectada e
 normaliza somente texto e áudio recebidos. Status e tipos fora do MVP não criam
 mensagens.
 
+Os dois segredos são entregues somente ao processo `backend`; migrations,
+outbox, realtime, retenção e demais workers recebem o kill switch desligado e
+não recebem essas credenciais.
+
 Texto já percorre a transação idempotente e a outbox existentes. Áudio possui
 persistência atômica da referência, fila própria e adapter autenticado de
 download, mas permanece recusado pelo webhook até uma ativação operacional
-explícita. O worker real também exige `MEDIA_DOWNLOAD_ADAPTER=meta`,
-`META_ACCESS_TOKEN` e uma versão fixa da Graph API.
+explícita com `META_WEBHOOK_AUDIO_ENABLED=1`. O worker real deve ser ativado no
+mesmo deploy e exige `MEDIA_DOWNLOAD_ADAPTER=meta`, `META_ACCESS_TOKEN` e uma
+versão fixa da Graph API. O token de acesso é entregue somente a esse worker.
 
 Não existe endpoint de envio. A integração inicial é somente de entrada e,
 portanto, ainda não atende ao requisito completo de capturar mensagens que o

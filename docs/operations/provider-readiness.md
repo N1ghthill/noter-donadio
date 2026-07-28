@@ -27,6 +27,11 @@ O endpoint `GET|POST /api/whatsapp/webhook` somente é registrado quando
 o kill switch em `0`, portanto a VPS continua respondendo `404` e não recebe
 eventos da Meta.
 
+`META_WEBHOOK_AUDIO_ENABLED` é um segundo kill switch, também desligado por
+padrão. Segredo de verificação e segredo do aplicativo ficam restritos à API;
+token de acesso e versão da Graph API ficam restritos ao worker de download.
+Ativar áudio exige mudar webhook e worker no mesmo deploy controlado.
+
 A fronteira implementada:
 
 - valida `X-Hub-Signature-256` por HMAC-SHA256 sobre os bytes originais e comparação em tempo constante;
