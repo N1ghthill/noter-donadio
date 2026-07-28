@@ -1,16 +1,16 @@
-# Integração com WhatsApp
+# Integração com WhatsApp via Baileys
 
-## Estado desta fatia
+## Direção aprovada
 
-Há dois caminhos isolados:
+O conector real do projeto será o Baileys, como cliente adicional do WhatsApp
+Web Multi-Device. A API oficial da Meta não faz parte da arquitetura vigente:
+webhook, adapters, configuração e chamadas externas correspondentes foram
+removidos do runtime.
 
-- o adapter falso implementa QR, conexão e caixa de entrada exclusivamente para
-  demonstração;
-- a WhatsApp Cloud API oficial da Meta possui webhook de entrada e adapter de
-  download compilados, mas desligados por padrão e sem credenciais versionadas.
+O Baileys ainda não está instalado nem habilitado. A VPS continua usando o
+adapter falso e nenhuma sessão real foi conectada.
 
-A VPS usa somente o primeiro caminho. Nenhuma conta real ou chamada à Meta faz
-parte da homologação atual.
+## Jornada de demonstração
 
 Ative o simulador explicitamente:
 
@@ -18,68 +18,57 @@ Ative o simulador explicitamente:
 WHATSAPP_ADAPTER=fake
 ```
 
-Com `disabled`, que é o padrão quando a variável está ausente, as rotas de setup não são registradas.
-
-## Fronteira oficial da Meta
-
-`GET|POST /api/whatsapp/webhook` é registrado somente com
-`META_WEBHOOK_ENABLED=1`, `META_WEBHOOK_VERIFY_TOKEN` e `META_APP_SECRET`
-válidos. O POST valida a assinatura sobre os bytes originais antes do parse,
-limita o corpo, resolve WABA e número empresarial para uma conta conectada e
-normaliza somente texto e áudio recebidos. Status e tipos fora do MVP não criam
-mensagens.
-
-Os dois segredos são entregues somente ao processo `backend`; migrations,
-outbox, realtime, retenção e demais workers recebem o kill switch desligado e
-não recebem essas credenciais.
-
-Texto já percorre a transação idempotente e a outbox existentes. Áudio possui
-persistência atômica da referência, fila própria e adapter autenticado de
-download, mas permanece recusado pelo webhook até uma ativação operacional
-explícita com `META_WEBHOOK_AUDIO_ENABLED=1`. O worker real deve ser ativado no
-mesmo deploy e exige `MEDIA_DOWNLOAD_ADAPTER=meta`, `META_ACCESS_TOKEN` e uma
-versão fixa da Graph API. O token de acesso é entregue somente a esse worker.
-
-Não existe endpoint de envio. A integração inicial é somente de entrada e,
-portanto, ainda não atende ao requisito completo de capturar mensagens que o
-usuário enviou por uma origem real.
-
-## Jornada local
-
 1. O usuário autenticado abre `/whatsapp`.
-2. `POST /api/whatsapp/setup` gera um payload aleatório com validade de cinco minutos.
-3. O QR é devolvido com `Cache-Control: no-store` e permanece somente na memória da API.
-4. O banco persiste `qr_generated`, mas nunca o conteúdo do QR.
-5. “Simular leitura do QR” consome o código e persiste `connected` com número fictício.
-6. A outbox publica apenas conta, workspace e estado.
-7. O frontend recebe a invalidação via Socket.IO e reconcilia pela API.
+2. `POST /api/whatsapp/setup` gera um QR fictício com validade de cinco minutos.
+3. O QR permanece somente na memória da API e nunca é registrado.
+4. “Simular leitura do QR” conecta uma conta sintética.
+5. `/conversas` permite inserir texto ou áudio fictício pelo pipeline real de
+   persistência, outbox, filas e reconciliação.
 
-## Caixa de entrada simulada
+Esse QR não autentica WhatsApp e serve somente à demonstração.
 
-Com a conta falsa conectada, `/conversas` permite registrar texto ou áudio fictício recebido. O navegador cria um `clientMessageId` UUID; o servidor deriva workspace e conta da sessão, acrescenta uma identidade fictícia fixa e executa o mesmo serviço de ingestão usado pelos eventos internos. No áudio, texto fornecido pelo navegador é descartado e nunca tratado como transcrição.
+## Jornada real planejada
 
-A transação resolve contato e negociação, persiste a mensagem antes de qualquer processamento e cria dois eventos de outbox: um para processamento e `message.persisted` para reconciliação da interface. Repetir o mesmo UUID não duplica a mensagem. O formulário não envia dados a uma conta ou provedor externo.
+O processo dedicado do Baileys será vinculado a uma conta interna e:
 
-## Segurança
+1. carregará credenciais e chaves Signal criptografadas do PostgreSQL;
+2. emitirá QR efêmero para a API autenticada quando não houver sessão;
+3. persistirá cada atualização do auth state de modo atômico;
+4. normalizará eventos `messages.upsert`, incluindo `fromMe`;
+5. descartará grupos, status, newsletters e protocolo antes da ingestão;
+6. persistirá texto recebido ou enviado antes de qualquer processamento;
+7. tratará áudio por referência durável e download pós-commit;
+8. reconectará com backoff, sem recriar sessão após logout explícito.
 
-- workspace sempre deriva da sessão, nunca do corpo da requisição;
-- QR não é escrito em banco, Redis, outbox ou logs;
-- respostas com QR não podem ser armazenadas em cache;
-- payloads de tempo real descartam qualquer campo adicional;
-- somente dados fictícios são usados nos testes;
-- não existe endpoint para enviar mensagens; a única mutação de conversa simula uma entrada local;
-- o adapter falso não deve ser habilitado em produção.
+A fronteira pura para texto já diferencia `inbound` e `outbound`, preserva o ID
+externo e não aceita workspace ou conta vindos do evento. O processo de socket,
+o auth state e o download real ainda serão implementados.
 
-## Porta de domínio
+## Segurança obrigatória
 
-`WhatsappGateway` define criação e consulta do QR e conclusão da conexão do
-simulador. O adapter oficial mantém payloads e autenticação da Meta em sua
-própria fronteira e entrega ao domínio somente o contrato normalizado.
+- usar uma versão 7 fixada; nunca `master`, fork desconhecido ou versão 6;
+- manter o logger da biblioteca silencioso e encaminhar apenas eventos
+  sanitizados ao logger da aplicação;
+- nunca usar `useMultiFileAuthState` em produção;
+- criptografar credenciais e chaves com AES-256-GCM e chave externa ao banco;
+- nunca gravar QR, JID, telefone, conteúdo ou auth state em logs;
+- QR deve ser curto, `no-store` e acessível somente ao administrador do
+  workspace;
+- não habilitar envio autônomo; `fromMe` serve para capturar o que o usuário
+  enviou pelo próprio WhatsApp;
+- testes automatizados usam fakes e fixtures sintéticas, nunca conta real.
 
-Antes de habilitar a integração real ainda será necessário:
+As tabelas de autenticação criptografada já existem. Colunas históricas criadas
+para o experimento removido com outro provedor permanecem sem uso porque
+migrations compartilhadas não são reescritas; removê-las exigirá migration
+destrutiva autorizada separadamente.
 
-- criptografia autenticada das credenciais em repouso;
-- provisionamento controlado da conta, rotação e revogação de credenciais;
-- decisão oficial para capturar mensagens enviadas pelo usuário;
-- revisão dos termos do provedor e do risco operacional;
-- testes com uma conta controlada, nunca com a conta principal do cliente.
+## Portões antes de conectar
+
+- fixar e auditar a versão 7 escolhida;
+- implementar auth state PostgreSQL com testes de rotação e concorrência;
+- implementar processo dedicado e health state;
+- fechar o contrato durável de mídia do Baileys;
+- validar termos de uso e aceitar formalmente o risco de bloqueio;
+- definir número controlado para homologação;
+- obter autorização explícita antes de conectar ou desconectar a sessão real.

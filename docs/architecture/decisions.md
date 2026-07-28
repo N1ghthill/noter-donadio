@@ -192,7 +192,7 @@ As imagens de container separam interface, API, dispatcher, tempo real e retenç
 
 Esse empacotamento é uma base operacional reproduzível, não autoriza deploy nem uso de dados reais. WhatsApp, transcrição e IA continuam desabilitados na composição de produção enquanto não houver adapters aprovados, armazenamento de objetos privado e revisão dos requisitos externos.
 
-## ADR-031 — Produção terá como alvo a API oficial do WhatsApp
+## ADR-031 — Produção terá como alvo a API oficial do WhatsApp [substituída pela ADR-051]
 
 Para a primeira operação com dados reais, o alvo aprovado de arquitetura é a WhatsApp Cloud API oficial da Meta. O adapter falso continua sendo o único implementado; esta decisão não adiciona credenciais, não conecta conta e não habilita ingestão ou envio real.
 
@@ -272,13 +272,13 @@ A VPS aceita SSH somente por chave para o usuário `noterops`; senha, interaçã
 
 O firewall persistente usa uma tabela `nftables` própria, sem limpar regras administradas pelo Docker. A entrada do host fica fechada por padrão e permite somente conexões estabelecidas, loopback, ICMP, SSH e web. Alterações futuras devem validar uma segunda sessão antes de recarregar SSH ou firewall.
 
-## ADR-043 — A fronteira da Meta é preparada antes de publicar o webhook
+## ADR-043 — A fronteira da Meta é preparada antes de publicar o webhook [substituída pela ADR-051]
 
 A primeira unidade da WhatsApp Cloud API é um adapter puro que valida assinatura HMAC-SHA256 sobre o corpo bruto, valida o desafio de inscrição e normaliza somente mensagens recebidas de texto e áudio. Payload, SDK e nomenclatura da Meta não atravessam essa fronteira; eventos de status e tipos fora do MVP não geram mensagens.
 
 O módulo permanece sem rota e sem configuração de ativação. Publicar o webhook exige primeiro garantir captura limitada dos bytes originais, resolução inequívoca entre número empresarial, conta e workspace, persistência atômica da mensagem e da referência de mídia, download somente após commit, observabilidade agregada e segredo externo. Nenhuma credencial ou chamada real é introduzida por esta decisão.
 
-## ADR-044 — O webhook Meta nasce desligado e aceita inicialmente somente texto
+## ADR-044 — O webhook Meta nasce desligado e aceita inicialmente somente texto [substituída pela ADR-051]
 
 O backend possui `GET|POST /api/whatsapp/webhook`, mas registra as rotas apenas
 quando `META_WEBHOOK_ENABLED=1` e ambos os segredos obrigatórios estão
@@ -314,9 +314,9 @@ e chave privada presente. Falhas usam código sanitizado e permanecem visíveis
 por estado, idade e métricas agregadas.
 
 O adapter falso gera apenas áudio sintético e serve à homologação do pipeline.
-O webhook Meta mantém áudio desligado até existir adapter autenticado, limites
-confirmados e revisão de retenção. Jobs não carregam referência externa,
-telefone, bytes ou conteúdo.
+O conector real mantém áudio desligado até existir referência durável,
+downloader autenticado, limites confirmados e revisão de retenção. Jobs não
+carregam credencial, telefone, bytes ou conteúdo.
 
 Uma falha indeterminada entre a gravação privada e a confirmação no banco pode
 deixar um objeto órfão identificado pela tentativa, sem sobrescrever mídia já
@@ -324,7 +324,7 @@ confirmada. Essa dívida é aceita somente com dados fictícios; antes do adapte
 real, uma rotina de reconciliação deve remover objetos sem referência após uma
 janela segura e preservar os objetos ligados a tentativas concluídas.
 
-## ADR-046 — Adapter Meta é compilado, mas ativação continua operacional
+## ADR-046 — Adapter Meta é compilado, mas ativação continua operacional [substituída pela ADR-051]
 
 O adapter de mídia da Meta executa duas leituras autenticadas: resolve a URL
 temporária pelo ID externo e baixa os bytes usando autenticação Bearer nas duas
@@ -363,7 +363,7 @@ varredura não registra chaves, workspaces ou nomes físicos; somente a contagem
 agregada de remoções. O PostgreSQL permanece a autoridade para distinguir mídia
 confirmada de tentativa abandonada.
 
-## ADR-049 — Entrada real não satisfaz a captura de mensagens enviadas
+## ADR-049 — Entrada real não satisfaz a captura de mensagens enviadas [substituída pela ADR-051]
 
 A primeira ativação da Meta continua limitada a mensagens recebidas. Status de
 entrega, leitura ou template não serão transformados em mensagens enviadas,
@@ -376,7 +376,7 @@ identidade, direção, conteúdo e ID externo, além de nova decisão sobre
 consentimento, auditoria e idempotência. Até lá, o fluxo completo existe apenas
 no domínio e nos testes, não na ativação Meta.
 
-## ADR-050 — Segredos e áudio Meta seguem privilégios e kill switches separados
+## ADR-050 — Segredos e áudio Meta seguem privilégios e kill switches separados [substituída pela ADR-051]
 
 O segredo de verificação e o segredo do aplicativo da Meta são necessários
 somente na API que recebe o webhook. Os demais processos recebem
@@ -387,3 +387,30 @@ Texto pode ser ativado sem habilitar áudio. Áudio exige adicionalmente
 `META_WEBHOOK_AUDIO_ENABLED=1` e deve ser ligado no mesmo deploy controlado que
 o worker real de download. Os dois switches permanecem desligados por padrão;
 uma configuração de áudio ativo com webhook desligado impede a inicialização.
+
+## ADR-051 — Baileys volta a ser o único caminho de conexão real
+
+Por decisão do produto, a integração real retorna ao Baileys e as ADRs 031,
+043, 044, 046 e 050 deixam de orientar o runtime. Rotas de webhook, adapters,
+segredos, configuração e download específicos da API oficial foram removidos.
+Nenhuma sessão Baileys foi conectada por esta decisão.
+
+O conector usará uma release 7 fixada e um processo dedicado. O auth state será
+implementado no PostgreSQL, com cada credencial e chave Signal criptografada
+por AES-256-GCM e chave externa ao banco. `useMultiFileAuthState`, logger padrão,
+histórico completo e envio autônomo são proibidos em produção.
+
+Eventos de texto serão normalizados atrás de uma porta sem importar o SDK no
+domínio. `fromMe` determina `outbound`, permitindo preservar também mensagens
+enviadas pelo usuário. Grupos, status, newsletters e eventos de protocolo são
+descartados antes da ingestão. Áudio exige uma decisão adicional sobre
+referência durável e download pós-commit.
+
+As migrations 202607280001 e 202607280002 já foram compartilhadas. O pipeline
+genérico de download da segunda permanece útil; colunas e constraint do
+experimento anterior ficam sem uso. Elas não serão apagadas até existir
+autorização explícita para uma migration destrutiva em ambiente compartilhado.
+
+Antes de conectar uma conta real, devem ser concluídos o auth state
+transacional, QR efêmero autenticado, reconexão, observabilidade sanitizada,
+auditoria da versão fixada, aceite dos termos e teste com número controlado.

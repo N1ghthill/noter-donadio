@@ -8,8 +8,8 @@ Para áudio externo, a mensagem, a referência de mídia em estado `pending` e
 `message.audio.download_requested` são persistidos juntos. O worker recebe
 somente IDs internos, adquire um lease, baixa para uma chave `.media` exclusiva
 da tentativa e confirma condicionalmente o registro antes de liberar a
-transcrição. O adapter autenticado da Meta está compilado, porém desligado na
-VPS.
+transcrição. O pipeline é independente do conector, mas ainda não existe
+downloader real do Baileys.
 
 O arquivo não é servido como conteúdo estático. A timeline autenticada informa apenas se a reprodução está disponível. Ao clicar em **Carregar áudio**, o frontend solicita `GET /api/media/:messageId/access`, que retorna uma URL relativa assinada válida por dois minutos. A leitura em `GET /api/media/:messageId/content` exige simultaneamente a sessão ativa, o mesmo workspace, prazo válido e assinatura HMAC correta.
 
@@ -45,8 +45,8 @@ associados à mensagem quando a remoção ocorreu apenas por retenção.
 
 ## Limites desta fatia
 
-- nenhum áudio real é baixado enquanto os kill switches permanecerem desligados;
-- o adapter Meta aceita o fluxo real, mas ainda depende de credencial, ativação e teste controlado;
+- nenhum áudio real é baixado enquanto o conector Baileys não estiver implementado;
+- o contrato durável para recuperar mídia do Baileys após o commit ainda precisa ser fechado;
 - não há endpoint público, URL permanente nem chave física na resposta da API;
 - o endpoint entrega o arquivo completo; suporte otimizado a `Range` fica para o adapter de objeto/produção;
 - exclusão manual por contato possui tarefas duráveis e tentativas `.media`

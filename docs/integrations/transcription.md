@@ -42,28 +42,16 @@ Falhas persistem somente o código sanitizado `TRANSCRIPTION_PROCESSING_FAILED` 
 - somente uma transcrição concluída produz `message.audio.ready_for_analysis`, contendo IDs;
 - o formulário local de áudio ignora qualquer texto enviado pelo navegador;
 - o áudio de demonstração é um WAV local fictício; o armazenamento privado, a URL curta assinada, o player e a retenção estão descritos em [`media.md`](media.md);
-- o adapter Meta de download permanece desligado até revisão operacional e configuração autorizada.
+- o downloader Baileys ainda não foi implementado; ele deverá recuperar mídia
+  pós-commit sem transportar conteúdo ou auth state no job.
 
-## Adapter de download da Meta
+## Download futuro pelo Baileys
 
-O adapter `meta` segue as operações oficiais para
-[resolver a URL](https://www.postman.com/meta/whatsapp-business-platform/request/fpj02x0/retrieve-media-url)
-e [baixar a mídia](https://www.postman.com/meta/whatsapp-business-platform/request/zsq66eh/download-media).
-Ele usa `GET /{media-id}?phone_number_id=...`, envia o token somente no header
-`Authorization`, resolve uma URL nova em cada tentativa e valida timeout,
-tamanho, MIME e cada redirecionamento. URLs temporárias são aceitas somente por
-HTTPS nos hosts de mídia esperados da Meta.
+O processo de conexão deverá persistir uma referência durável e mínima da
+mensagem de áudio. O worker recebe apenas IDs internos, resolve a referência e
+a sessão criptografada no PostgreSQL e grava os bytes no armazenamento privado
+antes de liberar a transcrição.
 
-Para um perfil real, o token e a versão explícita da Graph API são injetados
-somente no worker:
-
-```dotenv
-MEDIA_DOWNLOAD_ADAPTER=meta
-META_ACCESS_TOKEN=valor-fora-do-git
-META_GRAPH_API_VERSION=vXX.X
-```
-
-No `compose.production.yaml`, o processo pertence ao profile
-`media-download`; ativá-lo exige `COMPOSE_PROFILES=media-download`. Não use
-`latest` como versão e não coloque o token no banco, em jobs ou em URLs. O
-perfil da VPS continua usando o adapter falso.
+Não será persistido um diretório `auth_info_baileys`, nem objeto integral de
+mensagem em Redis. O formato exato da referência e a coordenação com o socket
+serão definidos e testados antes de habilitar áudio real.

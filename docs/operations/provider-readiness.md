@@ -2,92 +2,78 @@
 
 ## Estado
 
-Nenhum provedor externo está configurado ou autorizado a receber conversas. A composição de produção mantém `WHATSAPP_ADAPTER`, `TRANSCRIPTION_ADAPTER` e `AI_ADAPTER` como `disabled`; o desenvolvimento usa apenas adapters falsos.
+Nenhum provedor externo está configurado ou autorizado a receber conversas. A
+VPS usa apenas adapters falsos. O runtime e toda configuração da API oficial da
+Meta foram removidos por decisão do produto.
 
-## WhatsApp
+## WhatsApp via Baileys
 
-O alvo para produção é a [WhatsApp Cloud API oficial da Meta](https://www.postman.com/meta/whatsapp-business-platform/documentation/wlk6lh4/whatsapp-cloud-api). A implementação depende de uma conta empresarial controlada, WABA, número dedicado, credenciais e autorização explícita.
+O alvo aprovado é o [Baileys mantido pelo WhiskeySockets](https://github.com/WhiskeySockets/Baileys).
+Ele opera como cliente adicional do WhatsApp Web Multi-Device e não é uma API
+oficial ou endossada pelo WhatsApp.
 
-Primeira fase permitida pelo desenho:
+Estado implementado:
 
-- somente eventos recebidos; nenhum endpoint de envio;
-- HTTPS e validação da autenticidade do webhook antes do parse;
-- deduplicação por workspace, conta e ID externo;
-- persistência atômica antes de download de mídia e filas;
-- payload original minimizado e com retenção definida;
-- logs sem mensagem, telefone, mídia, QR ou token;
-- testes de contrato com fixtures sintéticas obtidas da documentação oficial.
+- jornada falsa de QR e conexão para demonstração;
+- tabelas para credenciais e chaves criptografadas;
+- ingestão idempotente e isolada por workspace;
+- fronteira pura para texto Baileys recebido e enviado;
+- pipeline genérico de mídia, filas e retenção;
+- filtros de grupos, status, newsletters e protocolo no domínio.
 
-A assinatura e os exemplos devem seguir a [coleção oficial de webhooks](https://www.postman.com/meta/whatsapp-business-platform/folder/lboq68h/webhooks) e os [exemplos mantidos pela Meta](https://github.com/fbsamples/whatsapp-api-examples). SDKs e payloads não atravessam a porta do domínio.
+Antes de instalar e habilitar:
 
-### Endpoint implementado, ainda inativo
+1. fixar uma release 7 suportada e auditar dependências;
+2. implementar `AuthenticationState` no PostgreSQL com AES-256-GCM;
+3. persistir cada atualização de credencial e chave de forma atômica;
+4. criar processo dedicado para socket, reconexão e health state;
+5. manter o logger da biblioteca silencioso e redigir logs da aplicação;
+6. implementar QR efêmero autenticado e `Cache-Control: no-store`;
+7. adaptar `messages.upsert` sem sincronizar histórico completo;
+8. implementar referência e download duráveis para áudio;
+9. testar apenas com número controlado e dados sintéticos;
+10. documentar aceite do risco de bloqueio e dos termos de uso.
 
-O endpoint `GET|POST /api/whatsapp/webhook` somente é registrado quando
-`META_WEBHOOK_ENABLED=1`. O valor padrão e os dois perfis de composição mantêm
-o kill switch em `0`, portanto a VPS continua respondendo `404` e não recebe
-eventos da Meta.
-
-`META_WEBHOOK_AUDIO_ENABLED` é um segundo kill switch, também desligado por
-padrão. Segredo de verificação e segredo do aplicativo ficam restritos à API;
-token de acesso e versão da Graph API ficam restritos ao worker de download.
-Ativar áudio exige mudar webhook e worker no mesmo deploy controlado.
-
-A fronteira implementada:
-
-- valida `X-Hub-Signature-256` por HMAC-SHA256 sobre os bytes originais e comparação em tempo constante;
-- valida modo, token e desafio da inscrição sem registrar o token;
-- aceita envelopes `whatsapp_business_account` e normaliza somente texto e áudio recebidos;
-- aplica limite de corpo de 1 MiB e rate limit específico;
-- resolve WABA e número empresarial para uma conta conectada e um único workspace antes de persistir;
-- persiste texto pelo fluxo transacional existente, com deduplicação e outbox;
-- ignora status e tipos não suportados, e recusa mensagens suportadas fora do contrato;
-- não preserva o payload original nem importa SDK da Meta.
-
-Não existem credenciais versionadas, conta real mapeada ou chamada externa.
-Áudio assinado ainda retorna `503` antes de qualquer persistência. O pipeline
-durável, o adapter autenticado de download e a reconciliação tardia de arquivos
-órfãos já existem, mas o perfil da VPS mantém somente o adapter falso.
-
-Antes da ativação ainda faltam credenciais injetadas externamente, cadastro da
-conta controlada, homologação do escopo do token, hosts retornados, retenção e
-teste controlado com payload sintético assinado.
-
-A primeira ativação continua somente de entrada. A captura de mensagens
-enviadas pelo usuário é requisito do MVP, mas ainda depende de uma fonte oficial
-e de decisão arquitetural própria; status de entrega não será convertido em
-mensagem para preencher essa lacuna.
+`useMultiFileAuthState` não será usado na VPS. A própria documentação do
+Baileys recomenda auth state próprio para produção; o diretório de autenticação
+equivale a uma credencial duradoura e não pode entrar em imagem, Git, log,
+backup desprotegido ou ferramenta de IA.
 
 ## Transcrição
 
-O adapter futuro pode usar a API de transcrições da OpenAI, mas só será implementado após disponibilização segura da credencial e aprovação do tratamento de áudio. O contrato atual permite trocar o adapter sem mudar mensagem, lease ou job.
+O adapter futuro pode usar um provedor aprovado somente depois de revisão do
+tratamento de áudio. O contrato atual permite troca sem mudar mensagem, lease
+ou job.
 
 Requisitos mínimos:
 
-- obter a mídia somente depois da persistência da mensagem;
+- obter mídia somente após persistência da mensagem;
 - validar tipo, tamanho e duração antes do upload;
-- enviar idioma quando conhecido e somente os bytes necessários;
-- manter timeout, retry limitado, custo e códigos de erro sanitizados;
-- registrar modelo e duração, sem copiar áudio para logs;
-- testar com áudio sintético e avaliar qualidade em amostra autorizada antes da produção.
-
-O candidato técnico atual é `gpt-4o-transcribe`; a escolha final continua configurável e depende de avaliação de qualidade, latência, custo, retenção e região.
+- enviar somente os bytes necessários;
+- aplicar timeout, retry limitado, custo e códigos sanitizados;
+- registrar modelo e duração sem copiar áudio para logs;
+- avaliar qualidade com áudio sintético e amostra autorizada.
 
 ## Análise estruturada
 
-O adapter futuro deve usar saída estruturada por JSON Schema estrito e continuar tratando a resposta como não confiável. A validação Zod existente permanece a última fronteira antes do PostgreSQL.
+O adapter futuro deve usar saída estruturada com schema estrito e tratar toda
+resposta como não confiável. A validação Zod existente permanece a última
+fronteira antes do PostgreSQL.
 
-O modelo não será fixado sem avaliação representativa. Para extração de alto volume, avaliar primeiro uma variante otimizada para custo e latência; usar um modelo mais capaz apenas quando os testes demonstrarem necessidade. Toda execução deve registrar modelo, versão do prompt, tokens, duração e confiança quando disponível.
+Toda execução deve registrar modelo, versão do prompt, tokens, duração e
+confiança quando disponíveis. Nenhuma sugestão é aplicada sem ação humana.
 
 ## Portões de ativação
 
-Cada integração real exige, antes de mudar seu adapter de `disabled`:
+Cada integração real exige:
 
-1. decisão arquitetural com provedor, finalidade, região, retenção, custo e condição de saída;
-2. contrato e avaliação de privacidade aprovados;
-3. segredo injetado por mecanismo externo, nunca em arquivo versionado;
-4. adapter, validação de fronteira, testes de contrato e kill switch;
-5. métricas de erro, latência, fila e custo com alertas;
+1. decisão arquitetural com finalidade, retenção, custo e condição de saída;
+2. revisão de privacidade e termos;
+3. segredo injetado externamente, nunca versionado;
+4. adapter, validação de fronteira, testes e kill switch;
+5. métricas e alertas sem dados de negócio;
 6. teste em workspace e conta controlados;
-7. autorização explícita para ativação.
+7. autorização explícita para conectar a sessão ou transmitir dados.
 
-Credenciais ausentes ou inválidas devem impedir a inicialização do processo correspondente. Nenhum fallback pode enviar dados para outro provedor silenciosamente.
+Credenciais ausentes ou inválidas devem impedir a inicialização. Nenhum
+fallback pode transmitir dados para outro provedor silenciosamente.

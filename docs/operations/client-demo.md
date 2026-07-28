@@ -112,7 +112,9 @@ Peça ao cliente decisões sobre:
 - Banco, Redis, aplicação e backups locais compartilham a mesma VPS.
 - Não há backup off-host nesta fase, por decisão aceita para dados fictícios.
 - Mídia real e credenciais reais ainda não são permitidas.
-- A integração planejada para dados reais é a WhatsApp Cloud API oficial e depende de autorização, credenciais e revisão de privacidade.
+- A integração planejada para dados reais é Baileys 7 e depende de auth state
+  criptografado, aceite do risco operacional e autorização antes de conectar
+  uma conta controlada.
 
 ## Evidência esperada
 
