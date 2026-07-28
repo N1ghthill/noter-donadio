@@ -277,3 +277,24 @@ O firewall persistente usa uma tabela `nftables` própria, sem limpar regras adm
 A primeira unidade da WhatsApp Cloud API é um adapter puro que valida assinatura HMAC-SHA256 sobre o corpo bruto, valida o desafio de inscrição e normaliza somente mensagens recebidas de texto e áudio. Payload, SDK e nomenclatura da Meta não atravessam essa fronteira; eventos de status e tipos fora do MVP não geram mensagens.
 
 O módulo permanece sem rota e sem configuração de ativação. Publicar o webhook exige primeiro garantir captura limitada dos bytes originais, resolução inequívoca entre número empresarial, conta e workspace, persistência atômica da mensagem e da referência de mídia, download somente após commit, observabilidade agregada e segredo externo. Nenhuma credencial ou chamada real é introduzida por esta decisão.
+
+## ADR-044 — O webhook Meta nasce desligado e aceita inicialmente somente texto
+
+O backend possui `GET|POST /api/whatsapp/webhook`, mas registra as rotas apenas
+quando `META_WEBHOOK_ENABLED=1` e ambos os segredos obrigatórios estão
+presentes. O padrão permanece desligado. O POST limita o corpo bruto a 1 MiB,
+valida a assinatura antes do parse, aplica rate limit e não depende de
+`Origin`, pois sua autenticidade vem da assinatura do provedor.
+
+Uma conta da Meta é resolvida pela combinação de provedor, WABA e identificador
+do número empresarial. O identificador do número é único por provedor e o
+vínculo só aceita conta conectada, produzindo workspace e conta internos antes
+da ingestão. Texto usa a transação e a outbox existentes, preservando
+idempotência. Conta ausente retorna indisponibilidade temporária sem aceitar o
+evento.
+
+Áudio permanece normalizado, mas retorna `503` antes de persistir qualquer
+item do lote. A condição de remoção é persistir a referência de mídia junto da
+mensagem e implementar download privado posterior ao commit antes de publicar
+transcrição. Não existe endpoint de envio, credencial versionada, conta real
+ou chamada à Meta nesta decisão.

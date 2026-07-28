@@ -16,6 +16,10 @@ import { registerAuthRoutes } from './modules/auth/http/auth.routes.js';
 import { registerOriginProtection } from './modules/auth/http/origin-protection.js';
 import type { WhatsappConnectionService } from './modules/whatsapp/domain/whatsapp-connection.js';
 import { registerWhatsappRoutes } from './modules/whatsapp/http/whatsapp.routes.js';
+import {
+  registerMetaCloudWebhookRoutes,
+  type MetaCloudWebhookRouteOptions,
+} from './modules/whatsapp/http/meta-cloud-webhook.routes.js';
 import type { MediaAccessService } from './modules/media/domain/media-access.js';
 import { registerMediaRoutes } from './modules/media/http/media.routes.js';
 import type { ContactDeletionService } from './modules/privacy/domain/contact-deletion.js';
@@ -37,6 +41,7 @@ interface AppOptions {
   readonly sessionAuthenticator?: SessionAuthenticator;
   readonly secureCookie?: boolean;
   readonly whatsappService?: WhatsappConnectionService;
+  readonly metaCloudWebhook?: MetaCloudWebhookRouteOptions;
   readonly conversationRepository?: ConversationRepository;
   readonly demoMessageService?: DemoMessageService;
   readonly mediaAccessService?: MediaAccessService;
@@ -163,6 +168,10 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
       service: options.whatsappService,
       sessionAuthenticator,
     });
+  }
+
+  if (options.metaCloudWebhook) {
+    registerMetaCloudWebhookRoutes(app, options.metaCloudWebhook);
   }
 
   if (options.conversationRepository && sessionAuthenticator) {

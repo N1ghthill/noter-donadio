@@ -107,37 +107,37 @@ model Workspace {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  whatsappAccounts   WhatsappAccount[]
-  contacts           Contact[]
-  negotiations       Negotiation[]
-  messages           Message[]
-  mediaAssets        MediaAsset[]
-  aiAnalyses         AiAnalysis[]
-  outboxEvents       OutboxEvent[]
-  users              User[]
-  analysisDecisions  AnalysisDecision[]
-  auditEvents        AuditEvent[]
-  mediaDeletionTasks MediaDeletionTask[]
+  whatsappAccounts           WhatsappAccount[]
+  contacts                   Contact[]
+  negotiations               Negotiation[]
+  messages                   Message[]
+  mediaAssets                MediaAsset[]
+  aiAnalyses                 AiAnalysis[]
+  outboxEvents               OutboxEvent[]
+  users                      User[]
+  analysisDecisions          AnalysisDecision[]
+  auditEvents                AuditEvent[]
+  mediaDeletionTasks         MediaDeletionTask[]
   negotiationFollowUpHistory NegotiationFollowUpHistory[]
 
   @@map("workspaces")
 }
 
 model User {
-  id                String             @id @default(uuid()) @db.Uuid
-  workspaceId       String             @map("workspace_id") @db.Uuid
-  email             String             @db.VarChar(320)
-  displayName       String             @map("display_name") @db.VarChar(255)
-  passwordHash      String             @map("password_hash") @db.VarChar(512)
-  role              UserRole           @default(admin)
-  status            UserStatus         @default(active)
-  lastLoginAt       DateTime?          @map("last_login_at") @db.Timestamptz(6)
-  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt         DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
-  workspace         Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  sessions          Session[]
-  analysisDecisions AnalysisDecision[]
-  auditEvents       AuditEvent[]
+  id                            String                       @id @default(uuid()) @db.Uuid
+  workspaceId                   String                       @map("workspace_id") @db.Uuid
+  email                         String                       @db.VarChar(320)
+  displayName                   String                       @map("display_name") @db.VarChar(255)
+  passwordHash                  String                       @map("password_hash") @db.VarChar(512)
+  role                          UserRole                     @default(admin)
+  status                        UserStatus                   @default(active)
+  lastLoginAt                   DateTime?                    @map("last_login_at") @db.Timestamptz(6)
+  createdAt                     DateTime                     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                     DateTime                     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  workspace                     Workspace                    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sessions                      Session[]
+  analysisDecisions             AnalysisDecision[]
+  auditEvents                   AuditEvent[]
   completedNegotiationFollowUps NegotiationFollowUpHistory[]
 
   @@unique([workspaceId, email])
@@ -163,20 +163,24 @@ model Session {
 }
 
 model WhatsappAccount {
-  id               String                   @id @default(uuid()) @db.Uuid
-  workspaceId      String                   @map("workspace_id") @db.Uuid
-  identifier       String                   @db.VarChar(100)
-  phoneNumber      String?                  @map("phone_number") @db.VarChar(20)
-  connectionStatus WhatsappConnectionStatus @default(disconnected) @map("connection_status")
-  lastConnectedAt  DateTime?                @map("last_connected_at") @db.Timestamptz(6)
-  createdAt        DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
-  workspace        Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  messages         Message[]
-  authKeys         WhatsappAuthKey[]
+  id                        String                   @id @default(uuid()) @db.Uuid
+  workspaceId               String                   @map("workspace_id") @db.Uuid
+  identifier                String                   @db.VarChar(100)
+  phoneNumber               String?                  @map("phone_number") @db.VarChar(20)
+  provider                  String?                  @db.VarChar(50)
+  providerBusinessAccountId String?                  @map("provider_business_account_id") @db.VarChar(255)
+  providerPhoneNumberId     String?                  @map("provider_phone_number_id") @db.VarChar(255)
+  connectionStatus          WhatsappConnectionStatus @default(disconnected) @map("connection_status")
+  lastConnectedAt           DateTime?                @map("last_connected_at") @db.Timestamptz(6)
+  createdAt                 DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                 DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  workspace                 Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  messages                  Message[]
+  authKeys                  WhatsappAuthKey[]
 
   @@unique([workspaceId, identifier])
   @@unique([workspaceId, id])
+  @@unique([provider, providerPhoneNumberId])
   @@index([workspaceId])
   @@map("whatsapp_accounts")
 }
@@ -226,39 +230,39 @@ model Contact {
 }
 
 model Negotiation {
-  id                 String             @id @default(uuid()) @db.Uuid
-  workspaceId        String             @map("workspace_id") @db.Uuid
-  contactId          String             @map("contact_id") @db.Uuid
-  title              String?            @db.VarChar(255)
-  stage              NegotiationStage   @default(lead)
-  value              Decimal?           @db.Decimal(15, 2)
-  valueConfirmedAt   DateTime?          @map("value_confirmed_at") @db.Timestamptz(6)
-  currency           String             @default("BRL") @db.Char(3)
-  expectedCloseDate  DateTime?          @map("expected_close_date") @db.Date
-  expectedCloseDateConfirmedAt DateTime? @map("expected_close_date_confirmed_at") @db.Timestamptz(6)
-  productInterest    String?            @map("product_interest")
-  productInterestConfirmedAt DateTime?   @map("product_interest_confirmed_at") @db.Timestamptz(6)
-  nextAction         String?            @map("next_action")
-  nextActionConfirmedAt DateTime?       @map("next_action_confirmed_at") @db.Timestamptz(6)
-  nextActionDueDate  DateTime?          @map("next_action_due_date") @db.Date
-  nextActionDueDateConfirmedAt DateTime? @map("next_action_due_date_confirmed_at") @db.Timestamptz(6)
-  lastSummary        String?            @map("last_summary")
-  sentiment          Sentiment?
-  priority           Int                @default(0) @db.SmallInt
-  pipelineStageOrder Int                @default(0) @map("pipeline_stage_order")
-  metadata           Json               @default("{}")
-  closedAt           DateTime?          @map("closed_at") @db.Timestamptz(6)
-  closeReason        String?            @map("close_reason")
-  version            Int                @default(1)
-  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
-  workspace          Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  contact            Contact            @relation(fields: [workspaceId, contactId], references: [workspaceId, id], onDelete: Cascade)
-  messages           Message[]
-  aiAnalyses         AiAnalysis[]
-  analysisDecisions  AnalysisDecision[]
-  auditEvents        AuditEvent[]
-  followUpHistory    NegotiationFollowUpHistory[]
+  id                           String                       @id @default(uuid()) @db.Uuid
+  workspaceId                  String                       @map("workspace_id") @db.Uuid
+  contactId                    String                       @map("contact_id") @db.Uuid
+  title                        String?                      @db.VarChar(255)
+  stage                        NegotiationStage             @default(lead)
+  value                        Decimal?                     @db.Decimal(15, 2)
+  valueConfirmedAt             DateTime?                    @map("value_confirmed_at") @db.Timestamptz(6)
+  currency                     String                       @default("BRL") @db.Char(3)
+  expectedCloseDate            DateTime?                    @map("expected_close_date") @db.Date
+  expectedCloseDateConfirmedAt DateTime?                    @map("expected_close_date_confirmed_at") @db.Timestamptz(6)
+  productInterest              String?                      @map("product_interest")
+  productInterestConfirmedAt   DateTime?                    @map("product_interest_confirmed_at") @db.Timestamptz(6)
+  nextAction                   String?                      @map("next_action")
+  nextActionConfirmedAt        DateTime?                    @map("next_action_confirmed_at") @db.Timestamptz(6)
+  nextActionDueDate            DateTime?                    @map("next_action_due_date") @db.Date
+  nextActionDueDateConfirmedAt DateTime?                    @map("next_action_due_date_confirmed_at") @db.Timestamptz(6)
+  lastSummary                  String?                      @map("last_summary")
+  sentiment                    Sentiment?
+  priority                     Int                          @default(0) @db.SmallInt
+  pipelineStageOrder           Int                          @default(0) @map("pipeline_stage_order")
+  metadata                     Json                         @default("{}")
+  closedAt                     DateTime?                    @map("closed_at") @db.Timestamptz(6)
+  closeReason                  String?                      @map("close_reason")
+  version                      Int                          @default(1)
+  createdAt                    DateTime                     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                    DateTime                     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  workspace                    Workspace                    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contact                      Contact                      @relation(fields: [workspaceId, contactId], references: [workspaceId, id], onDelete: Cascade)
+  messages                     Message[]
+  aiAnalyses                   AiAnalysis[]
+  analysisDecisions            AnalysisDecision[]
+  auditEvents                  AuditEvent[]
+  followUpHistory              NegotiationFollowUpHistory[]
 
   @@unique([workspaceId, id])
   @@index([workspaceId, stage])
@@ -274,11 +278,11 @@ model NegotiationFollowUpHistory {
   negotiationId     String      @map("negotiation_id") @db.Uuid
   completedByUserId String      @map("completed_by_user_id") @db.Uuid
   description       String
-  dueDate            DateTime?   @map("due_date") @db.Date
-  completedAt        DateTime    @default(now()) @map("completed_at") @db.Timestamptz(6)
-  workspace          Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  negotiation        Negotiation @relation(fields: [workspaceId, negotiationId], references: [workspaceId, id], onDelete: Cascade)
-  completedByUser    User        @relation(fields: [workspaceId, completedByUserId], references: [workspaceId, id], onDelete: Restrict)
+  dueDate           DateTime?   @map("due_date") @db.Date
+  completedAt       DateTime    @default(now()) @map("completed_at") @db.Timestamptz(6)
+  workspace         Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  negotiation       Negotiation @relation(fields: [workspaceId, negotiationId], references: [workspaceId, id], onDelete: Cascade)
+  completedByUser   User        @relation(fields: [workspaceId, completedByUserId], references: [workspaceId, id], onDelete: Restrict)
 
   @@index([workspaceId, completedAt])
   @@index([negotiationId, completedAt])
@@ -406,9 +410,9 @@ model AnalysisDecision {
   appliedTags                 String[]             @default([]) @map("applied_tags")
   appliedValue                Decimal?             @map("applied_value") @db.Decimal(15, 2)
   appliedExpectedCloseDate    DateTime?            @map("applied_expected_close_date") @db.Date
-  appliedProductInterest      String?               @map("applied_product_interest")
-  appliedNextAction           String?               @map("applied_next_action")
-  appliedNextActionDueDate    DateTime?             @map("applied_next_action_due_date") @db.Date
+  appliedProductInterest      String?              @map("applied_product_interest")
+  appliedNextAction           String?              @map("applied_next_action")
+  appliedNextActionDueDate    DateTime?            @map("applied_next_action_due_date") @db.Date
   resultingNegotiationVersion Int                  @map("resulting_negotiation_version")
   createdAt                   DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   workspace                   Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -424,20 +428,20 @@ model AnalysisDecision {
 }
 
 model AuditEvent {
-  id               String      @id @default(uuid()) @db.Uuid
-  workspaceId      String      @map("workspace_id") @db.Uuid
-  userId           String      @map("user_id") @db.Uuid
-  contactId        String?     @map("contact_id") @db.Uuid
-  negotiationId    String?     @map("negotiation_id") @db.Uuid
+  id               String       @id @default(uuid()) @db.Uuid
+  workspaceId      String       @map("workspace_id") @db.Uuid
+  userId           String       @map("user_id") @db.Uuid
+  contactId        String?      @map("contact_id") @db.Uuid
+  negotiationId    String?      @map("negotiation_id") @db.Uuid
   action           AuditAction
-  changedFields    String[]    @default([]) @map("changed_fields")
-  previousVersion  Int?        @map("previous_version")
-  resultingVersion Int?        @map("resulting_version")
-  details          Json        @default("{}")
-  createdAt        DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
-  workspace        Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  user             User        @relation(fields: [workspaceId, userId], references: [workspaceId, id], onDelete: Restrict)
-  contact          Contact?    @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  changedFields    String[]     @default([]) @map("changed_fields")
+  previousVersion  Int?         @map("previous_version")
+  resultingVersion Int?         @map("resulting_version")
+  details          Json         @default("{}")
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  workspace        Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user             User         @relation(fields: [workspaceId, userId], references: [workspaceId, id], onDelete: Restrict)
+  contact          Contact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
   negotiation      Negotiation? @relation(fields: [negotiationId], references: [id], onDelete: SetNull)
 
   @@index([workspaceId, createdAt])

@@ -27,3 +27,25 @@ test('recusa URL com caminho na configuração de Origin', () => {
     APP_ORIGINS: 'https://app.example.test/subpath',
   }));
 });
+
+test('webhook Meta permanece desligado por padrão', () => {
+  const environment = readEnvironment(required);
+  assert.equal(environment.META_WEBHOOK_ENABLED, false);
+  assert.equal(environment.META_WEBHOOK_VERIFY_TOKEN, undefined);
+  assert.equal(environment.META_APP_SECRET, undefined);
+});
+
+test('webhook Meta ativo exige ambos os segredos', () => {
+  assert.throws(() => readEnvironment({
+    ...required,
+    META_WEBHOOK_ENABLED: '1',
+  }));
+
+  const environment = readEnvironment({
+    ...required,
+    META_WEBHOOK_ENABLED: '1',
+    META_WEBHOOK_VERIFY_TOKEN: 'token-de-verificacao-com-mais-de-trinta-e-dois-caracteres',
+    META_APP_SECRET: 'segredo-do-aplicativo-com-mais-de-trinta-e-dois-caracteres',
+  });
+  assert.equal(environment.META_WEBHOOK_ENABLED, true);
+});

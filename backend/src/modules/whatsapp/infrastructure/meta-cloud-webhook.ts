@@ -6,6 +6,8 @@ import {
 
 import { z } from 'zod';
 
+import type { MetaCloudInboundMessage } from '../domain/meta-cloud-ingestion.js';
+
 const signaturePattern = /^sha256=([a-f0-9]{64})$/;
 const digitsPattern = /^\d{8,20}$/;
 const timestampPattern = /^\d{1,13}$/;
@@ -61,22 +63,6 @@ const audioMessageSchema = baseMessageSchema.extend({
     mime_type: z.string().trim().min(1).max(255).optional(),
   }),
 });
-
-export interface MetaCloudInboundMessage {
-  readonly provider: 'meta_cloud_api';
-  readonly businessAccountId: string;
-  readonly phoneNumberId: string;
-  readonly externalMessageId: string;
-  readonly remoteJid: `${string}@s.whatsapp.net`;
-  readonly phoneNumber: string;
-  readonly displayName?: string | undefined;
-  readonly direction: 'inbound';
-  readonly messageType: 'text' | 'audio';
-  readonly content?: string | undefined;
-  readonly occurredAt: Date;
-  readonly providerMediaId?: string | undefined;
-  readonly mediaMimeType?: string | undefined;
-}
 
 export class InvalidMetaWebhookPayloadError extends Error {
   public constructor() {

@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+const optionalSecret = z.preprocess(
+  (value) => value === '' ? undefined : value,
+  z.string().min(32).optional(),
+);
+
 const environmentSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   HOST: z.string().default('127.0.0.1'),
@@ -8,6 +13,9 @@ const environmentSchema = z.object({
   REDIS_URL: z.url(),
   INTERNAL_INGESTION_TOKEN: z.string().min(32),
   WHATSAPP_ADAPTER: z.enum(['disabled', 'fake']).default('disabled'),
+  META_WEBHOOK_ENABLED: z.enum(['0', '1']).default('0').transform((value) => value === '1'),
+  META_WEBHOOK_VERIFY_TOKEN: optionalSecret,
+  META_APP_SECRET: optionalSecret,
   TRANSCRIPTION_ADAPTER: z.enum(['disabled', 'fake']).default('disabled'),
   AI_ADAPTER: z.enum(['disabled', 'fake']).default('disabled'),
   MEDIA_STORAGE_PATH: z.string().trim().min(1).default('storage/media'),
@@ -34,6 +42,22 @@ const environmentSchema = z.object({
         return z.NEVER;
       }
     }),
+}).superRefine((environment, context) => {
+  if (!environment.META_WEBHOOK_ENABLED) return;
+  if (!environment.META_WEBHOOK_VERIFY_TOKEN) {
+    context.addIssue({
+      code: 'custom',
+      path: ['META_WEBHOOK_VERIFY_TOKEN'],
+      message: 'META_WEBHOOK_VERIFY_TOKEN é obrigatório quando o webhook está ativo',
+    });
+  }
+  if (!environment.META_APP_SECRET) {
+    context.addIssue({
+      code: 'custom',
+      path: ['META_APP_SECRET'],
+      message: 'META_APP_SECRET é obrigatório quando o webhook está ativo',
+    });
+  }
 });
 
 export type Environment = z.infer<typeof environmentSchema>;
