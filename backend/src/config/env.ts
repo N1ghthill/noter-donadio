@@ -14,6 +14,7 @@ const environmentSchema = z.object({
   INTERNAL_INGESTION_TOKEN: z.string().min(32),
   WHATSAPP_ADAPTER: z.enum(['disabled', 'fake']).default('disabled'),
   META_WEBHOOK_ENABLED: z.enum(['0', '1']).default('0').transform((value) => value === '1'),
+  META_WEBHOOK_AUDIO_ENABLED: z.enum(['0', '1']).default('0').transform((value) => value === '1'),
   META_WEBHOOK_VERIFY_TOKEN: optionalSecret,
   META_APP_SECRET: optionalSecret,
   MEDIA_DOWNLOAD_ADAPTER: z.enum(['disabled', 'fake', 'meta']).default('disabled'),
@@ -50,6 +51,13 @@ const environmentSchema = z.object({
       }
     }),
 }).superRefine((environment, context) => {
+  if (environment.META_WEBHOOK_AUDIO_ENABLED && !environment.META_WEBHOOK_ENABLED) {
+    context.addIssue({
+      code: 'custom',
+      path: ['META_WEBHOOK_AUDIO_ENABLED'],
+      message: 'META_WEBHOOK_AUDIO_ENABLED exige o webhook Meta ativo',
+    });
+  }
   if (environment.META_WEBHOOK_ENABLED) {
     if (!environment.META_WEBHOOK_VERIFY_TOKEN) {
       context.addIssue({

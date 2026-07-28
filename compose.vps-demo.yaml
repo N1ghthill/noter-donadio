@@ -26,9 +26,8 @@ x-backend: &backend
     MEDIA_MAX_BYTES: ${MEDIA_MAX_BYTES:-10485760}
     APP_ORIGINS: ${APP_ORIGINS:?defina APP_ORIGINS}
     WHATSAPP_ADAPTER: fake
-    META_WEBHOOK_ENABLED: ${META_WEBHOOK_ENABLED:-0}
-    META_WEBHOOK_VERIFY_TOKEN: ${META_WEBHOOK_VERIFY_TOKEN:-}
-    META_APP_SECRET: ${META_APP_SECRET:-}
+    META_WEBHOOK_ENABLED: 0
+    META_WEBHOOK_AUDIO_ENABLED: 0
     MEDIA_DOWNLOAD_ADAPTER: fake
     TRANSCRIPTION_ADAPTER: fake
     AI_ADAPTER: fake
@@ -86,6 +85,12 @@ services:
 
   backend:
     <<: *backend
+    environment:
+      <<: *backend-environment
+      META_WEBHOOK_ENABLED: ${META_WEBHOOK_ENABLED:-0}
+      META_WEBHOOK_AUDIO_ENABLED: ${META_WEBHOOK_AUDIO_ENABLED:-0}
+      META_WEBHOOK_VERIFY_TOKEN: ${META_WEBHOOK_VERIFY_TOKEN:-}
+      META_APP_SECRET: ${META_APP_SECRET:-}
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
       interval: 10s

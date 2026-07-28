@@ -31,6 +31,7 @@ test('recusa URL com caminho na configuração de Origin', () => {
 test('webhook Meta permanece desligado por padrão', () => {
   const environment = readEnvironment(required);
   assert.equal(environment.META_WEBHOOK_ENABLED, false);
+  assert.equal(environment.META_WEBHOOK_AUDIO_ENABLED, false);
   assert.equal(environment.META_WEBHOOK_VERIFY_TOKEN, undefined);
   assert.equal(environment.META_APP_SECRET, undefined);
   assert.equal(environment.MEDIA_ORPHAN_GRACE_HOURS, 24);
@@ -60,6 +61,21 @@ test('webhook Meta ativo exige ambos os segredos', () => {
     META_APP_SECRET: 'segredo-do-aplicativo-com-mais-de-trinta-e-dois-caracteres',
   });
   assert.equal(environment.META_WEBHOOK_ENABLED, true);
+});
+
+test('áudio Meta exige webhook ativo e permanece opt-in', () => {
+  assert.throws(() => readEnvironment({
+    ...required,
+    META_WEBHOOK_AUDIO_ENABLED: '1',
+  }));
+  const environment = readEnvironment({
+    ...required,
+    META_WEBHOOK_ENABLED: '1',
+    META_WEBHOOK_AUDIO_ENABLED: '1',
+    META_WEBHOOK_VERIFY_TOKEN: 'token-de-verificacao-com-mais-de-trinta-e-dois-caracteres',
+    META_APP_SECRET: 'segredo-do-aplicativo-com-mais-de-trinta-e-dois-caracteres',
+  });
+  assert.equal(environment.META_WEBHOOK_AUDIO_ENABLED, true);
 });
 
 test('download Meta exige token e versão explícita da Graph API', () => {

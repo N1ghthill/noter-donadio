@@ -64,6 +64,7 @@ if (environment.META_WEBHOOK_ENABLED) {
     {
       ingest: (command) => ingestionService.execute(command),
     },
+    environment.META_WEBHOOK_AUDIO_ENABLED,
   );
   metaCloudWebhook = {
     verifyToken: environment.META_WEBHOOK_VERIFY_TOKEN,
