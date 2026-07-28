@@ -235,3 +235,21 @@ As regras iniciais cobrem disponibilidade, atraso do outbox e dos pipelines assi
 O perfil de observabilidade inclui Alertmanager com versão fixada, armazenamento próprio e acesso somente por loopback. Prometheus envia os alertas pela rede privada; Grafana recebe um datasource provisionado e não editável. Receivers locais separam avisos e críticos, agrupam eventos equivalentes e não possuem e-mail, chat ou webhook configurado.
 
 Backlogs críticos inibem apenas os avisos equivalentes quando `component`, `alert_class` e `pipeline` coincidem. Um exercício sintético confirma recebimento e resolução sem consultar dados de negócio. Esta decisão implementa localmente a etapa deixada pendente na ADR-035; TLS, alta disponibilidade, destinatários reais e credenciais continuam sujeitos a aprovação separada.
+
+## ADR-037 — Identidade de rede é confiada somente ao proxy empacotado
+
+O backend habilita `trustProxy` apenas no processo configurado como produção, que não publica sua porta no host e recebe tráfego web pelo Nginx da mesma composição. O Nginx sobrescreve `X-Forwarded-For` com o endereço do par que abriu a conexão, impedindo que um cliente forneça arbitrariamente a chave usada pelos limites de login e exportação.
+
+Quando houver um terminador TLS externo, ele deverá acessar o Nginx por rede restrita. A topologia, os intervalos confiáveis e a propagação do endereço original precisam ser definidos antes de configurar limites adicionais no proxy; não será aceita confiança irrestrita em uma cadeia de cabeçalhos fornecida pelo cliente.
+
+## ADR-038 — Prisma avança como conjunto alinhado
+
+O CLI, o client e o adapter do Prisma ficam alinhados em `7.9.1`. Essa versão remove os achados transitivos observados nas tentativas anteriores com `7.8.0` e `7.9.0`, sem exigir override de pacote. A combinação completa é validada por geração do client, migrations em banco vazio, testes integrados e build.
+
+Prisma CLI, client e adapter devem continuar avançando juntos. Um upgrade só é aceito depois de instalação limpa e validação de schema, migration, testes e auditoria; correções transitivas isoladas não podem produzir uma combinação de versões não suportada.
+
+## ADR-039 — A fase compartilhada usa uma única VPS sem classificá-la como produção
+
+Aplicação, PostgreSQL, Redis e workers compartilham uma VPS enquanto a carga é baixa e somente dados fictícios são permitidos. Banco e filas ficam em rede Docker privada, volumes são persistentes, logs possuem rotação e todos os processos backend reutilizam a mesma imagem. A indisponibilidade do host afeta todo o sistema e é um risco aceito apenas nesta fase.
+
+O perfil público por IP usa HTTP, cookies de desenvolvimento e adapters falsos. Git permanece a fonte de verdade; deploys exigem checkout limpo, snapshot prévio, migration controlada e smoke test. Snapshot no próprio host não é recuperação de desastre, portanto domínio/TLS, backup off-host, alertas com destino real, mídia externa e revisão de segurança continuam bloqueando dados reais.

@@ -1,0 +1,11 @@
+[Unit]
+Description=Agenda backup diário do noter.donadio
+
+[Timer]
+OnCalendar=*-*-* 03:15:00 UTC
+Persistent=true
+RandomizedDelaySec=15m
+Unit=noter-backup.service
+
+[Install]
+WantedBy=timers.target

@@ -13,7 +13,7 @@ x-backend: &backend
   init: true
   logging: *default-logging
   environment: &backend-environment
-    NODE_ENV: production
+    NODE_ENV: development
     HOST: 0.0.0.0
     PORT: 3000
     DATABASE_URL: postgresql://${DB_USER:?defina DB_USER}:${DB_PASSWORD:?defina DB_PASSWORD}@postgres:5432/${DB_NAME:-noter_donadio}
@@ -23,10 +23,10 @@ x-backend: &backend
     MEDIA_SIGNING_SECRET: ${MEDIA_SIGNING_SECRET:?defina MEDIA_SIGNING_SECRET}
     MEDIA_RETENTION_DAYS: ${MEDIA_RETENTION_DAYS:-30}
     MEDIA_MAX_BYTES: ${MEDIA_MAX_BYTES:-10485760}
-    APP_ORIGINS: ${APP_ORIGINS:?defina APP_ORIGINS}
-    WHATSAPP_ADAPTER: disabled
-    TRANSCRIPTION_ADAPTER: disabled
-    AI_ADAPTER: disabled
+    APP_ORIGINS: http://${PUBLIC_HOST:?defina PUBLIC_HOST}
+    WHATSAPP_ADAPTER: fake
+    TRANSCRIPTION_ADAPTER: fake
+    AI_ADAPTER: fake
   depends_on:
     migrate:
       condition: service_completed_successfully
@@ -95,6 +95,14 @@ services:
     <<: *backend
     command: ["node", "dist/realtime.main.js"]
 
+  transcription:
+    <<: *backend
+    command: ["node", "dist/transcription.main.js"]
+
+  analysis:
+    <<: *backend
+    command: ["node", "dist/analysis.main.js"]
+
   retention:
     <<: *backend
     command: ["node", "dist/media-retention.main.js"]
@@ -110,7 +118,7 @@ services:
       backend:
         condition: service_healthy
     ports:
-      - "${HTTP_BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT:-8080}:80"
+      - "0.0.0.0:${HTTP_PORT:-80}:80"
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1/"]
       interval: 10s

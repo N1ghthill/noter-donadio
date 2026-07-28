@@ -6,6 +6,8 @@ O repositório possui imagens reproduzíveis para backend e frontend e uma compo
 
 O sistema ainda não está liberado para conversas reais: WhatsApp, transcrição e IA possuem somente adapters falsos. Em `compose.production.yaml` eles ficam explicitamente `disabled`; os respectivos workers não são iniciados. Armazenamento local de mídia também deve ser substituído por objeto privado criptografado antes de produção real.
 
+O perfil público por IP definido em `compose.vps-demo.yaml` é um ambiente transitório de desenvolvimento e demonstração, não uma variação de produção. Sua operação e seus portões estão documentados em [`vps.md`](vps.md).
+
 ## Validação das imagens
 
 Use credenciais exclusivamente locais e aleatórias. Não reutilize secrets de ambiente compartilhado.
@@ -37,6 +39,8 @@ Antes de qualquer upgrade:
 ## Métricas e alertas
 
 O backend oferece `GET /api/internal/metrics` no formato Prometheus, com prazo de coleta de dois segundos. O scraper deve acessar `backend:3000` pela rede privada e enviar `x-internal-token` como header protegido. O Nginx público responde `404` para todo `/api/internal/`; não abra uma porta pública alternativa para contornar essa restrição.
+
+O Nginx sobrescreve `X-Forwarded-For`, e o backend confia nesse salto somente em produção. Assim, os limites de login e exportação usam o endereço observado pelo proxy sem aceitar um valor arbitrário enviado pelo cliente. Antes de colocar outro proxy ou balanceador à frente do Nginx, restrinja a rede entre eles e configure explicitamente a propagação do endereço original; até essa topologia ser definida, não adicione confiança genérica em cadeias de proxies.
 
 As séries disponíveis são:
 

@@ -6,15 +6,17 @@ Marco base: tag `v0.2.0-mvp`, publicada em 21/07/2026. As evidências abaixo aco
 
 Os fluxos comerciais e administrativos implementados estão aceitos para demonstração com dados fictícios. Isso não constitui liberação para dados reais ou provedores externos.
 
-Evidências automatizadas do marco:
+Evidências automatizadas repetidas sobre a candidata da fase VPS em 28/07/2026:
 
 - lint e TypeScript estrito sem erros;
-- 129 testes aprovados: 1 de contratos, 97 de backend e 31 de frontend;
+- 130 testes aprovados: 1 de contratos, 98 de backend e 31 de frontend;
 - build dos três workspaces aprovado;
 - 14 migrations aplicadas em PostgreSQL vazio;
 - fluxo integrado validado com PostgreSQL, Redis, BullMQ e adapters falsos;
-- imagens de backend e frontend construídas, configuração do Compose validada e Nginx com sintaxe válida;
-- auditoria de dependências de produção sem vulnerabilidades conhecidas no momento da execução.
+- imagens de backend e frontend construídas, configuração do Compose e sintaxe do Nginx validadas;
+- backup sintético restaurado com sucesso em PostgreSQL 16 isolado;
+- Prisma CLI, client e adapter atualizados e sem achados próprios no `npm audit`;
+- o `npm audit --omit=dev` ainda reporta o advisory de React Router restrito ao modo RSC, que não é usado pela SPA atual; o achado permanece registrado e bloqueia tratar o perfil HTTP da VPS como produção real.
 
 ## Jornadas cobertas
 

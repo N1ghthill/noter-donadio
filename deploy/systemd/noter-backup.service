@@ -1,0 +1,13 @@
+[Unit]
+Description=Backup local do noter.donadio
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/noter-donadio
+Environment=COMPOSE_FILE=compose.vps-demo.yaml
+ExecStart=/opt/noter-donadio/scripts/backup-vps.sh
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

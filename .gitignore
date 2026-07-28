@@ -19,3 +19,4 @@ backend/src/generated/prisma/
 .vscode/
 *.tsbuildinfo
 backups/
+.deployed-commit
