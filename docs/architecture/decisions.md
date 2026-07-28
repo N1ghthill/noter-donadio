@@ -252,4 +252,16 @@ Prisma CLI, client e adapter devem continuar avançando juntos. Um upgrade só �
 
 Aplicação, PostgreSQL, Redis e workers compartilham uma VPS enquanto a carga é baixa e somente dados fictícios são permitidos. Banco e filas ficam em rede Docker privada, volumes são persistentes, logs possuem rotação e todos os processos backend reutilizam a mesma imagem. A indisponibilidade do host afeta todo o sistema e é um risco aceito apenas nesta fase.
 
-O perfil público por IP usa HTTP, cookies de desenvolvimento e adapters falsos. Git permanece a fonte de verdade; deploys exigem checkout limpo, snapshot prévio, migration controlada e smoke test. Snapshot no próprio host não é recuperação de desastre, portanto domínio/TLS, backup off-host, alertas com destino real, mídia externa e revisão de segurança continuam bloqueando dados reais.
+O perfil usa adapters falsos. Git permanece a fonte de verdade; deploys exigem checkout limpo, snapshot prévio, migration controlada e smoke test. Snapshot no próprio host não é recuperação de desastre, portanto backup off-host, alertas com destino real, mídia externa e revisão de segurança continuam bloqueando dados reais.
+
+## ADR-040 — O domínio da fase compartilhada termina TLS no Caddy
+
+`leadcontrol.online` aponta diretamente para a VPS. O Caddy é o único serviço web publicado, redireciona HTTP para HTTPS, administra o certificado e encaminha `/api` e `/socket.io` diretamente ao backend; o frontend Nginx fica restrito à rede Docker. O prefixo `/api/internal` é recusado antes de qualquer proxy.
+
+O backend executa com `NODE_ENV=production`, emite cookie `Secure` e aceita mutações somente da origem HTTPS explícita. A porta do backend não é publicada e o Caddy substitui cabeçalhos de encaminhamento recebidos do cliente antes de informar o endereço original ao backend. Estado ACME fica em volume persistente; perder esse volume não perde dados de negócio, mas pode causar nova emissão e limites da autoridade certificadora.
+
+## ADR-041 — Backup somente na VPS é dívida aceita para dados fictícios
+
+Durante a continuidade de implementação e demonstração com dados fictícios, os snapshots automáticos permanecem no mesmo host. A justificativa é reduzir custo e complexidade nesta fase; o impacto aceito é perder aplicação, banco, mídia e todos os snapshots em uma única falha da VPS.
+
+A exceção termina antes de qualquer dado real. A condição de remoção é configurar cópia off-host criptografada, retenção definida e exercício documentado de restauração. Snapshot local continua obrigatório antes de deploys mesmo durante a exceção.

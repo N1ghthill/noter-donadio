@@ -2,18 +2,18 @@
 
 ## Estado e finalidade
 
-A VPS única é o ambiente compartilhado de desenvolvimento assistido e demonstração da fase atual. Ela executa aplicação, PostgreSQL, Redis e workers no mesmo host para reduzir custo e complexidade operacional. Essa topologia é adequada enquanto a carga é baixa, os dados são fictícios e a indisponibilidade de um único host é um risco aceito.
+A VPS única é o ambiente compartilhado de desenvolvimento assistido e demonstração da fase atual. Ela executa aplicação, proxy TLS, PostgreSQL, Redis e workers no mesmo host para reduzir custo e complexidade operacional. Essa topologia é adequada enquanto a carga é baixa, os dados são fictícios e a indisponibilidade de um único host é um risco aceito.
 
-O perfil `compose.vps-demo.yaml` usa HTTP e adapters falsos. Ele não é produção real e não pode receber conversas, contatos, áudios ou credenciais reais. Domínio, TLS, cookies `Secure`, provedores aprovados, armazenamento de mídia externo e backup off-host são portões obrigatórios para mudar essa classificação.
+O perfil `compose.vps-demo.yaml` publica `leadcontrol.online` em HTTPS, usa cookies `Secure` e mantém adapters falsos. Ele não é produção real e não pode receber conversas, contatos, áudios ou credenciais reais. Provedores aprovados, armazenamento de mídia externo, backup off-host e revisão de segurança continuam sendo portões obrigatórios para mudar essa classificação.
 
 ## Topologia
 
 ```text
 Internet
-└── porta 80 → frontend Nginx
-    ├── arquivos React
-    ├── /api → backend
-    └── /socket.io → backend
+└── portas 80/443 → Caddy (TLS automático e redirecionamento HTTPS)
+    ├── arquivos React → frontend Nginx privado
+    ├── /api/internal → 404
+    └── /api e /socket.io → backend privado
         ├── PostgreSQL em rede Docker privada
         ├── Redis/BullMQ em rede Docker privada
         └── outbox, realtime, transcription, analysis e retention
@@ -58,7 +58,15 @@ scripts/deploy-vps.sh
 scripts/status-vps.sh
 ```
 
-O `.env` remoto permanece fora do Git, com permissão `600`. Segredos não devem aparecer em comandos versionados, tickets ou logs.
+O `.env` remoto permanece fora do Git, com permissão `600`. Segredos não devem aparecer em comandos versionados, tickets ou logs. Para este perfil, mantenha:
+
+```dotenv
+APP_DOMAIN=leadcontrol.online
+APP_ORIGINS=https://leadcontrol.online
+PUBLIC_ORIGIN=https://leadcontrol.online
+```
+
+O registro `A` do domínio deve apontar para a VPS e as portas TCP 80/443 devem estar liberadas. A porta UDP 443 é publicada para HTTP/3; a aplicação continua funcional por HTTPS/TCP se UDP estiver indisponível. O Caddy obtém e renova o certificado automaticamente e preserva seu estado nos volumes `noter_caddy_data` e `noter_caddy_config`.
 
 Defina `ENABLE_OBSERVABILITY=1` no `.env` quando o deploy também deva preservar e reconciliar Prometheus, Alertmanager e Grafana.
 
@@ -82,7 +90,7 @@ scripts/backup-vps.sh
 scripts/verify-postgres-backup.sh /var/backups/noter-donadio/AAAAMMDDTHHMMSSZ/noter-AAAAMMDDTHHMMSSZ.dump
 ```
 
-Um snapshot no mesmo disco protege contra erro de aplicação, mas não contra perda da VPS. Copiar os snapshots, de forma criptografada, para armazenamento off-host com retenção e teste periódico continua obrigatório antes de dados reais.
+Um snapshot no mesmo disco protege contra erro de aplicação, mas não contra perda da VPS. Nesta fase, o proprietário aceitou operar sem cópia off-host para reduzir complexidade enquanto os dados são fictícios. O impacto aceito é a perda integral de dados e backups em caso de falha ou perda da VPS. Essa exceção deve ser removida antes da entrada de dados reais, copiando snapshots de forma criptografada para armazenamento externo com retenção e restauração testada.
 
 ## Observabilidade
 
@@ -109,8 +117,7 @@ Na VPS atual, autenticação SSH por senha e interação de teclado estão desab
 
 O ambiente só pode ser promovido depois de:
 
-- domínio e TLS válidos, com redirecionamento de HTTP e cookies `Secure`;
-- troca de `compose.vps-demo.yaml` por configuração de produção revisada;
+- configuração de produção revisada em substituição ao perfil de demonstração;
 - firewall e acesso SSH endurecidos, usuário operacional sem login rotineiro como `root`;
 - backup off-host automatizado e restauração comprovada;
 - destino real de alertas e runbook de incidente;

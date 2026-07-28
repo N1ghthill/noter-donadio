@@ -3,7 +3,6 @@ set -euo pipefail
 
 project_directory="${PROJECT_DIRECTORY:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 compose_file="${COMPOSE_FILE:-compose.vps-demo.yaml}"
-health_url="${HEALTH_URL:-http://127.0.0.1/}"
 
 cd "${project_directory}"
 
@@ -13,6 +12,8 @@ if test -f .env; then
   source .env
   set +a
 fi
+
+health_url="${HEALTH_URL:-${PUBLIC_ORIGIN:-http://127.0.0.1/}}"
 
 compose_arguments=(-f "${compose_file}")
 if test "${ENABLE_OBSERVABILITY:-0}" = "1"; then

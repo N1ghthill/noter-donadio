@@ -23,9 +23,9 @@ docker compose -f "${compose_file}" exec -T postgres \
   pg_isready --username="${DB_USER:?defina DB_USER}" --dbname="${DB_NAME:-noter_donadio}"
 docker compose -f "${compose_file}" exec -T redis redis-cli ping
 
-public_url="http://${PUBLIC_HOST:?defina PUBLIC_HOST}"
-curl --fail --silent --show-error "${public_url}/" >/dev/null
-internal_status="$(curl --silent --output /dev/null --write-out '%{http_code}' "${public_url}/api/internal/health/ready")"
+public_url="${PUBLIC_ORIGIN:?defina PUBLIC_ORIGIN}"
+curl --fail --silent --show-error "${public_url%/}/" >/dev/null
+internal_status="$(curl --silent --output /dev/null --write-out '%{http_code}' "${public_url%/}/api/internal/health/ready")"
 test "${internal_status}" = "404"
 
 if test "${ENABLE_OBSERVABILITY:-0}" = "1"; then

@@ -13,7 +13,7 @@ x-backend: &backend
   init: true
   logging: *default-logging
   environment: &backend-environment
-    NODE_ENV: development
+    NODE_ENV: production
     HOST: 0.0.0.0
     PORT: 3000
     DATABASE_URL: postgresql://${DB_USER:?defina DB_USER}:${DB_PASSWORD:?defina DB_PASSWORD}@postgres:5432/${DB_NAME:-noter_donadio}
@@ -23,7 +23,7 @@ x-backend: &backend
     MEDIA_SIGNING_SECRET: ${MEDIA_SIGNING_SECRET:?defina MEDIA_SIGNING_SECRET}
     MEDIA_RETENTION_DAYS: ${MEDIA_RETENTION_DAYS:-30}
     MEDIA_MAX_BYTES: ${MEDIA_MAX_BYTES:-10485760}
-    APP_ORIGINS: http://${PUBLIC_HOST:?defina PUBLIC_HOST}
+    APP_ORIGINS: ${APP_ORIGINS:?defina APP_ORIGINS}
     WHATSAPP_ADAPTER: fake
     TRANSCRIPTION_ADAPTER: fake
     AI_ADAPTER: fake
@@ -117,10 +117,35 @@ services:
     depends_on:
       backend:
         condition: service_healthy
-    ports:
-      - "0.0.0.0:${HTTP_PORT:-80}:80"
+    expose:
+      - "80"
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  caddy:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    logging: *default-logging
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?defina APP_DOMAIN}
+    ports:
+      - "0.0.0.0:80:80"
+      - "0.0.0.0:443:443"
+      - "0.0.0.0:443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - noter_caddy_data:/data
+      - noter_caddy_config:/config
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:2019/config/"]
       interval: 10s
       timeout: 3s
       retries: 10
@@ -129,3 +154,5 @@ volumes:
   noter_postgres:
   noter_redis:
   noter_media:
+  noter_caddy_data:
+  noter_caddy_config:
