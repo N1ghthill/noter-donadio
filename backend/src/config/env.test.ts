@@ -49,3 +49,25 @@ test('webhook Meta ativo exige ambos os segredos', () => {
   });
   assert.equal(environment.META_WEBHOOK_ENABLED, true);
 });
+
+test('download Meta exige token e versão explícita da Graph API', () => {
+  assert.throws(() => readEnvironment({
+    ...required,
+    MEDIA_DOWNLOAD_ADAPTER: 'meta',
+  }));
+  assert.throws(() => readEnvironment({
+    ...required,
+    MEDIA_DOWNLOAD_ADAPTER: 'meta',
+    META_ACCESS_TOKEN: 'token-meta-sintetico-com-mais-de-trinta-e-dois-caracteres',
+    META_GRAPH_API_VERSION: 'latest',
+  }));
+
+  const environment = readEnvironment({
+    ...required,
+    MEDIA_DOWNLOAD_ADAPTER: 'meta',
+    META_ACCESS_TOKEN: 'token-meta-sintetico-com-mais-de-trinta-e-dois-caracteres',
+    META_GRAPH_API_VERSION: 'v99.0',
+  });
+  assert.equal(environment.MEDIA_DOWNLOAD_ADAPTER, 'meta');
+  assert.equal(environment.META_GRAPH_API_VERSION, 'v99.0');
+});

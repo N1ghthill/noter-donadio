@@ -7,6 +7,7 @@ import {
   MediaDownloadService,
   type MediaDownloadRepository,
   type MediaDownloadTarget,
+  validateDownloadedMedia,
 } from './media-download.js';
 
 const target: MediaDownloadTarget = {
@@ -15,6 +16,8 @@ const target: MediaDownloadTarget = {
   attemptId: '91a408dd-6933-4d69-bcdb-93e1e23c03d5',
   externalMediaId: 'media-synthetic',
   expectedMimeType: null,
+  provider: null,
+  providerPhoneNumberId: null,
 };
 
 test('grava a mídia antes de liberar a transcrição', async () => {
@@ -112,4 +115,16 @@ test('reentrega concluída não chama adapter nem armazenamento', async () => {
     status: 'already_completed',
   });
   assert.equal(externalCalls, 0);
+});
+
+test('compara MIME por tipo base quando o webhook inclui parâmetros de codec', () => {
+  assert.deepEqual(validateDownloadedMedia({
+    bytes: new Uint8Array([1]),
+    mimeType: 'audio/ogg',
+    durationSeconds: null,
+  }, 'audio/ogg; codecs=opus'), {
+    bytes: new Uint8Array([1]),
+    mimeType: 'audio/ogg',
+    durationSeconds: null,
+  });
 });

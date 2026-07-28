@@ -99,6 +99,16 @@ services:
     <<: *backend
     command: ["node", "dist/realtime.main.js"]
 
+  media-download:
+    <<: *backend
+    profiles: ["media-download"]
+    command: ["node", "dist/media-download.main.js"]
+    environment:
+      <<: *backend-environment
+      MEDIA_DOWNLOAD_ADAPTER: ${MEDIA_DOWNLOAD_ADAPTER:-disabled}
+      META_ACCESS_TOKEN: ${META_ACCESS_TOKEN:-}
+      META_GRAPH_API_VERSION: ${META_GRAPH_API_VERSION:-}
+
   retention:
     <<: *backend
     command: ["node", "dist/media-retention.main.js"]

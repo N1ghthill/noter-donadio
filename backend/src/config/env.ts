@@ -16,7 +16,12 @@ const environmentSchema = z.object({
   META_WEBHOOK_ENABLED: z.enum(['0', '1']).default('0').transform((value) => value === '1'),
   META_WEBHOOK_VERIFY_TOKEN: optionalSecret,
   META_APP_SECRET: optionalSecret,
-  MEDIA_DOWNLOAD_ADAPTER: z.enum(['disabled', 'fake']).default('disabled'),
+  MEDIA_DOWNLOAD_ADAPTER: z.enum(['disabled', 'fake', 'meta']).default('disabled'),
+  META_ACCESS_TOKEN: optionalSecret,
+  META_GRAPH_API_VERSION: z.preprocess(
+    (value) => value === '' ? undefined : value,
+    z.string().regex(/^v\d+\.\d+$/).optional(),
+  ),
   TRANSCRIPTION_ADAPTER: z.enum(['disabled', 'fake']).default('disabled'),
   AI_ADAPTER: z.enum(['disabled', 'fake']).default('disabled'),
   MEDIA_STORAGE_PATH: z.string().trim().min(1).default('storage/media'),
@@ -44,20 +49,37 @@ const environmentSchema = z.object({
       }
     }),
 }).superRefine((environment, context) => {
-  if (!environment.META_WEBHOOK_ENABLED) return;
-  if (!environment.META_WEBHOOK_VERIFY_TOKEN) {
-    context.addIssue({
-      code: 'custom',
-      path: ['META_WEBHOOK_VERIFY_TOKEN'],
-      message: 'META_WEBHOOK_VERIFY_TOKEN é obrigatório quando o webhook está ativo',
-    });
+  if (environment.META_WEBHOOK_ENABLED) {
+    if (!environment.META_WEBHOOK_VERIFY_TOKEN) {
+      context.addIssue({
+        code: 'custom',
+        path: ['META_WEBHOOK_VERIFY_TOKEN'],
+        message: 'META_WEBHOOK_VERIFY_TOKEN é obrigatório quando o webhook está ativo',
+      });
+    }
+    if (!environment.META_APP_SECRET) {
+      context.addIssue({
+        code: 'custom',
+        path: ['META_APP_SECRET'],
+        message: 'META_APP_SECRET é obrigatório quando o webhook está ativo',
+      });
+    }
   }
-  if (!environment.META_APP_SECRET) {
-    context.addIssue({
-      code: 'custom',
-      path: ['META_APP_SECRET'],
-      message: 'META_APP_SECRET é obrigatório quando o webhook está ativo',
-    });
+  if (environment.MEDIA_DOWNLOAD_ADAPTER === 'meta') {
+    if (!environment.META_ACCESS_TOKEN) {
+      context.addIssue({
+        code: 'custom',
+        path: ['META_ACCESS_TOKEN'],
+        message: 'META_ACCESS_TOKEN é obrigatório para download de mídia da Meta',
+      });
+    }
+    if (!environment.META_GRAPH_API_VERSION) {
+      context.addIssue({
+        code: 'custom',
+        path: ['META_GRAPH_API_VERSION'],
+        message: 'META_GRAPH_API_VERSION é obrigatória para download de mídia da Meta',
+      });
+    }
   }
 });
 

@@ -42,4 +42,28 @@ Falhas persistem somente o código sanitizado `TRANSCRIPTION_PROCESSING_FAILED` 
 - somente uma transcrição concluída produz `message.audio.ready_for_analysis`, contendo IDs;
 - o formulário local de áudio ignora qualquer texto enviado pelo navegador;
 - o áudio de demonstração é um WAV local fictício; o armazenamento privado, a URL curta assinada, o player e a retenção estão descritos em [`media.md`](media.md);
-- o adapter real de download ainda exigirá autenticação Meta, limites confirmados e contrato com o provedor.
+- o adapter Meta de download permanece desligado até revisão operacional e configuração autorizada.
+
+## Adapter de download da Meta
+
+O adapter `meta` segue as operações oficiais para
+[resolver a URL](https://www.postman.com/meta/whatsapp-business-platform/request/fpj02x0/retrieve-media-url)
+e [baixar a mídia](https://www.postman.com/meta/whatsapp-business-platform/request/zsq66eh/download-media).
+Ele usa `GET /{media-id}?phone_number_id=...`, envia o token somente no header
+`Authorization`, resolve uma URL nova em cada tentativa e valida timeout,
+tamanho, MIME e cada redirecionamento. URLs temporárias são aceitas somente por
+HTTPS nos hosts de mídia esperados da Meta.
+
+Para um perfil real, o token e a versão explícita da Graph API são injetados
+somente no worker:
+
+```dotenv
+MEDIA_DOWNLOAD_ADAPTER=meta
+META_ACCESS_TOKEN=valor-fora-do-git
+META_GRAPH_API_VERSION=vXX.X
+```
+
+No `compose.production.yaml`, o processo pertence ao profile
+`media-download`; ativá-lo exige `COMPOSE_PROFILES=media-download`. Não use
+`latest` como versão e não coloque o token no banco, em jobs ou em URLs. O
+perfil da VPS continua usando o adapter falso.

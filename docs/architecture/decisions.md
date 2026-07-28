@@ -323,3 +323,17 @@ deixar um objeto órfão identificado pela tentativa, sem sobrescrever mídia j�
 confirmada. Essa dívida é aceita somente com dados fictícios; antes do adapter
 real, uma rotina de reconciliação deve remover objetos sem referência após uma
 janela segura e preservar os objetos ligados a tentativas concluídas.
+
+## ADR-046 — Adapter Meta é compilado, mas ativação continua operacional
+
+O adapter de mídia da Meta executa duas leituras autenticadas: resolve a URL
+temporária pelo ID externo e baixa os bytes usando autenticação Bearer nas duas
+requisições. O token permanece fora do banco, dos jobs, das URLs e dos logs. O
+worker valida a conta provedora, versão explícita da Graph API, HTTPS, hosts de
+mídia, redirecionamentos, timeout, MIME e limite de bytes.
+
+O perfil compartilhado continua usando somente o adapter falso. No perfil de
+produção, o worker real é opt-in e recebe o token apenas em seu próprio
+processo. Habilitar webhook, worker ou credencial real exige uma mudança
+operacional separada, revisão do escopo `whatsapp_business_messaging`, teste
+controlado com fixture não sensível e confirmação da política de retenção.

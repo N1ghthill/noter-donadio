@@ -9,7 +9,7 @@ Os fluxos comerciais e administrativos implementados estão aceitos para demonst
 Evidências automatizadas repetidas sobre a candidata da fase VPS em 28/07/2026:
 
 - lint e TypeScript estrito sem erros;
-- 155 testes aprovados: 1 de contratos, 123 de backend e 31 de frontend;
+- 161 testes aprovados: 1 de contratos, 129 de backend e 31 de frontend;
 - build dos três workspaces aprovado;
 - 16 migrations aplicadas em PostgreSQL vazio;
 - fluxo integrado validado com PostgreSQL, Redis, BullMQ e adapters falsos;

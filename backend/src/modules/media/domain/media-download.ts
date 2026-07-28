@@ -11,6 +11,8 @@ export interface MediaDownloadTarget {
   readonly attemptId: string;
   readonly externalMediaId: string;
   readonly expectedMimeType: string | null;
+  readonly provider: string | null;
+  readonly providerPhoneNumberId: string | null;
 }
 
 export interface DownloadedMedia {
@@ -115,7 +117,11 @@ export function validateDownloadedMedia(
   if (!mimeType.startsWith('audio/') || mimeType.length > 100) {
     throw new Error('invalid_media_mime_type');
   }
-  if (expectedMimeType && expectedMimeType.toLowerCase() !== mimeType) {
+  const expectedBaseMimeType = expectedMimeType
+    ?.split(';', 1)[0]
+    ?.trim()
+    .toLowerCase();
+  if (expectedBaseMimeType && expectedBaseMimeType !== mimeType) {
     throw new Error('unexpected_media_mime_type');
   }
   if (media.bytes.byteLength === 0) throw new Error('empty_media');

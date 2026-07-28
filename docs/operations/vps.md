@@ -16,7 +16,7 @@ Internet
     └── /api e /socket.io → backend privado
         ├── PostgreSQL em rede Docker privada
         ├── Redis/BullMQ em rede Docker privada
-        └── outbox, realtime, transcription, analysis e retention
+        └── outbox, realtime, media-download, transcription, analysis e retention
 ```
 
 Somente SSH e o proxy web são publicados pelo host. PostgreSQL, Redis, backend, métricas e painéis operacionais não possuem porta pública.

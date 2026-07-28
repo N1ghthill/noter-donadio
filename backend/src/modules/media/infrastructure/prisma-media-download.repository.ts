@@ -54,6 +54,16 @@ export class PrismaMediaDownloadRepository implements MediaDownloadRepository {
         select: {
           externalMediaId: true,
           mimeType: true,
+          message: {
+            select: {
+              whatsappAccount: {
+                select: {
+                  provider: true,
+                  providerPhoneNumberId: true,
+                },
+              },
+            },
+          },
         },
       });
       if (!asset.externalMediaId) throw new Error('Mídia reivindicada sem referência externa');
@@ -65,6 +75,8 @@ export class PrismaMediaDownloadRepository implements MediaDownloadRepository {
           attemptId: input.attemptId,
           externalMediaId: asset.externalMediaId,
           expectedMimeType: asset.mimeType,
+          provider: asset.message.whatsappAccount.provider,
+          providerPhoneNumberId: asset.message.whatsappAccount.providerPhoneNumberId,
         },
       };
     });

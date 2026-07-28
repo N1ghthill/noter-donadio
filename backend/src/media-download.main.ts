@@ -4,16 +4,32 @@ import { Redis } from 'ioredis';
 import { createPrismaClient } from './config/database.js';
 import { readEnvironment } from './config/env.js';
 import { createAppLogger, safeErrorContext } from './config/logger.js';
-import { MediaDownloadService } from './modules/media/domain/media-download.js';
+import {
+  MediaDownloadService,
+  type MediaDownloader,
+} from './modules/media/domain/media-download.js';
 import { FakeMediaDownloader } from './modules/media/infrastructure/fake-media-downloader.js';
 import { LocalMediaStorage } from './modules/media/infrastructure/local-media-storage.js';
+import { MetaCloudMediaDownloader } from './modules/media/infrastructure/meta-cloud-media-downloader.js';
 import { parseMediaDownloadJob } from './modules/media/infrastructure/media-download-job.js';
 import { PrismaMediaDownloadRepository } from './modules/media/infrastructure/prisma-media-download.repository.js';
 
 const environment = readEnvironment();
 const logger = createAppLogger('media-download-worker');
-if (environment.MEDIA_DOWNLOAD_ADAPTER !== 'fake') {
-  throw new Error('MEDIA_DOWNLOAD_ADAPTER precisa estar configurado como fake');
+let downloader: MediaDownloader;
+if (environment.MEDIA_DOWNLOAD_ADAPTER === 'fake') {
+  downloader = new FakeMediaDownloader();
+} else if (environment.MEDIA_DOWNLOAD_ADAPTER === 'meta') {
+  if (!environment.META_ACCESS_TOKEN || !environment.META_GRAPH_API_VERSION) {
+    throw new Error('Configuração incompleta do adapter de mídia da Meta');
+  }
+  downloader = new MetaCloudMediaDownloader(
+    environment.META_ACCESS_TOKEN,
+    environment.META_GRAPH_API_VERSION,
+    environment.MEDIA_MAX_BYTES,
+  );
+} else {
+  throw new Error('MEDIA_DOWNLOAD_ADAPTER precisa estar habilitado explicitamente');
 }
 
 const prisma = createPrismaClient(environment.DATABASE_URL);
@@ -23,7 +39,7 @@ connection.on('error', (error) => {
 });
 const service = new MediaDownloadService(
   new PrismaMediaDownloadRepository(prisma),
-  new FakeMediaDownloader(),
+  downloader,
   new LocalMediaStorage(environment.MEDIA_STORAGE_PATH, environment.MEDIA_MAX_BYTES),
   environment.MEDIA_RETENTION_DAYS,
 );
