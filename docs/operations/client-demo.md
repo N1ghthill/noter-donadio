@@ -13,37 +13,24 @@ Antes da reunião, acesse a VPS e confira o ambiente:
 ```bash
 cd /opt/noter-donadio
 git status --short --branch
-scripts/status-vps.sh
+sudo scripts/status-vps.sh
 ```
 
-Execute o smoke autenticado somente leitura:
+Em um checkout de desenvolvimento com Node 24, execute o smoke autenticado somente leitura:
 
 ```bash
-read -rsp 'Senha da demonstração: ' demo_password
-echo
-ACCEPTANCE_WORKSPACE='demo-cliente' \
-ACCEPTANCE_EMAIL='demo@example.com' \
-ACCEPTANCE_PASSWORD="${demo_password}" \
 scripts/run-acceptance-vps.sh
-unset demo_password
 ```
 
 Para preparar novamente o cenário fictício e repetir toda a homologação:
 
 ```bash
-read -rsp 'Senha da demonstração: ' demo_password
-echo
-ACCEPTANCE_WORKSPACE='demo-cliente' \
-ACCEPTANCE_EMAIL='demo@example.com' \
-ACCEPTANCE_PASSWORD="${demo_password}" \
-ACCEPTANCE_MUTATIONS=1 \
-scripts/run-acceptance-vps.sh
-unset demo_password
+scripts/run-acceptance-vps.sh --mutations
 ```
 
 O modo mutável cria ou atualiza `Empresa Aurora — cenário fictício`, deixa sua negociação `Implantação CRM — homologação` em `proposal_sent` e acrescenta mensagens simuladas à caixa de conversas. Ele nunca apaga dados.
 
-O wrapper usa Node 24 quando disponível. Na VPS, onde Node não é instalado no host, ele executa o mesmo arquivo em um container temporário e não altera os containers da aplicação.
+O wrapper solicita a senha sem exibi-la e usa Node 24 quando disponível. O usuário restrito da VPS não executa containers arbitrários; por isso, a homologação automatizada é disparada pelo checkout de desenvolvimento contra o domínio público.
 
 ## Roteiro de 10 a 15 minutos
 

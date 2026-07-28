@@ -265,3 +265,9 @@ O backend executa com `NODE_ENV=production`, emite cookie `Secure` e aceita muta
 Durante a continuidade de implementação e demonstração com dados fictícios, os snapshots automáticos permanecem no mesmo host. A justificativa é reduzir custo e complexidade nesta fase; o impacto aceito é perder aplicação, banco, mídia e todos os snapshots em uma única falha da VPS.
 
 A exceção termina antes de qualquer dado real. A condição de remoção é configurar cópia off-host criptografada, retenção definida e exercício documentado de restauração. Snapshot local continua obrigatório antes de deploys mesmo durante a exceção.
+
+## ADR-042 — Acesso operacional substitui login remoto de root
+
+A VPS aceita SSH somente por chave para o usuário `noterops`; senha, interação de teclado e login remoto de `root` ficam desabilitados. O usuário não pertence aos grupos `sudo` ou `docker`. O sudoers permite apenas atualizar `/opt/noter-donadio` por fast-forward e executar os scripts versionados de deploy, status, backup e homologação.
+
+O firewall persistente usa uma tabela `nftables` própria, sem limpar regras administradas pelo Docker. A entrada do host fica fechada por padrão e permite somente conexões estabelecidas, loopback, ICMP, SSH e web. Alterações futuras devem validar uma segunda sessão antes de recarregar SSH ou firewall.

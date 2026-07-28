@@ -1,0 +1,23 @@
+#!/usr/sbin/nft -f
+
+destroy table inet noter_host
+
+table inet noter_host {
+  chain input {
+    type filter hook input priority filter; policy drop;
+
+    ct state invalid drop
+    ct state established,related accept
+    iifname "lo" accept
+
+    ip protocol icmp accept
+    ip6 nexthdr ipv6-icmp accept
+
+    tcp dport { 22, 80, 443 } accept
+    udp dport 443 accept
+  }
+
+  chain output {
+    type filter hook output priority filter; policy accept;
+  }
+}

@@ -45,17 +45,19 @@ Fluxo esperado:
 
 1. implementar e validar em um checkout de desenvolvimento;
 2. criar commit coeso e enviar ao repositório remoto;
-3. na VPS, executar `git fetch` e `git pull --ff-only`;
-4. executar `scripts/deploy-vps.sh`;
-5. conferir `scripts/status-vps.sh` e a jornada afetada.
+3. entrar na VPS como `noterops`;
+4. atualizar o checkout pelos comandos Git autorizados;
+5. executar o deploy autorizado;
+6. conferir o status e a jornada afetada.
 
 O script de deploy valida o Compose, cria snapshot antes da atualização, constrói uma única imagem compartilhada pelo backend e workers, aplica migrations e espera a interface responder. Use `SKIP_BACKUP=1` somente quando o banco ainda não existe ou houver justificativa operacional registrada.
 
 ```bash
-cd /opt/noter-donadio
-git pull --ff-only
-scripts/deploy-vps.sh
-scripts/status-vps.sh
+ssh noterops@VPS
+sudo /usr/bin/git -C /opt/noter-donadio fetch origin main
+sudo /usr/bin/git -C /opt/noter-donadio pull --ff-only origin main
+sudo /opt/noter-donadio/scripts/deploy-vps.sh
+sudo /opt/noter-donadio/scripts/status-vps.sh
 ```
 
 O `.env` remoto permanece fora do Git, com permissão `600`. Segredos não devem aparecer em comandos versionados, tickets ou logs. Para este perfil, mantenha:
@@ -97,7 +99,7 @@ Um snapshot no mesmo disco protege contra erro de aplicação, mas não contra p
 Prometheus, Alertmanager e Grafana podem compartilhar a VPS durante esta fase porque suas portas ficam em `127.0.0.1`. Acesse os painéis por túnel SSH, nunca expondo diretamente as portas:
 
 ```bash
-ssh -L 3001:127.0.0.1:3001 -L 9090:127.0.0.1:9090 root@VPS
+ssh -L 3001:127.0.0.1:3001 -L 9090:127.0.0.1:9090 noterops@VPS
 ```
 
 Com os segredos definidos no `.env`:
@@ -111,14 +113,15 @@ docker compose \
 
 Os receivers atuais não notificam pessoas. Um destino externo exige aprovação separada e deve receber apenas métricas agregadas.
 
-Na VPS atual, autenticação SSH por senha e interação de teclado estão desabilitadas. O acesso `root` permanece temporariamente permitido somente por chave; criar um usuário operacional com privilégios mínimos continua sendo um portão para dados reais.
+Na VPS atual, autenticação SSH por senha, interação de teclado e login remoto de `root` estão desabilitados. O usuário `noterops` aceita somente a chave operacional e não pertence aos grupos `sudo` ou `docker`. O arquivo versionado `deploy/sudoers/noterops` permite apenas atualizar este checkout e executar deploy, status e backup.
+
+O `nftables` aplica `deploy/nftables/noter-host.nft` na inicialização. A política de entrada permite conexões estabelecidas, loopback, ICMP, SSH e web nas portas TCP 22/80/443 e HTTP/3 em UDP 443. Não use `flush ruleset`, pois isso também removeria regras administradas pelo Docker.
 
 ## Promoção para dados reais
 
 O ambiente só pode ser promovido depois de:
 
 - configuração de produção revisada em substituição ao perfil de demonstração;
-- firewall e acesso SSH endurecidos, usuário operacional sem login rotineiro como `root`;
 - backup off-host automatizado e restauração comprovada;
 - destino real de alertas e runbook de incidente;
 - resolução ou aceitação formal dos advisories de dependências aplicáveis;

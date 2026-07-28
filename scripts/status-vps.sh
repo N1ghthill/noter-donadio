@@ -34,4 +34,10 @@ if test "${ENABLE_OBSERVABILITY:-0}" = "1"; then
   curl --fail --silent --show-error http://127.0.0.1:3001/api/health >/dev/null
 fi
 
-printf '%s\n' "Aplicação pública acessível; PostgreSQL e Redis saudáveis; endpoint interno bloqueado."
+systemctl is-active --quiet nftables
+nft list table inet noter_host >/dev/null
+ssh_configuration="$(sshd -T)"
+grep --quiet '^permitrootlogin no$' <<<"${ssh_configuration}"
+grep --quiet '^allowusers noterops$' <<<"${ssh_configuration}"
+
+printf '%s\n' "Aplicação e dependências saudáveis; endpoint interno bloqueado; firewall e SSH endurecidos."

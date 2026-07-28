@@ -1,0 +1,8 @@
+Cmnd_Alias NOTER_GIT = /usr/bin/git -C /opt/noter-donadio fetch origin main, \
+  /usr/bin/git -C /opt/noter-donadio pull --ff-only origin main, \
+  /usr/bin/git -C /opt/noter-donadio status --short --branch
+Cmnd_Alias NOTER_OPERATIONS = /opt/noter-donadio/scripts/deploy-vps.sh, \
+  /opt/noter-donadio/scripts/status-vps.sh, \
+  /opt/noter-donadio/scripts/backup-vps.sh
+
+noterops ALL=(root) NOPASSWD: NOTER_GIT, NOTER_OPERATIONS
