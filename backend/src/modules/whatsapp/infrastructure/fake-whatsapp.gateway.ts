@@ -9,6 +9,8 @@ import {
 const QR_LIFETIME_MS = 5 * 60 * 1_000;
 
 export class FakeWhatsappGateway implements WhatsappGateway {
+  public readonly adapter = 'fake' as const;
+  public readonly canSimulate = true;
   private readonly qrCodes = new Map<string, EphemeralQrCode>();
 
   public async createQrCode(workspaceId: string): Promise<EphemeralQrCode> {

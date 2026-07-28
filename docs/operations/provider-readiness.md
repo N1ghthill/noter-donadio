@@ -16,6 +16,8 @@ Estado implementado:
 
 - jornada falsa de QR e conexão para demonstração;
 - tabelas para credenciais e chaves criptografadas;
+- Baileys `7.0.0-rc13` fixado e auth state PostgreSQL com AES-256-GCM,
+  isolamento explícito por workspace e suporte a rotação;
 - ingestão idempotente e isolada por workspace;
 - fronteira pura para texto Baileys recebido e enviado;
 - pipeline genérico de mídia, filas e retenção;
@@ -23,16 +25,15 @@ Estado implementado:
 
 Antes de instalar e habilitar:
 
-1. fixar uma release 7 suportada e auditar dependências;
-2. implementar `AuthenticationState` no PostgreSQL com AES-256-GCM;
-3. persistir cada atualização de credencial e chave de forma atômica;
-4. criar processo dedicado para socket, reconexão e health state;
-5. manter o logger da biblioteca silencioso e redigir logs da aplicação;
-6. implementar QR efêmero autenticado e `Cache-Control: no-store`;
-7. adaptar `messages.upsert` sem sincronizar histórico completo;
-8. implementar referência e download duráveis para áudio;
-9. testar apenas com número controlado e dados sintéticos;
-10. documentar aceite do risco de bloqueio e dos termos de uso.
+1. concluir a auditoria da release 7 fixada e acompanhar sua estabilização;
+2. ligar o `AuthenticationState` implementado ao socket e validar concorrência;
+3. criar processo dedicado para socket, reconexão e health state;
+4. manter o logger da biblioteca silencioso e redigir logs da aplicação;
+5. implementar QR efêmero autenticado e `Cache-Control: no-store`;
+6. adaptar `messages.upsert` sem sincronizar histórico completo;
+7. implementar referência e download duráveis para áudio;
+8. testar apenas com número controlado e dados sintéticos;
+9. documentar aceite do risco de bloqueio e dos termos de uso.
 
 `useMultiFileAuthState` não será usado na VPS. A própria documentação do
 Baileys recomenda auth state próprio para produção; o diretório de autenticação

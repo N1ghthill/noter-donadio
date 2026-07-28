@@ -7,6 +7,7 @@ import {
   WhatsappConnectionService,
   type StoredWhatsappConnection,
   type WhatsappConnectionRepository,
+  type WhatsappGateway,
 } from '../domain/whatsapp-connection.js';
 import { FakeWhatsappGateway } from '../infrastructure/fake-whatsapp.gateway.js';
 
@@ -97,6 +98,43 @@ test('leitura simulada conecta apenas após QR válido', async (context) => {
   assert.equal(connected.statusCode, 200);
   assert.equal(connected.json().status, 'connected');
   assert.equal(connected.json().qrCode, null);
+});
+
+test('contrato Baileys não expõe ação de simulação', async (context) => {
+  const gateway: WhatsappGateway = {
+    adapter: 'baileys',
+    canSimulate: false,
+    async createQrCode() {
+      return {
+        payload: 'qr-real-sintético',
+        expiresAt: '2026-07-28T18:05:00.000Z',
+      };
+    },
+    async currentQrCode() {
+      return null;
+    },
+  };
+  const app = buildApp({
+    sessionAuthenticator: new FakeSessionAuthenticator(),
+    whatsappService: new WhatsappConnectionService(new FakeConnectionRepository(), gateway),
+  });
+  context.after(async () => app.close());
+
+  const connection = await app.inject({
+    method: 'GET',
+    url: '/api/whatsapp/connection',
+    headers: { cookie: SESSION_COOKIE },
+  });
+  assert.equal(connection.statusCode, 200);
+  assert.equal(connection.json().adapter, 'baileys');
+  assert.equal(connection.json().canSimulate, false);
+
+  const simulation = await app.inject({
+    method: 'POST',
+    url: '/api/whatsapp/demo/connect',
+    headers: { cookie: SESSION_COOKIE },
+  });
+  assert.equal(simulation.statusCode, 404);
 });
 
 function connection(

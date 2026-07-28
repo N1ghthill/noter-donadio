@@ -7,8 +7,9 @@ Web Multi-Device. A API oficial da Meta não faz parte da arquitetura vigente:
 webhook, adapters, configuração e chamadas externas correspondentes foram
 removidos do runtime.
 
-O Baileys ainda não está instalado nem habilitado. A VPS continua usando o
-adapter falso e nenhuma sessão real foi conectada.
+O Baileys 7 está fixado como dependência de desenvolvimento do conector, mas o
+socket ainda não está habilitado. A VPS continua usando o adapter falso e
+nenhuma sessão real foi conectada.
 
 ## Jornada de demonstração
 
@@ -58,15 +59,22 @@ o auth state e o download real ainda serão implementados.
   enviou pelo próprio WhatsApp;
 - testes automatizados usam fakes e fixtures sintéticas, nunca conta real.
 
-As tabelas de autenticação criptografada já existem. Colunas históricas criadas
+As tabelas de autenticação criptografada já existem. O primeiro adapter de auth
+state persiste credenciais e Signal keys de forma atômica, com isolamento
+explícito por workspace e AES-256-GCM vinculado à conta por AAD. Ele suporta
+leitura de versões anteriores da chave para rotação, mas ainda não está ligado
+a um socket.
+
+Colunas históricas criadas
 para o experimento removido com outro provedor permanecem sem uso porque
 migrations compartilhadas não são reescritas; removê-las exigirá migration
 destrutiva autorizada separadamente.
 
 ## Portões antes de conectar
 
-- fixar e auditar a versão 7 escolhida;
-- implementar auth state PostgreSQL com testes de rotação e concorrência;
+- concluir a auditoria da versão 7 fixada e acompanhar a saída do estado RC;
+- ligar o auth state PostgreSQL ao processo dedicado e testar concorrência do
+  socket;
 - implementar processo dedicado e health state;
 - fechar o contrato durável de mídia do Baileys;
 - validar termos de uso e aceitar formalmente o risco de bloqueio;

@@ -1,6 +1,9 @@
-# Aceitação do MVP v0.2.0
+# Aceitação da demonstração v0.2.0
 
-Marco base: tag `v0.2.0-mvp`, publicada em 21/07/2026. As evidências abaixo acompanham o estado atual da `main`, incluindo evoluções posteriores ao marco.
+Marco histórico: tag `v0.2.0-mvp`, publicada em 21/07/2026. Apesar do nome
+original da tag, este marco aceita somente a demonstração com dados fictícios;
+o MVP funcional depende da conexão Baileys e dos adapters reais descritos no
+escopo. As evidências abaixo acompanham o estado atual da `main`.
 
 ## Resultado
 
@@ -9,9 +12,9 @@ Os fluxos comerciais e administrativos implementados estão aceitos para demonst
 Evidências automatizadas repetidas sobre a candidata da fase VPS em 28/07/2026:
 
 - lint e TypeScript estrito sem erros;
-- 150 testes aprovados: 1 de contratos, 118 de backend e 31 de frontend;
+- 157 testes aprovados: 1 de contratos, 125 de backend e 31 de frontend;
 - build dos três workspaces aprovado;
-- 16 migrations aplicadas em PostgreSQL vazio;
+- 17 migrations aplicadas em PostgreSQL vazio;
 - fluxo integrado validado com PostgreSQL, Redis, BullMQ e adapters falsos;
 - imagens de backend e frontend construídas, configuração do Compose e sintaxe do Nginx validadas;
 - backup sintético restaurado com sucesso em PostgreSQL 16 isolado;
@@ -22,6 +25,8 @@ Evidências automatizadas repetidas sobre a candidata da fase VPS em 28/07/2026:
   reprovando o CI. A exceção não libera a VPS para dados reais.
 - runtime, rotas e configuração da integração oficial removidos; o contrato
   Baileys de texto cobre entrada, saída e filtros sem importar SDK no domínio;
+- Baileys 7 fixado e auth state PostgreSQL validado com criptografia
+  autenticada, rotação e isolamento por workspace, ainda sem ativação de rede;
 - build do backend limpa `dist` antes de compilar, impedindo execução de
   artefatos correspondentes a fontes removidas.
 

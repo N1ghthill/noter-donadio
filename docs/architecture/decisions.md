@@ -411,6 +411,31 @@ genérico de download da segunda permanece útil; colunas e constraint do
 experimento anterior ficam sem uso. Elas não serão apagadas até existir
 autorização explícita para uma migration destrutiva em ambiente compartilhado.
 
-Antes de conectar uma conta real, devem ser concluídos o auth state
-transacional, QR efêmero autenticado, reconexão, observabilidade sanitizada,
-auditoria da versão fixada, aceite dos termos e teste com número controlado.
+Antes de conectar uma conta real, o auth state transacional deve ser integrado
+ao socket e validado sob concorrência; também devem ser concluídos QR efêmero
+autenticado, reconexão, observabilidade sanitizada, auditoria da versão fixada,
+aceite dos termos e teste com número controlado.
+
+## ADR-052 — A base Baileys nasce sem ativação de rede
+
+A primeira entrega do conector fixa `baileys@7.0.0-rc13`, adiciona isolamento
+explícito por workspace às chaves de autenticação e implementa
+`AuthenticationState` no PostgreSQL. Credenciais e Signal keys são serializadas
+com o codec do Baileys e criptografadas individualmente com AES-256-GCM; a AAD
+vincula versão do formato, workspace, conta, categoria e identificador da
+chave. Um lote de alterações de Signal keys é persistido em uma única
+transação.
+
+O cipher aceita chaves antigas para leitura e usa uma versão ativa nas novas
+gravações, permitindo rotação posterior sem plaintext. A configuração dedicada
+exige UUIDs de workspace e conta e chave base64 canônica de 32 bytes.
+
+A release atual possui declarações transitivas incompatíveis com
+`moduleResolution: NodeNext`; por isso somente a verificação de declarações de
+dependências está ignorada no backend por `skipLibCheck`, enquanto todo código
+do projeto continua sob TypeScript estrito. A versão fica fixada e deverá ser
+reavaliada antes de sair do RC.
+
+Esta decisão não cria socket, não gera QR real, não conecta sessão e não envia
+mensagens. A ativação de rede continua dependendo de processo dedicado,
+observabilidade sanitizada, teste controlado e autorização explícita.

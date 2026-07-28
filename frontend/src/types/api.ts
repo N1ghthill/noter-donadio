@@ -155,8 +155,8 @@ export interface WhatsappConnection {
   phoneNumber: string | null;
   updatedAt: string | null;
   qrCode: { payload: string; expiresAt: string } | null;
-  adapter: 'fake';
-  canSimulate: true;
+  adapter: 'fake' | 'baileys';
+  canSimulate: boolean;
 }
 
 export interface ConversationSummary {

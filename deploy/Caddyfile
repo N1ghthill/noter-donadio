@@ -14,7 +14,7 @@
 		@internal path /api/internal /api/internal/*
 		respond @internal 404
 
-		@backend path /api/* /socket.io/*
+		@backend path /health /api/* /socket.io/*
 		reverse_proxy @backend backend:3000
 
 		reverse_proxy frontend:80

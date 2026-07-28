@@ -94,7 +94,8 @@ O usuário conecta uma conta do WhatsApp por QR via Baileys, recebe novas conver
 
 ## Estado da integração real
 
-A direção aprovada é Baileys 7 com processo dedicado. O runtime real ainda não
-está instalado ou habilitado; a VPS usa o simulador. A fronteira de texto já
-normaliza mensagens recebidas e enviadas por `fromMe`, mas conexão, auth state
-criptografado e mídia real ainda precisam ser implementados.
+A direção aprovada é Baileys 7 com processo dedicado. A dependência fixada e o
+auth state criptografado no PostgreSQL já formam a base do conector, mas o
+socket real ainda não está habilitado e a VPS usa o simulador. A fronteira de
+texto normaliza mensagens recebidas e enviadas por `fromMe`; conexão, QR real e
+mídia real ainda precisam ser integrados.

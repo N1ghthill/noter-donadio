@@ -4,6 +4,7 @@ import type { SessionAuthenticator } from '../../auth/domain/auth.service.js';
 import { SESSION_COOKIE_NAME } from '../../auth/http/auth.routes.js';
 import {
   QrCodeUnavailableError,
+  WhatsappSimulationUnavailableError,
   type WhatsappConnectionService,
 } from '../domain/whatsapp-connection.js';
 
@@ -37,6 +38,9 @@ export function registerWhatsappRoutes(
     } catch (error: unknown) {
       if (error instanceof QrCodeUnavailableError) {
         return reply.code(409).send({ error: 'qr_unavailable' });
+      }
+      if (error instanceof WhatsappSimulationUnavailableError) {
+        return reply.code(404).send({ error: 'not_found' });
       }
       throw error;
     }

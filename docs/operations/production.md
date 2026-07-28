@@ -4,9 +4,10 @@
 
 O repositório possui imagens reproduzíveis para backend e frontend e uma composição que separa API, outbox, eventos em tempo real, retenção, PostgreSQL e Redis. Isso permite validar o formato operacional sem publicar, fazer deploy ou conectar provedores reais.
 
-O sistema ainda não está liberado para conversas reais. O conector Baileys, seu
-auth state PostgreSQL e o download real de mídia ainda não estão implementados;
-o perfil de produção mantém WhatsApp `disabled`. Transcrição e IA ainda possuem
+O sistema ainda não está liberado para conversas reais. A dependência Baileys e
+o auth state PostgreSQL criptografado estão implementados, mas o socket, o QR
+real e o download real de mídia ainda não estão integrados; o perfil de
+produção mantém WhatsApp `disabled`. Transcrição e IA ainda possuem
 somente adapters falsos.
 Armazenamento local de mídia também deve ser substituído por objeto privado
 criptografado antes de produção real.
@@ -91,9 +92,8 @@ A verificação confere o checksum quando disponível, restaura com `--exit-on-e
 ## Checklist pendente antes de dados reais
 
 - validar termos e aceitar formalmente o risco operacional do Baileys;
-- implementar o conector Baileys 7, auth state criptografado e captura de
-  mensagens recebidas e enviadas;
-- implementar criptografia autenticada das credenciais do WhatsApp com chave fora do banco;
+- integrar ao socket o auth state Baileys criptografado já implementado e
+  capturar mensagens recebidas e enviadas;
 - implementar adapters aprovados de transcrição e IA, com contratos, retenção e custos revisados;
 - substituir filesystem por armazenamento de objeto privado criptografado;
 - aprovar o protocolo de exclusão integral de workspace, prazo de auditoria e procedimento de atendimento ao titular; a exportação síncrona atual deve se tornar assíncrona para grandes volumes;

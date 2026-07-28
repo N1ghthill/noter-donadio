@@ -65,7 +65,7 @@ export function WhatsappSetupPage() {
           <div className="panel-heading"><h2>Estado da conexão</h2></div>
           <span className={`connection-pill status-${connection.status}`}><span />{STATUS_LABELS[connection.status]}</span>
           <dl className="definition-list">
-            <div><dt>Adapter</dt><dd>Simulador local</dd></div>
+            <div><dt>Adapter</dt><dd>{connection.adapter === 'fake' ? 'Simulador local' : 'Baileys'}</dd></div>
             <div><dt>Número</dt><dd>{connection.phoneNumber ?? 'Ainda não vinculado'}</dd></div>
             <div><dt>Atualizado</dt><dd>{connection.updatedAt ? new Date(connection.updatedAt).toLocaleString('pt-BR') : 'Sem atividade'}</dd></div>
           </dl>
@@ -81,10 +81,14 @@ export function WhatsappSetupPage() {
               <div className="qr-frame" aria-label="QR code de demonstração">
                 <QRCodeSVG value={connection.qrCode.payload} size={220} level="M" />
               </div>
-              <p>Em uma integração real, este código seria lido pelo WhatsApp no telefone.</p>
-              <button className="button secondary" type="button" disabled={busy} onClick={() => void simulateScan()}>
-                Simular leitura do QR
-              </button>
+              <p>{connection.adapter === 'fake'
+                ? 'Em uma integração real, este código seria lido pelo WhatsApp no telefone.'
+                : 'Leia este código em Aparelhos conectados no WhatsApp do telefone.'}</p>
+              {connection.canSimulate ? (
+                <button className="button secondary" type="button" disabled={busy} onClick={() => void simulateScan()}>
+                  Simular leitura do QR
+                </button>
+              ) : null}
               <small>Expira em {new Date(connection.qrCode.expiresAt).toLocaleTimeString('pt-BR')}.</small>
             </>
           ) : connection.status === 'connected' ? (
@@ -95,7 +99,9 @@ export function WhatsappSetupPage() {
         </article>
       </section>
 
-      <aside className="demo-notice"><strong>Modo de demonstração</strong><p>Nenhuma conta real é conectada e nenhuma mensagem é enviada. O QR existe somente na memória da API.</p></aside>
+      {connection.adapter === 'fake' ? (
+        <aside className="demo-notice"><strong>Modo de demonstração</strong><p>Nenhuma conta real é conectada e nenhuma mensagem é enviada. O QR existe somente na memória da API.</p></aside>
+      ) : null}
     </div>
   );
 }

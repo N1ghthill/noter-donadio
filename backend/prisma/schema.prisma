@@ -108,6 +108,7 @@ model Workspace {
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   whatsappAccounts           WhatsappAccount[]
+  whatsappAuthKeys           WhatsappAuthKey[]
   contacts                   Contact[]
   negotiations               Negotiation[]
   messages                   Message[]
@@ -186,18 +187,22 @@ model WhatsappAccount {
 }
 
 model WhatsappAuthKey {
-  id            String          @id @default(uuid()) @db.Uuid
-  accountId     String          @map("account_id") @db.Uuid
-  category      String          @db.VarChar(100)
-  keyId         String          @map("key_id") @db.VarChar(255)
-  encryptedData Bytes           @map("encrypted_data")
-  iv            Bytes
-  authTag       Bytes           @map("auth_tag")
-  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
-  account       WhatsappAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  id                   String          @id @default(uuid()) @db.Uuid
+  workspaceId          String          @map("workspace_id") @db.Uuid
+  accountId            String          @map("account_id") @db.Uuid
+  category             String          @db.VarChar(100)
+  keyId                String          @map("key_id") @db.VarChar(255)
+  encryptedData        Bytes           @map("encrypted_data")
+  iv                   Bytes
+  authTag              Bytes           @map("auth_tag")
+  encryptionKeyVersion Int             @default(1) @map("encryption_key_version") @db.SmallInt
+  createdAt            DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  workspace            Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  account              WhatsappAccount @relation(fields: [workspaceId, accountId], references: [workspaceId, id], onDelete: Cascade)
 
   @@unique([accountId, category, keyId])
+  @@index([workspaceId, accountId])
   @@map("whatsapp_auth_keys")
 }
 

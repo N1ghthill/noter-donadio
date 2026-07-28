@@ -16,7 +16,7 @@ test('mutações da API recusam Origin ausente ou fora da lista', async (context
   assert.deepEqual(foreign.json(), { error: 'invalid_origin' });
 });
 
-test('Origin permitido avança para a rota e token interno não depende de Origin', async (context) => {
+test('Origin permitido avança para a rota e somente o prefixo interno dispensa Origin', async (context) => {
   const app = buildApp({ allowedOrigins: ['http://localhost:5173'] });
   context.after(async () => app.close());
 
@@ -24,11 +24,11 @@ test('Origin permitido avança para a rota e token interno não depende de Origi
     method: 'POST', url: '/api/auth/logout', headers: { origin: 'http://localhost:5173' },
   });
   const internal = await app.inject({ method: 'POST', url: '/api/internal/messages/ingest' });
-  const signedProviderWebhook = await app.inject({
+  const removedProviderWebhook = await app.inject({
     method: 'POST',
     url: '/api/whatsapp/webhook',
   });
   assert.equal(allowed.statusCode, 404);
   assert.equal(internal.statusCode, 404);
-  assert.equal(signedProviderWebhook.statusCode, 404);
+  assert.equal(removedProviderWebhook.statusCode, 403);
 });

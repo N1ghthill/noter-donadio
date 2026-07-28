@@ -60,6 +60,6 @@ O empacotamento em containers, secrets, migrations, backup e limites de produç�
 O perfil local de Prometheus, Alertmanager e Grafana, seus alertas e runbooks estão em [`docs/operations/observability.md`](docs/operations/observability.md).
 O perfil transitório para aplicação, PostgreSQL, Redis e workers em uma única VPS está em [`docs/operations/vps.md`](docs/operations/vps.md).
 
-A aceitação do marco `v0.2.0-mvp` está registrada em [`docs/operations/acceptance.md`](docs/operations/acceptance.md). Os portões para WhatsApp oficial, transcrição e análise reais estão em [`docs/operations/provider-readiness.md`](docs/operations/provider-readiness.md).
+A aceitação do marco de demonstração `v0.2.0-mvp` está registrada em [`docs/operations/acceptance.md`](docs/operations/acceptance.md). Os portões para WhatsApp via Baileys, transcrição e análise reais estão em [`docs/operations/provider-readiness.md`](docs/operations/provider-readiness.md).
 
 Com o ambiente local iniciado, `/pipeline` permite filtrar e acompanhar negociações, concluir próximas ações e registrar fechamentos; `/` exibe indicadores agregados e `/administracao` permite revogar sessões, consultar a auditoria global e exportar os dados do workspace. `/conversas` apresenta a caixa de entrada persistida e permite simular uma mensagem recebida sem conectar ou enviar dados a um WhatsApp real.
