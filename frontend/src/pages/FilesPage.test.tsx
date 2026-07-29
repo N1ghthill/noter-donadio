@@ -1,8 +1,13 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { FilesPage } from './FilesPage.js';
+import { RealtimeProvider } from '../realtime/RealtimeContext.js';
+
+vi.mock('socket.io-client', () => ({
+  io: () => ({ on: vi.fn(), connect: vi.fn(), disconnect: vi.fn(), removeAllListeners: vi.fn() }),
+}));
 
 describe('arquivos por contato', () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -11,18 +16,25 @@ describe('arquivos por contato', () => {
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url === '/api/contacts') return response({ data: [contact] });
-      if (url === '/api/files') return response({ data: [file] });
+      if (url.startsWith('/api/files')) return response({ data: [file] });
       return response({ error: 'not_found' }, 404);
     }));
 
-    render(<MemoryRouter><FilesPage /></MemoryRouter>);
+    render(<MemoryRouter><RealtimeProvider><FilesPage /></RealtimeProvider></MemoryRouter>);
 
     expect(await screen.findByText(file.fileName)).toBeInTheDocument();
     expect(screen.getByText('1.0 KB')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Abrir negociação' })).toHaveAttribute(
+    expect(screen.getByText('Imagem')).toBeInTheDocument();
+    expect(screen.getByText('Recebido')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Abrir conversa e negociação' })).toHaveAttribute(
       'href',
       `/pipeline/${file.negotiationId}`,
     );
+    fireEvent.click(screen.getByRole('button', { name: 'Documentos' }));
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith(
+      '/api/files?fileType=document',
+      expect.objectContaining({ credentials: 'include' }),
+    ));
     expect(document.body).not.toHaveTextContent('storage/');
   });
 });
@@ -42,11 +54,14 @@ const file = {
   contactId: contact.id,
   contactName: contact.displayName,
   negotiationId: '278b2fa9-b1bf-49a4-8beb-d8fa7020d5bb',
-  fileName: 'audio-2026-07-29.ogg',
-  mimeType: 'audio/ogg',
+  messageType: 'image',
+  direction: 'inbound',
+  fileName: 'proposta-ficticia.jpg',
+  mimeType: 'image/jpeg',
   fileSizeBytes: '1024',
-  durationSeconds: 3,
-  transcriptionState: 'pending',
+  durationSeconds: null,
+  transcriptionState: 'completed',
+  caption: 'Imagem da proposta fictícia',
   occurredAt: '2026-07-29T12:00:00.000Z',
 };
 

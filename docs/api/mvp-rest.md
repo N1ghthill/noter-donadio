@@ -11,7 +11,7 @@ Nenhum token, telefone ou conteúdo deve aparecer em logs ou exemplos versionado
 
 ## Rotas
 
-- `POST /api/internal/messages/ingest`: ingestão idempotente de texto ou áudio;
+- `POST /api/internal/messages/ingest`: ingestão idempotente de texto, áudio, imagem ou documento;
 - `GET /api/internal/health/ready`: verifica PostgreSQL e Redis, exige token interno e retorna `503` quando uma dependência está indisponível;
 - `GET /api/internal/metrics`: expõe métricas Prometheus agregadas e exige token interno;
 - `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout`: ciclo da sessão;
@@ -34,7 +34,9 @@ Nenhum token, telefone ou conteúdo deve aparecer em logs ou exemplos versionado
 - `POST /api/negotiations/:id/next-action/complete`: arquiva a próxima ação e limpa o acompanhamento atual com controle de versão;
 - `POST /api/negotiations/:id/analyses/:analysisId/decision`: aceita uma seleção editável de etapa, tags, valor, produto, previsões e próxima ação ou ignora a sugestão, com UUID idempotente e `expectedVersion`;
 - `GET /api/conversations`: lista até 50 conversas, usando a mensagem mais recente de cada negociação; aceita `startedFrom`, `startedTo`, `stage`, `aiStage`, `search` e `limit`;
-- `GET /api/files`: lista mídias privadas acessíveis por contato; aceita `contactId`, `search` e `limit`, sem expor a chave física de armazenamento;
+- `GET /api/files`: lista mídias privadas acessíveis; aceita `contactId`,
+  `search`, `fileType`, `direction`, `occurredFrom`, `occurredTo` e `limit`, sem
+  expor a chave física de armazenamento;
 - `GET /api/whatsapp/connection`: consulta o estado da conta principal;
 - `POST /api/whatsapp/setup`: inicia setup e retorna QR efêmero no adapter falso;
 - `POST /api/whatsapp/demo/connect`: simula a leitura do QR, disponível somente quando o adapter falso está habilitado;
@@ -75,7 +77,9 @@ concluída mais recente e não aplicam a sugestão ao estágio confirmado.
 O catálogo de arquivos retorna metadados de mídias não removidas e ainda dentro
 da retenção. O conteúdo continua disponível somente pelo fluxo assinado de
 `/api/media`; o catálogo não cria uma URL pública nem altera a política de
-retenção.
+retenção. `fileType` aceita `audio`, `image` ou `document`; direção aceita
+`inbound` ou `outbound`, e o período UTC também é semiaberto. Documentos usam
+download forçado, enquanto imagem e áudio podem ser entregues inline.
 
 Todas as mutações de navegador sob `/api/` exigem um cabeçalho `Origin` presente em `APP_ORIGINS`. A ingestão em `/api/internal/` continua protegida pelo token interno e não depende de origem de navegador. A exclusão de contato retorna `204` também em reentregas ou IDs não pertencentes ao workspace, evitando enumeração.
 
@@ -96,11 +100,11 @@ npm run start:retention -w @noter/backend
 ```
 
 O processo da outbox publica `message.text.ingested`,
-`message.audio.download_requested`, `message.audio.ingested`,
+`message.media.download_requested`, `message.media.available`, `message.audio.ingested`,
 `message.audio.ready_for_analysis`, `message.persisted` e eventos de atualização
 do CRM nas filas correspondentes. Os jobs e notificações contêm IDs e metadados
 de roteamento, nunca o conteúdo integral da conversa. O processo
-`media-download` é obrigatório para áudio externo. O profile `baileys` usa o
+`media-download` é obrigatório para mídia externa. O profile `baileys` usa o
 downloader real com referência cifrada; o adapter falso permanece restrito ao
 profile `demo`.
 

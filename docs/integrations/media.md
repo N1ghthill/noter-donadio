@@ -1,19 +1,31 @@
-# Armazenamento, reprodução e retenção de áudio
+# Armazenamento, acesso e retenção de mídia
 
 ## Estado implementado
 
 No adapter local, uma simulação de áudio cria um WAV silencioso e explicitamente fictício. O arquivo é gravado antes da ingestão em `MEDIA_STORAGE_PATH`; depois, a mensagem, o registro de mídia e a outbox são persistidos na mesma transação. A chave é determinística por workspace e UUID do cliente, portanto uma repetição idempotente não cria outro arquivo.
 
-Para áudio externo, a mensagem, a referência de mídia em estado `pending` e
-`message.audio.download_requested` são persistidos juntos. O worker recebe
+Para mídia externa, a mensagem, a referência em estado `pending` e
+`message.media.download_requested` são persistidos juntos. O worker recebe
 somente IDs internos, adquire um lease, baixa para uma chave `.media` exclusiva
 da tentativa e confirma condicionalmente o registro antes de liberar a
 transcrição. No Baileys, `url`, `directPath` e `mediaKey` são criptografados com
 AES-256-GCM e AAD vinculada a workspace, conta e mensagem antes do commit. O
-downloader reabre essa referência somente no worker, impõe timeout de 30
+downloader reabre essa referência somente no worker, identifica áudio, imagem
+ou documento pela mensagem, impõe timeout de 30
 segundos e `MEDIA_MAX_BYTES` e não transporta credencial ou bytes pelo Redis.
 
-O arquivo não é servido como conteúdo estático. A timeline autenticada informa apenas se a reprodução está disponível. Ao clicar em **Carregar áudio**, o frontend solicita `GET /api/media/:messageId/access`, que retorna uma URL relativa assinada válida por dois minutos. A leitura em `GET /api/media/:messageId/content` exige simultaneamente a sessão ativa, o mesmo workspace, prazo válido e assinatura HMAC correta.
+O arquivo não é servido como conteúdo estático. A timeline e a biblioteca
+autenticadas informam apenas se o acesso está disponível. Reprodução de áudio,
+prévia de imagem e download de documento só solicitam
+`GET /api/media/:messageId/access` após ação do usuário. A rota retorna uma URL
+relativa assinada válida por dois minutos. A leitura em
+`GET /api/media/:messageId/content` exige simultaneamente sessão ativa, o mesmo
+workspace, prazo válido e assinatura HMAC correta. Documentos são entregues
+como attachment; imagens e áudios podem ser inline.
+
+Formatos aceitos são áudio, JPEG, PNG, WebP, GIF, PDF, texto, CSV, ZIP e os
+formatos usuais de Office. HTML, SVG e MIME desconhecido são recusados antes da
+gravação para não servir conteúdo ativo na origem da aplicação.
 
 ## Configuração local
 
@@ -48,7 +60,8 @@ associados à mensagem quando a remoção ocorreu apenas por retenção.
 ## Limites desta fatia
 
 - não há endpoint público, URL permanente nem chave física na resposta da API;
-- o endpoint entrega o arquivo completo; suporte otimizado a `Range` fica para o adapter de objeto/produção;
+- o endpoint entrega o arquivo completo; suporte otimizado a `Range` e
+  thumbnails geradas no servidor ficam para uma evolução;
 - o downloader usa a referência entregue na mensagem nova; recuperação de uma
   URL muito antiga por solicitação de reupload do telefone ainda não foi
   implementada;

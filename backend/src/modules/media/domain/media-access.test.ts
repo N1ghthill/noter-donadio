@@ -28,6 +28,8 @@ function service() {
         storageKey: `${WORKSPACE_ID}/${MESSAGE_ID}.wav`,
         mimeType: 'audio/wav',
         durationSeconds: 1,
+        fileName: 'audio.wav',
+        disposition: 'inline',
       };
     },
   }, storage(), 'segredo-de-teste-com-mais-de-trinta-e-dois-caracteres');

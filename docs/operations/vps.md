@@ -78,8 +78,8 @@ sudo /opt/noter-donadio/scripts/status-vps.sh --diagnose-baileys
 sudo /opt/noter-donadio/scripts/status-vps.sh --diagnose-media
 ```
 
-O diagnóstico de mídia retorna somente contagens agregadas de áudio por estado
-de download e logs sanitizados do worker.
+O diagnóstico de mídia retorna somente contagens agregadas de áudio, imagem e
+documento por estado de download e logs sanitizados do worker.
 
 Na primeira ativação autorizada do conector Baileys, use:
 

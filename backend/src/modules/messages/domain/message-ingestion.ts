@@ -8,7 +8,7 @@ import type {
   StoredMediaDescriptor,
 } from '../../media/domain/media-storage.js';
 
-export type IngestibleMessageType = Extract<MessageType, 'text' | 'audio'>;
+export type IngestibleMessageType = Extract<MessageType, 'text' | 'audio' | 'image' | 'document'>;
 
 export interface IngestMessageCommand {
   readonly workspaceId: string;

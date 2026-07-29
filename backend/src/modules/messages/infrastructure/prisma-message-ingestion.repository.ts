@@ -128,7 +128,7 @@ export class PrismaMessageIngestionRepository implements MessageIngestionReposit
           select: { id: true },
         });
 
-        if (command.messageType === 'audio') {
+        if (command.messageType !== 'text') {
           const hasStoredMedia = command.media !== undefined;
           const hasPendingMedia = command.pendingMedia !== undefined;
           await transaction.mediaAsset.create({
@@ -154,12 +154,14 @@ export class PrismaMessageIngestionRepository implements MessageIngestionReposit
               downloadFailureCode: hasStoredMedia || hasPendingMedia
                 ? null
                 : 'MEDIA_REFERENCE_MISSING',
-              transcriptionState: 'pending',
+              transcriptionState: command.messageType === 'audio' ? 'pending' : 'completed',
               storageKey: command.media?.storageKey ?? null,
               fileSizeBytes: command.media ? BigInt(command.media.fileSizeBytes) : null,
               durationSeconds:
                 command.media?.durationSeconds ?? command.pendingMedia?.durationSeconds ?? null,
               mimeType: command.media?.mimeType ?? command.pendingMedia?.mimeType ?? null,
+              originalFileName:
+                command.media?.originalFileName ?? command.pendingMedia?.originalFileName ?? null,
               retentionUntil: command.media?.retentionUntil ?? null,
             },
           });
@@ -168,9 +170,11 @@ export class PrismaMessageIngestionRepository implements MessageIngestionReposit
         const processingEventType = command.messageType === 'text'
           ? 'message.text.ingested'
           : command.media
-            ? 'message.audio.ingested'
+            ? command.messageType === 'audio'
+              ? 'message.audio.ingested'
+              : 'message.media.available'
             : command.pendingMedia
-              ? 'message.audio.download_requested'
+              ? 'message.media.download_requested'
               : null;
         const outboxEvents: Prisma.OutboxEventCreateManyInput[] = [
           {

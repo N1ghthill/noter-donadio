@@ -42,7 +42,11 @@ export class PrismaBullMqOperationalMetricsCollector implements OperationalMetri
       oldestAnalysis, ...queueCounts] = await Promise.all([
       this.prisma.outboxEvent.groupBy({ by: ['status'], _count: { _all: true } }),
       this.prisma.mediaAsset.groupBy({ by: ['downloadState'], _count: { _all: true } }),
-      this.prisma.mediaAsset.groupBy({ by: ['transcriptionState'], _count: { _all: true } }),
+      this.prisma.mediaAsset.groupBy({
+        by: ['transcriptionState'],
+        where: { message: { messageType: 'audio' } },
+        _count: { _all: true },
+      }),
       this.prisma.aiAnalysis.groupBy({ by: ['state'], _count: { _all: true } }),
       this.prisma.mediaDeletionTask.count(),
       this.prisma.outboxEvent.findFirst({
@@ -57,6 +61,7 @@ export class PrismaBullMqOperationalMetricsCollector implements OperationalMetri
         where: {
           downloadState: 'completed',
           transcriptionState: { in: ['pending', 'processing'] },
+          message: { messageType: 'audio' },
         },
         orderBy: { createdAt: 'asc' }, select: { createdAt: true },
       }),

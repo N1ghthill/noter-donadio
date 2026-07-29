@@ -14,8 +14,9 @@ import type {
 
 const DOWNLOAD_TIMEOUT_MS = 30_000;
 
-type DownloadAudio = (
+type DownloadMedia = (
   reference: BaileysMediaReference,
+  mediaType: 'audio' | 'image' | 'document',
   signal: AbortSignal,
 ) => Promise<AsyncIterable<Uint8Array>> | AsyncIterable<Uint8Array>;
 
@@ -24,7 +25,7 @@ export class BaileysMediaDownloader implements MediaDownloader {
     private readonly prisma: PrismaClient,
     private readonly referenceCipher: BaileysMediaReferenceCipher,
     private readonly maxBytes: number,
-    private readonly downloadAudio: DownloadAudio = defaultDownloadAudio,
+    private readonly downloadMedia: DownloadMedia = defaultDownloadMedia,
   ) {}
 
   public async download(target: MediaDownloadTarget): Promise<DownloadedMedia> {
@@ -70,7 +71,7 @@ export class BaileysMediaDownloader implements MediaDownloader {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), DOWNLOAD_TIMEOUT_MS);
     try {
-      const stream = await this.downloadAudio(reference, controller.signal);
+      const stream = await this.downloadMedia(reference, target.messageType, controller.signal);
       const chunks: Buffer[] = [];
       let totalBytes = 0;
       for await (const chunk of stream) {
@@ -84,7 +85,7 @@ export class BaileysMediaDownloader implements MediaDownloader {
       }
       return {
         bytes: Buffer.concat(chunks, totalBytes),
-        mimeType: normalizedMimeType(asset.mimeType),
+        mimeType: normalizedMimeType(asset.mimeType, target.messageType),
         durationSeconds: asset.durationSeconds,
       };
     } finally {
@@ -93,16 +94,23 @@ export class BaileysMediaDownloader implements MediaDownloader {
   }
 }
 
-async function defaultDownloadAudio(
+async function defaultDownloadMedia(
   reference: BaileysMediaReference,
+  mediaType: 'audio' | 'image' | 'document',
   signal: AbortSignal,
 ): Promise<AsyncIterable<Uint8Array>> {
-  return downloadContentFromMessage(reference, 'audio', {
+  return downloadContentFromMessage(reference, mediaType, {
     options: { signal },
   });
 }
 
-function normalizedMimeType(value: string | null): string {
+function normalizedMimeType(
+  value: string | null,
+  messageType: 'audio' | 'image' | 'document',
+): string {
   const mimeType = value?.split(';', 1)[0]?.trim().toLowerCase();
-  return mimeType?.startsWith('audio/') ? mimeType : 'audio/ogg';
+  if (mimeType) return mimeType;
+  if (messageType === 'audio') return 'audio/ogg';
+  if (messageType === 'image') return 'image/jpeg';
+  return 'application/octet-stream';
 }

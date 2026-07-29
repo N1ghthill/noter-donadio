@@ -16,6 +16,12 @@ test('download de mídia usa política longa sem transportar conteúdo', () => {
   assert.deepEqual(options.backoff, { type: 'fixed', delay: 30_000 });
 });
 
+test('download genérico de mídia preserva retries longos', () => {
+  const options = eventJobOptions('message.media.download_requested', 'event-media');
+  assert.equal(options.attempts, 12);
+  assert.deepEqual(options.backoff, { type: 'fixed', delay: 30_000 });
+});
+
 test('análise de texto e de áudio transcrito usa a mesma janela de recuperação', () => {
   for (const eventType of ['message.text.ingested', 'message.audio.ready_for_analysis']) {
     const options = eventJobOptions(eventType, 'event-analysis');

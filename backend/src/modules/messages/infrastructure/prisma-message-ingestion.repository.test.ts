@@ -5,7 +5,7 @@ import test from 'node:test';
 import { createPrismaClient } from '../../../config/database.js';
 import { PrismaMessageIngestionRepository } from './prisma-message-ingestion.repository.js';
 
-test('áudio externo persiste referência e solicitação de download atomicamente', async (context) => {
+test('mídia externa persiste referência e solicitação de download atomicamente', async (context) => {
   const databaseUrl = process.env.DATABASE_URL;
   assert.ok(databaseUrl, 'DATABASE_URL é obrigatória para o teste de integração');
   const prisma = createPrismaClient(databaseUrl);
@@ -76,7 +76,7 @@ test('áudio externo persiste referência e solicitação de download atomicamen
   });
   assert.deepEqual(events, [
     {
-      eventType: 'message.audio.download_requested',
+      eventType: 'message.media.download_requested',
       payload: {
         messageId: result.messageId,
         workspaceId,
@@ -93,4 +93,38 @@ test('áudio externo persiste referência e solicitação de download atomicamen
       },
     },
   ]);
+
+  const image = await new PrismaMessageIngestionRepository(prisma).persist({
+    workspaceId,
+    whatsappAccountId: accountId,
+    externalMessageId: 'wamid.external-image-synthetic',
+    remoteJid: '5571000000202@s.whatsapp.net',
+    phoneNumber: '5571000000202',
+    direction: 'outbound',
+    messageType: 'image',
+    content: 'Imagem fictícia do projeto',
+    occurredAt: new Date('2026-07-28T07:01:00Z'),
+    pendingMedia: {
+      externalMediaId: 'image-external-synthetic',
+      mimeType: 'image/jpeg',
+      originalFileName: 'projeto-ficticio.jpg',
+      encryptedProviderReference: {
+        encryptedData: Buffer.from('ciphertext-image-synthetic'),
+        iv: Buffer.alloc(12, 3),
+        authTag: Buffer.alloc(16, 4),
+        encryptionKeyVersion: 1,
+      },
+    },
+  });
+  const imageAsset = await prisma.mediaAsset.findUniqueOrThrow({
+    where: { messageId: image.messageId },
+  });
+  assert.equal(imageAsset.originalFileName, 'projeto-ficticio.jpg');
+  assert.equal(imageAsset.transcriptionState, 'completed');
+  assert.equal(await prisma.outboxEvent.count({
+    where: {
+      aggregateId: image.messageId,
+      eventType: 'message.media.download_requested',
+    },
+  }), 1);
 });

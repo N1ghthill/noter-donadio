@@ -383,6 +383,7 @@ export class PrismaCrmRepository implements CrmRepository {
           transcriptionText: message.mediaAsset.transcriptionText,
           durationSeconds: message.mediaAsset.durationSeconds,
           mimeType: message.mediaAsset.mimeType,
+          fileName: message.mediaAsset.originalFileName,
           playbackAvailable: Boolean(
             message.mediaAsset.storageKey
             && !message.mediaAsset.removedAt

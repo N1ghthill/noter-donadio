@@ -236,6 +236,35 @@ label { display: grid; gap: .4rem; color: #4c5b53; font-size: .8rem; font-weight
 .audio-player audio { width: min(100%, 25rem); height: 2.6rem; }
 .audio-player .button { justify-self: start; }
 .media-unavailable { margin: .5rem 0; color: #7b8580; font-size: .78rem; }
+.file-type-tabs { display: flex; gap: .5rem; overflow-x: auto; padding-bottom: .15rem; }
+.file-type-tabs button { padding: .65rem 1rem; border: 1px solid #dce1dc; border-radius: 2rem; color: #58675f; background: #fff; font: inherit; font-size: .78rem; font-weight: 750; white-space: nowrap; cursor: pointer; }
+.file-type-tabs button:hover { border-color: #9aae9f; background: #f5f8f3; }
+.file-type-tabs button.active { border-color: #355945; color: #fff; background: #355945; }
+.file-filters { display: grid; grid-template-columns: minmax(16rem, 1.5fr) repeat(3, minmax(10rem, .7fr)) auto; gap: .8rem; align-items: end; }
+.file-filters .button-link { min-height: 2.65rem; white-space: nowrap; }
+.file-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: 1rem; }
+.file-card { min-width: 0; overflow: hidden; border: 1px solid #e0e4df; border-radius: .9rem; background: #fff; box-shadow: 0 .4rem 1.2rem rgb(31 48 39 / 5%); }
+.file-card-preview { position: relative; display: grid; place-items: center; min-height: 9rem; padding: 1rem; background: #f1f4f0; }
+.file-card.file-document .file-card-preview { background: #f3f0e8; }
+.file-card.file-audio .file-card-preview { background: #edf3ef; }
+.file-kind { position: absolute; top: .7rem; left: .7rem; z-index: 1; padding: .3rem .5rem; border-radius: 2rem; color: #536158; background: rgb(255 255 255 / 88%); font-size: .65rem; font-weight: 850; text-transform: uppercase; }
+.file-card-preview .audio-player { width: 100%; margin-top: 1.6rem; }
+.file-card-preview .audio-player audio { width: 100%; }
+.file-card-copy { display: grid; gap: .45rem; padding: 1rem; }
+.file-card-copy > strong { overflow: hidden; color: #2f4037; text-overflow: ellipsis; white-space: nowrap; }
+.file-card-copy > span { color: #68766e; font-size: .8rem; }
+.file-card-copy > p { display: -webkit-box; overflow: hidden; margin: .2rem 0; color: #647169; font-size: .78rem; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.file-card-copy dl { display: grid; gap: .35rem; margin: .4rem 0; }
+.file-card-copy dl > div { display: flex; justify-content: space-between; gap: .75rem; font-size: .7rem; }
+.file-card-copy dt { color: #8a938e; }
+.file-card-copy dd { margin: 0; color: #55635b; text-align: right; }
+.file-card-copy > a { margin-top: .3rem; color: #496655; font-size: .76rem; font-weight: 750; text-decoration: none; }
+.file-card-copy > a:hover { text-decoration: underline; }
+.image-preview { display: grid; width: 100%; gap: .55rem; justify-items: center; }
+.image-preview img { width: 100%; height: 12rem; border-radius: .55rem; object-fit: cover; background: #e5e9e5; }
+.image-preview a { color: #496655; font-size: .72rem; font-weight: 750; }
+.media-action { display: grid; gap: .45rem; justify-items: center; }
+.media-action .button { font-size: .75rem; }
 .card-actions { display: flex; grid-column: 1 / -1; justify-content: flex-end; gap: .8rem; }
 .button-link.danger { color: #994d46; }
 .button-link:disabled { opacity: .55; cursor: wait; }
@@ -300,6 +329,8 @@ label { display: grid; gap: .4rem; color: #4c5b53; font-size: .8rem; font-weight
   .detail-grid { grid-template-columns: 1fr; }
   .connection-grid { grid-template-columns: 1fr; }
   .conversation-layout { grid-template-columns: 1fr; }
+  .file-filters { grid-template-columns: 1fr 1fr; }
+  .file-search { grid-column: 1 / -1; }
   .login-page { grid-template-columns: 1fr; }
   .login-copy h1 { font-size: clamp(2.7rem, 12vw, 5rem); }
 }
@@ -320,6 +351,8 @@ label { display: grid; gap: .4rem; color: #4c5b53; font-size: .8rem; font-weight
   .demo-message-form { grid-template-columns: 1fr; }
   .demo-message-actions { align-items: stretch; flex-direction: column; }
   .full-width { grid-column: auto; }
+  .file-filters { grid-template-columns: 1fr; }
+  .file-search { grid-column: auto; }
   .login-page { align-content: center; padding: 1.5rem; }
   .login-copy > p:last-child { display: none; }
 }

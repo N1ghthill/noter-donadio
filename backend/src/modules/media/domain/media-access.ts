@@ -8,6 +8,8 @@ export interface AccessibleMedia {
   readonly storageKey: string;
   readonly mimeType: string;
   readonly durationSeconds: number | null;
+  readonly fileName: string;
+  readonly disposition: 'inline' | 'attachment';
 }
 
 export interface MediaAccessRepository {
@@ -31,6 +33,8 @@ export class MediaAccessService {
       expiresAt: new Date(expires * 1_000).toISOString(),
       mimeType: media.mimeType,
       durationSeconds: media.durationSeconds,
+      fileName: media.fileName,
+      disposition: media.disposition,
     };
   }
 
@@ -54,7 +58,12 @@ export class MediaAccessService {
     const media = await this.repository.findAccessible(workspaceId, messageId, now);
     if (!media) throw new MediaNotFoundError();
     try {
-      return { bytes: await this.storage.read(media.storageKey), mimeType: media.mimeType };
+      return {
+        bytes: await this.storage.read(media.storageKey),
+        mimeType: media.mimeType,
+        fileName: media.fileName,
+        disposition: media.disposition,
+      };
     } catch (error: unknown) {
       if (isMissingFileError(error)) throw new MediaNotFoundError();
       throw error;

@@ -4,7 +4,7 @@ import type { NegotiationStage } from '@noter/contracts';
 
 import { ApiError, api } from '../api/client.js';
 import { ErrorState, LoadingState } from '../components/Feedback.js';
-import { AudioPlayer } from '../components/AudioPlayer.js';
+import { MediaPreview } from '../components/MediaPreview.js';
 import { formatDate, PROCESSING_LABELS, STAGE_LABELS } from '../lib/format.js';
 import { useRealtime } from '../realtime/RealtimeContext.js';
 import type {
@@ -210,15 +210,21 @@ export function ConversationsPage() {
                     <p>{message.content ?? (message.messageType === 'audio' ? 'Mensagem de áudio' : 'Conteúdo não textual')}</p>
                     {message.media ? (
                       <>
-                        <AudioPlayer messageId={message.id} playbackAvailable={message.media.playbackAvailable} />
-                        <div className="transcription">
+                        {message.media.playbackAvailable && ['audio', 'image', 'document'].includes(message.messageType)
+                          ? <MediaPreview
+                              messageId={message.id}
+                              messageType={message.messageType as 'audio' | 'image' | 'document'}
+                              fileName={message.media.fileName ?? 'Arquivo da conversa'}
+                            />
+                          : <p className="media-unavailable">Arquivo indisponível ou removido pela retenção.</p>}
+                        {message.messageType === 'audio' ? <div className="transcription">
                           <strong>Transcrição · {PROCESSING_LABELS[message.media.transcriptionState]}</strong>
                           <p>{message.media.transcriptionText ?? (message.media.transcriptionState === 'failed'
                             ? 'Não foi possível transcrever este áudio.'
                             : capabilities?.audioTranscriptionEnabled
                               ? 'Aguardando transcrição.'
                               : 'Transcrição ainda não ativada. O áudio original continua disponível.')}</p>
-                        </div>
+                        </div> : null}
                       </>
                     ) : null}
                   </article>

@@ -8,8 +8,8 @@ webhook, adapters, configuração e chamadas externas correspondentes foram
 removidos do runtime.
 
 O Baileys 7 está fixado e o processo dedicado implementa socket, QR efêmero,
-reconexão, auth state criptografado e ingestão de novas mensagens de texto e
-áudio. Nenhuma mensagem é enviada pelo sistema.
+reconexão, auth state criptografado e ingestão de novas mensagens de texto,
+áudio, imagem e documento. Nenhuma mensagem é enviada pelo sistema.
 
 ## Jornada de demonstração
 
@@ -38,7 +38,8 @@ O processo dedicado do Baileys será vinculado a uma conta interna e:
 4. normalizará eventos `messages.upsert`, incluindo `fromMe`;
 5. descartará grupos, status, newsletters e protocolo antes da ingestão;
 6. persistirá texto recebido ou enviado antes de qualquer processamento;
-7. trata áudio por referência mínima cifrada e download pós-commit;
+7. trata áudio, imagem e documento por referência mínima cifrada e download
+   pós-commit;
 8. reconectará com backoff, sem recriar sessão após logout explícito.
 
 Quando a conta já está `connected`, a API recusa um novo setup com

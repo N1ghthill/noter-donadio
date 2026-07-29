@@ -337,6 +337,7 @@ model MediaAsset {
   fileSizeBytes           BigInt?         @map("file_size_bytes")
   durationSeconds         Int?            @map("duration_seconds")
   mimeType                String?         @map("mime_type") @db.VarChar(100)
+  originalFileName        String?         @map("original_file_name") @db.VarChar(255)
   downloadState           ProcessingState @default(completed) @map("download_state")
   downloadAttemptId       String?         @map("download_attempt_id") @db.Uuid
   downloadStartedAt       DateTime?       @map("download_started_at") @db.Timestamptz(6)

@@ -74,20 +74,19 @@ if test "${diagnose_media}" = "1"; then
       --command="
         SELECT
           COUNT(*) FILTER (WHERE messages.message_type = 'audio') AS audio_messages,
+          COUNT(*) FILTER (WHERE messages.message_type = 'image') AS image_messages,
+          COUNT(*) FILTER (WHERE messages.message_type = 'document') AS document_messages,
           COUNT(*) FILTER (
             WHERE media_assets.encrypted_provider_reference IS NOT NULL
-          ) AS baileys_audio,
+          ) AS baileys_media,
           COUNT(*) FILTER (
-            WHERE messages.message_type = 'audio'
-              AND media_assets.download_state = 'completed'
+            WHERE media_assets.download_state = 'completed'
           ) AS downloaded,
           COUNT(*) FILTER (
-            WHERE messages.message_type = 'audio'
-              AND media_assets.download_state = 'pending'
+            WHERE media_assets.download_state = 'pending'
           ) AS pending,
           COUNT(*) FILTER (
-            WHERE messages.message_type = 'audio'
-              AND media_assets.download_state = 'failed'
+            WHERE media_assets.download_state = 'failed'
           ) AS failed
         FROM messages
         LEFT JOIN media_assets ON media_assets.message_id = messages.id;
@@ -105,7 +104,9 @@ if test "${diagnose_assistive}" = "1"; then
           COUNT(*) FILTER (WHERE transcription_state = 'processing') AS transcription_processing,
           COUNT(*) FILTER (WHERE transcription_state = 'completed') AS transcription_completed,
           COUNT(*) FILTER (WHERE transcription_state = 'failed') AS transcription_failed
-        FROM media_assets;
+        FROM media_assets
+        INNER JOIN messages ON messages.id = media_assets.message_id
+        WHERE messages.message_type = 'audio';
         SELECT
           COUNT(*) FILTER (WHERE state = 'pending') AS analysis_pending,
           COUNT(*) FILTER (WHERE state = 'processing') AS analysis_processing,

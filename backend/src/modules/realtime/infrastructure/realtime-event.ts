@@ -41,6 +41,12 @@ const eventSchemas = {
     contactId: z.uuid(),
     negotiationId: z.uuid(),
   }),
+  'message.media.available': z.object({
+    workspaceId,
+    messageId: z.uuid(),
+    contactId: z.uuid(),
+    negotiationId: z.uuid(),
+  }),
   'message.transcription.changed': z.object({
     workspaceId,
     messageId: z.uuid(),
@@ -71,6 +77,7 @@ export type RealtimeEvent =
   | { type: 'negotiation.updated'; workspaceId: string; negotiationId: string; changedFields: string[] }
   | { type: 'whatsapp.connection.changed'; workspaceId: string; accountId: string; status: string }
   | { type: 'message.persisted'; workspaceId: string; messageId: string; contactId: string; negotiationId: string }
+  | { type: 'message.media.available'; workspaceId: string; messageId: string; contactId: string; negotiationId: string }
   | { type: 'message.transcription.changed'; workspaceId: string; messageId: string; negotiationId: string; state: string }
   | { type: 'analysis.changed'; workspaceId: string; analysisId: string; messageId: string; negotiationId: string; state: string }
   | { type: 'analysis.decision.changed'; workspaceId: string; decisionId: string; analysisId: string; negotiationId: string; decision: string };
@@ -95,6 +102,9 @@ export function parseRealtimeEvent(name: string, data: unknown): RealtimeEvent {
     return { type: name, ...eventSchemas[name].parse(data) };
   }
   if (name === 'message.persisted') {
+    return { type: name, ...eventSchemas[name].parse(data) };
+  }
+  if (name === 'message.media.available') {
     return { type: name, ...eventSchemas[name].parse(data) };
   }
   if (name === 'message.transcription.changed') {

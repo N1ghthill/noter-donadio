@@ -3,6 +3,7 @@ export interface StoredMediaDescriptor {
   readonly fileSizeBytes: number;
   readonly durationSeconds: number;
   readonly mimeType: string;
+  readonly originalFileName?: string | undefined;
   readonly retentionUntil: Date;
 }
 
@@ -10,6 +11,7 @@ export interface PendingMediaReference {
   readonly externalMediaId: string;
   readonly mimeType?: string | undefined;
   readonly durationSeconds?: number | undefined;
+  readonly originalFileName?: string | undefined;
   readonly encryptedProviderReference?: EncryptedProviderReference | undefined;
 }
 

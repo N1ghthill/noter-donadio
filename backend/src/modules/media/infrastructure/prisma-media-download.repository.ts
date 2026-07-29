@@ -56,6 +56,7 @@ export class PrismaMediaDownloadRepository implements MediaDownloadRepository {
           mimeType: true,
           message: {
             select: {
+              messageType: true,
               whatsappAccount: {
                 select: {
                   provider: true,
@@ -67,6 +68,9 @@ export class PrismaMediaDownloadRepository implements MediaDownloadRepository {
         },
       });
       if (!asset.externalMediaId) throw new Error('Mídia reivindicada sem referência externa');
+      if (!['audio', 'image', 'document'].includes(asset.message.messageType)) {
+        throw new Error('Tipo de mídia reivindicada não suportado');
+      }
       return {
         status: 'claimed',
         target: {
@@ -75,6 +79,7 @@ export class PrismaMediaDownloadRepository implements MediaDownloadRepository {
           attemptId: input.attemptId,
           externalMediaId: asset.externalMediaId,
           expectedMimeType: asset.mimeType,
+          messageType: asset.message.messageType as 'audio' | 'image' | 'document',
           provider: asset.message.whatsappAccount.provider,
           providerPhoneNumberId: asset.message.whatsappAccount.providerPhoneNumberId,
         },
@@ -118,20 +123,29 @@ export class PrismaMediaDownloadRepository implements MediaDownloadRepository {
 
       const message = await transaction.message.findFirstOrThrow({
         where: { workspaceId: input.workspaceId, id: input.messageId },
-        select: { negotiationId: true },
+        select: { negotiationId: true, contactId: true, messageType: true },
       });
-      if (!message.negotiationId) throw new Error('Mensagem de áudio sem negociação');
+      if (!message.negotiationId) throw new Error('Mensagem de mídia sem negociação');
       await transaction.outboxEvent.create({
         data: {
           workspaceId: input.workspaceId,
           aggregateType: 'message',
           aggregateId: input.messageId,
-          eventType: 'message.audio.ingested',
-          payload: {
-            workspaceId: input.workspaceId,
-            messageId: input.messageId,
-            negotiationId: message.negotiationId,
-          },
+          eventType: message.messageType === 'audio'
+            ? 'message.audio.ingested'
+            : 'message.media.available',
+          payload: message.messageType === 'audio'
+            ? {
+                workspaceId: input.workspaceId,
+                messageId: input.messageId,
+                negotiationId: message.negotiationId,
+              }
+            : {
+                workspaceId: input.workspaceId,
+                messageId: input.messageId,
+                contactId: message.contactId,
+                negotiationId: message.negotiationId,
+              },
         },
       });
       return true;

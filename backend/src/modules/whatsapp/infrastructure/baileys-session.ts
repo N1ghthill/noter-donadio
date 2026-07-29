@@ -18,7 +18,7 @@ import type { BaileysMediaReferenceCipher } from './baileys-media-reference.js';
 import {
   resolveBaileysPhoneJid,
   shouldIngestBaileysUpsert,
-  toBaileysAudioEvent,
+  toBaileysMediaEvent,
   toBaileysTextEvent,
 } from './baileys-message.js';
 
@@ -131,35 +131,39 @@ export class BaileysSession {
         if (normalized) await this.ingestionService.execute(normalized);
         return;
       }
-      const audioEvent = toBaileysAudioEvent(
+      const mediaEvent = toBaileysMediaEvent(
         message,
-        (audio) => this.mediaReferenceCipher.fromAudioMessage(audio),
+        (media) => this.mediaReferenceCipher.fromMediaMessage(media),
         resolvedPhoneJid,
       );
-      if (!audioEvent) return;
+      if (!mediaEvent) return;
       const encryptedProviderReference = this.mediaReferenceCipher.encrypt(
-        audioEvent.mediaReference,
+        mediaEvent.mediaReference,
         {
           workspaceId: binding.workspaceId,
           accountId: binding.whatsappAccountId,
-          externalMessageId: audioEvent.externalMessageId,
+          externalMessageId: mediaEvent.externalMessageId,
         },
       );
       await this.ingestionService.execute({
         workspaceId: binding.workspaceId,
         whatsappAccountId: binding.whatsappAccountId,
-        externalMessageId: audioEvent.externalMessageId,
-        remoteJid: audioEvent.remoteJid,
-        phoneNumber: audioEvent.phoneNumber,
-        ...(audioEvent.displayName ? { displayName: audioEvent.displayName } : {}),
-        direction: audioEvent.fromMe ? 'outbound' : 'inbound',
-        messageType: 'audio',
-        occurredAt: audioEvent.occurredAt,
+        externalMessageId: mediaEvent.externalMessageId,
+        remoteJid: mediaEvent.remoteJid,
+        phoneNumber: mediaEvent.phoneNumber,
+        ...(mediaEvent.displayName ? { displayName: mediaEvent.displayName } : {}),
+        direction: mediaEvent.fromMe ? 'outbound' : 'inbound',
+        messageType: mediaEvent.messageType,
+        ...(mediaEvent.caption ? { content: mediaEvent.caption } : {}),
+        occurredAt: mediaEvent.occurredAt,
         pendingMedia: {
-          externalMediaId: audioEvent.externalMessageId,
-          ...(audioEvent.mimeType ? { mimeType: audioEvent.mimeType } : {}),
-          ...(audioEvent.durationSeconds !== undefined
-            ? { durationSeconds: audioEvent.durationSeconds }
+          externalMediaId: mediaEvent.externalMessageId,
+          ...(mediaEvent.mimeType ? { mimeType: mediaEvent.mimeType } : {}),
+          ...(mediaEvent.originalFileName
+            ? { originalFileName: mediaEvent.originalFileName }
+            : {}),
+          ...(mediaEvent.durationSeconds !== undefined
+            ? { durationSeconds: mediaEvent.durationSeconds }
             : {}),
           encryptedProviderReference,
         },

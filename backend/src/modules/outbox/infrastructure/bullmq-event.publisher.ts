@@ -46,7 +46,8 @@ export class BullMqEventPublisher implements EventPublisher {
   }
 
   private queueFor(eventType: string): Queue {
-    if (eventType === 'message.audio.download_requested') return this.mediaDownloadQueue;
+    if (eventType === 'message.audio.download_requested'
+      || eventType === 'message.media.download_requested') return this.mediaDownloadQueue;
     if (eventType === 'message.audio.ingested') return this.audioQueue;
     if (eventType === 'message.text.ingested' || eventType === 'message.audio.ready_for_analysis') {
       return this.textQueue;
@@ -57,6 +58,7 @@ export class BullMqEventPublisher implements EventPublisher {
 
 export function eventJobOptions(eventType: string, eventId: string): JobsOptions {
   const longRunning = eventType === 'message.audio.download_requested'
+    || eventType === 'message.media.download_requested'
     || eventType === 'message.audio.ingested'
     || eventType === 'message.text.ingested'
     || eventType === 'message.audio.ready_for_analysis';

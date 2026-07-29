@@ -18,6 +18,7 @@ const target: MediaDownloadTarget = {
   expectedMimeType: null,
   provider: null,
   providerPhoneNumberId: null,
+  messageType: 'audio',
 };
 
 test('grava a mídia antes de liberar a transcrição', async () => {
@@ -58,6 +59,34 @@ test('grava a mídia antes de liberar a transcrição', async () => {
     `write:${target.workspaceId}/${target.attemptId}.media`,
     `complete:${target.workspaceId}/${target.attemptId}.media`,
   ]);
+});
+
+test('aceita formatos seguros de imagem e documento e recusa conteúdo ativo', () => {
+  assert.equal(validateDownloadedMedia({
+    bytes: new Uint8Array([1]),
+    mimeType: 'image/jpeg',
+    durationSeconds: null,
+  }, 'image/jpeg').mimeType, 'image/jpeg');
+  assert.equal(validateDownloadedMedia({
+    bytes: new Uint8Array([1]),
+    mimeType: 'application/pdf',
+    durationSeconds: null,
+  }, 'application/pdf').mimeType, 'application/pdf');
+  assert.throws(() => validateDownloadedMedia({
+    bytes: new Uint8Array([1]),
+    mimeType: 'image/svg+xml',
+    durationSeconds: null,
+  }, 'image/svg+xml'), /invalid_media_mime_type/);
+  assert.throws(() => validateDownloadedMedia({
+    bytes: new Uint8Array([1]),
+    mimeType: 'text/html',
+    durationSeconds: null,
+  }, 'text/html'), /invalid_media_mime_type/);
+  assert.throws(() => validateDownloadedMedia({
+    bytes: new Uint8Array([1]),
+    mimeType: 'application/pdf',
+    durationSeconds: null,
+  }, 'application/pdf', 'image'), /invalid_media_mime_type/);
 });
 
 test('falha com código sanitizado quando o adapter devolve mídia inválida', async () => {

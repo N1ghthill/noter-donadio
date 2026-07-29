@@ -27,7 +27,8 @@ A aplicação React é uma interface autenticada para o CRM e contém:
   classificação da IA, resumo, filtros e histórico reconciliado via REST;
 - agenda de próximas ações com filtros de prazo, classificação, resumo e
   conclusão explícita;
-- catálogo de áudios por contato com reprodução privada sob demanda;
+- biblioteca responsiva de áudios, imagens e documentos por contato, com busca,
+  filtros combináveis, prévia ou download privado sob demanda;
 - formulário local para simular recebimento idempotente de texto ou áudio sem enviar mensagens;
 - exclusão irreversível de contato com confirmação explícita e remoção dos dados associados;
 - indicador de conexão em tempo real e reconciliação REST automática;
@@ -110,8 +111,8 @@ Os testes do frontend cobrem cookie de sessão, busca, erros HTTP, controle otim
 - o ambiente publicado usa exclusivamente o adapter Baileys; a simulação fica
   restrita ao profile local `demo`, e o novo pareamento depende de ação
   explícita quando o número estiver disponível;
-- o catálogo de arquivos cobre as mídias de áudio do fluxo existente; upload
-  manual de documentos ainda não pertence ao MVP;
+- upload manual, pastas e compartilhamento externo de arquivos ainda não
+  pertencem ao MVP;
 - áudio Baileys pode ser carregado sob demanda por URL curta, assinada e
   autenticada após o download privado na VPS;
 - a exportação JSON é gerada de forma síncrona e deverá virar uma tarefa assíncrona antes de workspaces grandes;

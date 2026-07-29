@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
+import type { MessageType } from '@noter/contracts';
+
 import type { MediaStorage } from './media-storage.js';
 
 const LEASE_DURATION_MS = 5 * 60 * 1_000;
@@ -11,6 +13,7 @@ export interface MediaDownloadTarget {
   readonly attemptId: string;
   readonly externalMediaId: string;
   readonly expectedMimeType: string | null;
+  readonly messageType: Extract<MessageType, 'audio' | 'image' | 'document'>;
   readonly provider: string | null;
   readonly providerPhoneNumberId: string | null;
 }
@@ -80,6 +83,7 @@ export class MediaDownloadService {
       const downloaded = validateDownloadedMedia(
         await this.downloader.download(claim.target),
         claim.target.expectedMimeType,
+        claim.target.messageType,
       );
       await this.storage.write(storageKey, downloaded.bytes);
       const completed = await this.repository.complete({
@@ -112,9 +116,14 @@ export class MediaDownloadFailedError extends Error {
 export function validateDownloadedMedia(
   media: DownloadedMedia,
   expectedMimeType: string | null,
+  expectedMessageType?: 'audio' | 'image' | 'document',
 ): DownloadedMedia {
   const mimeType = media.mimeType.trim().toLowerCase();
-  if (!mimeType.startsWith('audio/') || mimeType.length > 100) {
+  if (
+    !isAllowedMimeType(mimeType)
+    || !matchesMessageType(mimeType, expectedMessageType)
+    || mimeType.length > 100
+  ) {
     throw new Error('invalid_media_mime_type');
   }
   const expectedBaseMimeType = expectedMimeType
@@ -132,4 +141,31 @@ export function validateDownloadedMedia(
     throw new Error('invalid_media_duration');
   }
   return { ...media, mimeType };
+}
+
+function matchesMessageType(
+  mimeType: string,
+  messageType: 'audio' | 'image' | 'document' | undefined,
+): boolean {
+  if (!messageType) return true;
+  if (messageType === 'audio') return mimeType.startsWith('audio/');
+  if (messageType === 'image') return mimeType.startsWith('image/');
+  return !mimeType.startsWith('audio/') && !mimeType.startsWith('image/');
+}
+
+function isAllowedMimeType(mimeType: string): boolean {
+  return mimeType.startsWith('audio/')
+    || ['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(mimeType)
+    || [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/zip',
+      'text/plain',
+      'text/csv',
+    ].includes(mimeType);
 }

@@ -307,10 +307,19 @@ describe('cliente HTTP', () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: [] }), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
 
-    await api.files({ contactId: 'contact-1', search: 'áudio inicial' });
+    await api.files({
+      contactId: 'contact-1',
+      search: 'proposta inicial',
+      fileType: 'document',
+      direction: 'outbound',
+      occurredFrom: '2026-07-01T00:00:00.000Z',
+      occurredTo: '2026-08-01T00:00:00.000Z',
+    });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/files?contactId=contact-1&search=%C3%A1udio+inicial',
+      '/api/files?contactId=contact-1&search=proposta+inicial&fileType=document'
+        + '&direction=outbound&occurredFrom=2026-07-01T00%3A00%3A00.000Z'
+        + '&occurredTo=2026-08-01T00%3A00%3A00.000Z',
       expect.objectContaining({ credentials: 'include' }),
     );
   });

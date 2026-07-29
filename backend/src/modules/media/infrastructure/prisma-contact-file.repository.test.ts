@@ -38,18 +38,19 @@ test('lista somente arquivos acessíveis do contato e não expõe a chave privad
       id: messageId,
       workspaceId,
       whatsappAccountId: accountId,
-      externalMessageId: 'audio-synthetic',
+      externalMessageId: 'image-synthetic',
       contactId,
       direction: 'inbound',
-      messageType: 'audio',
+      messageType: 'image',
+      content: 'Imagem da proposta fictícia',
       occurredAt: new Date('2026-07-29T12:00:00.000Z'),
       mediaAsset: {
         create: {
-          storageKey: `${workspaceId}/private/audio.ogg`,
-          mimeType: 'audio/ogg',
+          storageKey: `${workspaceId}/private/image.jpg`,
+          mimeType: 'image/jpeg',
+          originalFileName: '../proposta-ficticia.jpg',
           fileSizeBytes: 1024,
-          durationSeconds: 3,
-          transcriptionState: 'pending',
+          transcriptionState: 'completed',
           retentionUntil: new Date('2026-08-29T12:00:00.000Z'),
         },
       },
@@ -60,6 +61,8 @@ test('lista somente arquivos acessíveis do contato e não expõe a chave privad
     workspaceId,
     contactId,
     search: 'arquivo',
+    fileType: 'image',
+    direction: 'inbound',
     limit: 20,
     now: new Date('2026-07-29T13:00:00.000Z'),
   });
@@ -67,6 +70,9 @@ test('lista somente arquivos acessíveis do contato e não expõe a chave privad
   assert.equal(result.length, 1);
   assert.equal(result[0]?.messageId, messageId);
   assert.equal(result[0]?.contactName, 'Contato com arquivo');
+  assert.equal(result[0]?.messageType, 'image');
+  assert.equal(result[0]?.fileName, 'proposta-ficticia.jpg');
+  assert.equal(result[0]?.caption, 'Imagem da proposta fictícia');
   assert.equal(result[0]?.fileSizeBytes, '1024');
   assert.doesNotMatch(JSON.stringify(result), /storageKey|private/);
 });

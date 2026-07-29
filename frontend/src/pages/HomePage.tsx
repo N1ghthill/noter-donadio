@@ -60,7 +60,7 @@ export function HomePage() {
           <Link to="/contatos"><strong>Contatos</strong><span>Cadastrar, editar e localizar pessoas.</span></Link>
           <Link to="/pipeline"><strong>Pipeline</strong><span>Organizar oportunidades por etapa.</span></Link>
           <Link to="/agenda"><strong>Tarefas e agenda</strong><span>Filtrar follow-ups e concluir ações.</span></Link>
-          <Link to="/arquivos"><strong>Arquivos por contato</strong><span>Localizar áudios preservados.</span></Link>
+          <Link to="/arquivos"><strong>Arquivos por contato</strong><span>Localizar áudios, imagens e documentos.</span></Link>
           <Link to="/conversas"><strong>Conversas</strong><span>Consultar classificação, resumo e histórico.</span></Link>
           <Link to="/whatsapp"><strong>Integração</strong><span>Acompanhar o estado do WhatsApp.</span></Link>
         </div>

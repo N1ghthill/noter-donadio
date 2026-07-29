@@ -67,6 +67,7 @@ export interface NegotiationDetail extends Negotiation {
       transcriptionText: string | null;
       durationSeconds: number | null;
       mimeType: string | null;
+      fileName: string | null;
       playbackAvailable: boolean;
     } | null;
   }>;
@@ -198,10 +199,13 @@ export interface ContactFile {
   contactId: string;
   contactName: string;
   negotiationId: string | null;
+  messageType: 'audio' | 'image' | 'document';
+  direction: 'inbound' | 'outbound';
   fileName: string;
   mimeType: string;
   fileSizeBytes: string | null;
   durationSeconds: number | null;
   transcriptionState: ProcessingState;
+  caption: string | null;
   occurredAt: string;
 }

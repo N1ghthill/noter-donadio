@@ -32,6 +32,14 @@ export class BaileysMediaReferenceCipher {
   public fromAudioMessage(
     message: proto.Message.IAudioMessage,
   ): BaileysMediaReference | null {
+    return this.fromMediaMessage(message);
+  }
+
+  public fromMediaMessage(message: {
+    readonly url?: string | null;
+    readonly directPath?: string | null;
+    readonly mediaKey?: Uint8Array | null;
+  }): BaileysMediaReference | null {
     const url = nonEmptyString(message.url);
     const directPath = nonEmptyString(message.directPath);
     if ((!url && !directPath) || !message.mediaKey?.byteLength) return null;

@@ -7,6 +7,7 @@ import {
   resolveBaileysPhoneJid,
   shouldIngestBaileysUpsert,
   toBaileysAudioEvent,
+  toBaileysMediaEvent,
   toBaileysTextEvent,
 } from './baileys-message.js';
 
@@ -88,10 +89,47 @@ test('adapta áudio novo sem expor a referência do SDK ao domínio', () => {
     fromMe: false,
     phoneNumber: '5571000000101',
     occurredAt: new Date('2026-07-28T10:40:00.000Z'),
+    messageType: 'audio',
     mimeType: 'audio/ogg; codecs=opus',
     durationSeconds: 7,
     mediaReference,
   });
+});
+
+test('adapta imagem e documento preservando legenda e nome seguro', () => {
+  const reference = { directPath: '/synthetic/media', mediaKey: Buffer.alloc(32, 3) };
+  const image = toBaileysMediaEvent({
+    key: { id: 'synthetic-image', remoteJid: '5571000000101@s.whatsapp.net' },
+    messageTimestamp: 1_785_235_200,
+    message: {
+      imageMessage: {
+        directPath: '/synthetic/image',
+        mediaKey: Buffer.alloc(32, 3),
+        mimetype: 'image/jpeg',
+        caption: 'Foto do projeto fictício',
+      },
+    },
+  } as WAMessage, () => reference);
+  assert.equal(image?.messageType, 'image');
+  assert.equal(image?.caption, 'Foto do projeto fictício');
+  assert.equal(image?.mimeType, 'image/jpeg');
+
+  const document = toBaileysMediaEvent({
+    key: { id: 'synthetic-document', remoteJid: '5571000000101@s.whatsapp.net' },
+    messageTimestamp: 1_785_235_200,
+    message: {
+      documentMessage: {
+        directPath: '/synthetic/document',
+        mediaKey: Buffer.alloc(32, 3),
+        mimetype: 'application/pdf',
+        fileName: '../../proposta-ficticia.pdf',
+        caption: 'Proposta fictícia',
+      },
+    },
+  } as WAMessage, () => reference);
+  assert.equal(document?.messageType, 'document');
+  assert.equal(document?.originalFileName, 'proposta-ficticia.pdf');
+  assert.equal(document?.caption, 'Proposta fictícia');
 });
 
 test('aceita append somente para mensagem própria posterior à conexão atual', () => {

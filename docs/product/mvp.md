@@ -2,18 +2,22 @@
 
 ## Resultado esperado
 
-O usuário conecta uma conta do WhatsApp por QR via Baileys, recebe novas conversas diretas no noter.donadio, organiza contatos e negociações em um Kanban e consulta sugestões produzidas por IA. Mensagens de áudio podem ser ouvidas e transcritas.
+O usuário conecta uma conta do WhatsApp por QR via Baileys, recebe novas
+conversas diretas no noter.donadio, organiza contatos e negociações em um
+Kanban, consulta arquivos por contato e avalia sugestões produzidas por IA.
+Mensagens de áudio podem ser ouvidas e transcritas; imagens e documentos ficam
+disponíveis de modo privado.
 
 ## Dentro do MVP
 
 - login de um usuário administrador;
 - conexão por QR e estado da sessão Baileys;
-- ingestão de conversas individuais de texto e áudio;
+- ingestão de conversas individuais de texto, áudio, imagem e documento;
 - captura correta de mensagens recebidas e enviadas pelo próprio usuário;
 - criação automática de contato e negociação inicial;
 - cadastro e edição manual de contatos;
 - Dashboard, lista de contatos, Kanban e detalhe da negociação;
-- histórico de mensagens e player de áudio;
+- histórico de mensagens, player de áudio, prévia de imagem e download de documento;
 - transcrição assíncrona;
 - extração de entidades, resumo, sentimento, objeções e próximas ações;
 - sugestões de alteração sem aplicação automática;
@@ -26,7 +30,7 @@ O usuário conecta uma conta do WhatsApp por QR via Baileys, recebe novas conver
 
 - grupos, status, canais e newsletters;
 - resposta automática ou ação autônoma da IA;
-- análise de imagem, vídeo e documentos;
+- análise do conteúdo visual de imagem, vídeo e documentos;
 - múltiplos números simultâneos por workspace;
 - sincronização integral do histórico anterior à conexão;
 - transcrição sincronizada palavra a palavra;
@@ -54,6 +58,15 @@ O usuário conecta uma conta do WhatsApp por QR via Baileys, recebe novas conver
 4. O texto é analisado pela mesma capacidade de IA.
 5. Falhas podem ser tentadas novamente sem duplicar a mensagem.
 
+### Receber imagem ou documento
+
+1. A mensagem e o ativo pendente são persistidos antes do download.
+2. O worker abre a referência Baileys cifrada e valida tamanho, tipo e formato.
+3. A mídia é armazenada no volume privado com retenção.
+4. A biblioteca é reconciliada em tempo real sem transportar nome ou conteúdo
+   pelo Redis.
+5. O usuário solicita prévia ou download por URL curta e autenticada.
+
 ### Gerenciar pipeline
 
 1. O usuário visualiza negociações por etapa.
@@ -74,7 +87,7 @@ O usuário conecta uma conta do WhatsApp por QR via Baileys, recebe novas conver
 ## Critérios de aceite transversais
 
 - recarregar a página ou reconectar o WebSocket não perde estado;
-- processar duas vezes o mesmo evento não duplica contato, mensagem, áudio ou análise equivalente;
+- processar duas vezes o mesmo evento não duplica contato, mensagem, mídia ou análise equivalente;
 - indisponibilidade da IA mantém a mensagem consultável e permite retry;
 - nenhum log contém conteúdo, credencial, QR ou telefone completo;
 - o sistema diferencia dados extraídos de dados confirmados pelo usuário;

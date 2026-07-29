@@ -13,7 +13,7 @@ const requestSchema = z.object({
   phoneNumber: z.string().regex(/^\d{8,20}$/),
   displayName: z.string().trim().min(1).max(255).optional(),
   direction: z.enum(['inbound', 'outbound']),
-  messageType: z.enum(['text', 'audio']),
+  messageType: z.enum(['text', 'audio', 'image', 'document']),
   content: z.string().max(100_000).optional(),
   occurredAt: z.iso.datetime({ offset: true }),
   metadata: z.record(z.string(), z.unknown()).optional(),

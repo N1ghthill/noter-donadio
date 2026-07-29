@@ -47,13 +47,16 @@ negociação; não apaga o acompanhamento já realizado.
 
 ## Arquivos por contato
 
-A rota `/arquivos` lista as mídias privadas já persistidas e permite filtrar
-por contato ou nome exibido. Nesta fase, o catálogo cobre os áudios recebidos
-pelo fluxo existente. O player solicita acesso assinado somente quando
-necessário. Chaves físicas de armazenamento não chegam ao navegador.
+A rota `/arquivos` organiza áudios, imagens e documentos enviados ou recebidos.
+Ela permite buscar por nome do arquivo, contato ou legenda e combinar filtros
+de tipo, contato, direção e período. Imagens usam prévia sob demanda; áudios
+usam o player; documentos exigem preparação explícita do download. Todos
+solicitam acesso curto e assinado somente quando necessário. Chaves físicas de
+armazenamento não chegam ao navegador.
 
-Upload de documentos, pastas manuais e compartilhamento externo não fazem
-parte desta fatia.
+O catálogo usa cartões responsivos, estados vazios orientativos, ação para
+limpar filtros e acesso direto à conversa e negociação. Upload manual, pastas e
+compartilhamento externo não fazem parte desta fatia.
 
 ## Estados sem integrações externas
 

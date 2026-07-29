@@ -108,6 +108,23 @@ test('evento de mensagem transporta somente identificadores para reconciliação
   });
 });
 
+test('disponibilidade de mídia transporta somente identificadores para reconciliação', () => {
+  const event = parseRealtimeEvent('message.media.available', {
+    workspaceId: '0e723f84-ec81-441e-b816-f3f179f25fe2',
+    messageId: '11b3f58b-4f89-47f2-93bc-89be57028a48',
+    contactId: '3a3db76b-c51a-4584-ab4b-6d3e70952e44',
+    negotiationId: 'db71084e-5829-4a90-8346-5832998294ea',
+    fileName: 'não deve atravessar',
+  });
+  assert.deepEqual(event, {
+    type: 'message.media.available',
+    workspaceId: '0e723f84-ec81-441e-b816-f3f179f25fe2',
+    messageId: '11b3f58b-4f89-47f2-93bc-89be57028a48',
+    contactId: '3a3db76b-c51a-4584-ab4b-6d3e70952e44',
+    negotiationId: 'db71084e-5829-4a90-8346-5832998294ea',
+  });
+});
+
 test('evento de transcrição descarta o texto produzido', () => {
   const event = parseRealtimeEvent('message.transcription.changed', {
     workspaceId: WORKSPACE_ID,

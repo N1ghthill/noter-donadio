@@ -10,6 +10,7 @@ const payload = {
 };
 
 test('job de download transporta somente identificadores internos', () => {
+  assert.deepEqual(parseMediaDownloadJob('message.media.download_requested', payload), payload);
   assert.deepEqual(parseMediaDownloadJob('message.audio.download_requested', payload), payload);
   assert.throws(
     () => parseMediaDownloadJob('message.audio.download_requested', {

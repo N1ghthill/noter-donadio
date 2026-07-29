@@ -13,7 +13,7 @@ export interface MediaDownloadJob {
 }
 
 export function parseMediaDownloadJob(name: string, data: unknown): MediaDownloadJob {
-  if (name !== 'message.audio.download_requested') {
+  if (name !== 'message.audio.download_requested' && name !== 'message.media.download_requested') {
     throw new Error('unsupported_media_download_job');
   }
   return mediaDownloadJobSchema.parse(data);

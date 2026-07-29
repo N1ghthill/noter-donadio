@@ -188,6 +188,8 @@ export const api = {
       expiresAt: string;
       mimeType: string;
       durationSeconds: number | null;
+      fileName: string;
+      disposition: 'inline' | 'attachment';
     }>(`/api/media/${messageId}/access`);
   },
 
@@ -266,10 +268,21 @@ export const api = {
     return request<{ data: ConversationSummary[] }>(`/api/conversations${query}`);
   },
 
-  async files(filters?: { contactId?: string; search?: string }) {
+  async files(filters?: {
+    contactId?: string;
+    search?: string;
+    fileType?: 'audio' | 'image' | 'document';
+    direction?: 'inbound' | 'outbound';
+    occurredFrom?: string;
+    occurredTo?: string;
+  }) {
     const params = new URLSearchParams();
     if (filters?.contactId) params.set('contactId', filters.contactId);
     if (filters?.search) params.set('search', filters.search);
+    if (filters?.fileType) params.set('fileType', filters.fileType);
+    if (filters?.direction) params.set('direction', filters.direction);
+    if (filters?.occurredFrom) params.set('occurredFrom', filters.occurredFrom);
+    if (filters?.occurredTo) params.set('occurredTo', filters.occurredTo);
     const query = params.size ? `?${params.toString()}` : '';
     return request<{ data: ContactFile[] }>(`/api/files${query}`);
   },

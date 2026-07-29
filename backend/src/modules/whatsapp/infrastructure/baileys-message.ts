@@ -17,7 +17,23 @@ export interface BaileysAudioEvent {
   readonly phoneNumber: string;
   readonly displayName?: string;
   readonly occurredAt: Date;
+  readonly messageType: 'audio';
   readonly mimeType?: string;
+  readonly durationSeconds?: number;
+  readonly mediaReference: BaileysMediaReference;
+}
+
+export interface BaileysMediaEvent {
+  readonly externalMessageId: string;
+  readonly remoteJid: string;
+  readonly fromMe: boolean;
+  readonly phoneNumber: string;
+  readonly displayName?: string;
+  readonly occurredAt: Date;
+  readonly messageType: 'audio' | 'image' | 'document';
+  readonly caption?: string;
+  readonly mimeType?: string;
+  readonly originalFileName?: string;
   readonly durationSeconds?: number;
   readonly mediaReference: BaileysMediaReference;
 }
@@ -66,29 +82,57 @@ export function toBaileysAudioEvent(
   ) => BaileysMediaReference | null,
   resolvedPhoneJid?: string,
 ): BaileysAudioEvent | null {
+  const event = toBaileysMediaEvent(message, (media) => createReference(
+    media as proto.Message.IAudioMessage,
+  ), resolvedPhoneJid);
+  if (!event || event.messageType !== 'audio') return null;
+  return { ...event, messageType: 'audio' };
+}
+
+export function toBaileysMediaEvent(
+  message: WAMessage,
+  createReference: (
+    media: MediaMessage,
+  ) => BaileysMediaReference | null,
+  resolvedPhoneJid?: string,
+): BaileysMediaEvent | null {
   const externalMessageId = message.key.id;
   const remoteJid = message.key.remoteJid;
   const content = extractMessageContent(message.message);
-  const audio = content?.audioMessage;
+  const media = content?.audioMessage ?? content?.imageMessage ?? content?.documentMessage;
+  const messageType = content?.audioMessage
+    ? 'audio'
+    : content?.imageMessage
+      ? 'image'
+      : content?.documentMessage
+        ? 'document'
+        : undefined;
   const phoneJid = phoneJidForMessage(message, resolvedPhoneJid);
   const occurredAt = toDate(message.messageTimestamp);
-  const reference = audio ? createReference(audio) : null;
+  const reference = media ? createReference(media) : null;
 
   if (
     typeof externalMessageId !== 'string'
     || typeof remoteJid !== 'string'
     || !phoneJid
     || !occurredAt
-    || !audio
+    || !media
+    || !messageType
     || !reference
   ) return null;
 
-  const mimeType = typeof audio.mimetype === 'string' && audio.mimetype.length <= 100
-    ? audio.mimetype
+  const mimeType = typeof media.mimetype === 'string' && media.mimetype.length <= 100
+    ? media.mimetype
     : undefined;
-  const durationSeconds = Number.isInteger(audio.seconds) && Number(audio.seconds) >= 0
-    ? Number(audio.seconds)
+  const durationSeconds = 'seconds' in media
+    && Number.isInteger(media.seconds)
+    && Number(media.seconds) >= 0
+    ? Number(media.seconds)
     : undefined;
+  const caption = 'caption' in media && typeof media.caption === 'string' && media.caption.trim()
+    ? media.caption.trim()
+    : undefined;
+  const originalFileName = 'fileName' in media ? safeFileName(media.fileName) : undefined;
   return {
     externalMessageId,
     remoteJid,
@@ -96,11 +140,19 @@ export function toBaileysAudioEvent(
     phoneNumber: phoneJid.slice(0, -'@s.whatsapp.net'.length),
     ...(message.pushName ? { displayName: message.pushName } : {}),
     occurredAt,
+    messageType,
+    ...(caption ? { caption } : {}),
     ...(mimeType ? { mimeType } : {}),
+    ...(originalFileName ? { originalFileName } : {}),
     ...(durationSeconds !== undefined ? { durationSeconds } : {}),
     mediaReference: reference,
   };
 }
+
+type MediaMessage =
+  | proto.Message.IAudioMessage
+  | proto.Message.IImageMessage
+  | proto.Message.IDocumentMessage;
 
 export async function resolveBaileysPhoneJid(
   message: WAMessage,
@@ -152,4 +204,18 @@ function phoneJidForMessage(
       : resolvedPhoneJid?.endsWith('@s.whatsapp.net')
         ? resolvedPhoneJid
         : undefined;
+}
+
+function safeFileName(value: string | null | undefined): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const normalized = value
+    .replaceAll('\\', '/')
+    .split('/')
+    .at(-1)
+    ?.split('').filter((character) => {
+      const code = character.charCodeAt(0);
+      return code >= 32 && code !== 127;
+    }).join('')
+    .trim();
+  return normalized ? normalized.slice(0, 255) : undefined;
 }

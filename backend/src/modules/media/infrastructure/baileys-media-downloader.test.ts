@@ -54,6 +54,7 @@ test('baixa somente a referência Baileys cifrada vinculada à mensagem', async 
     expectedMimeType: 'audio/ogg; codecs=opus',
     provider: null,
     providerPhoneNumberId: null,
+    messageType: 'audio',
   }), {
     bytes: Buffer.from([1, 2, 3]),
     mimeType: 'audio/ogg',
@@ -100,5 +101,6 @@ test('interrompe download que ultrapassa o limite configurado', async () => {
     expectedMimeType: 'audio/ogg',
     provider: null,
     providerPhoneNumberId: null,
+    messageType: 'audio',
   }), /baileys_media_too_large/);
 });

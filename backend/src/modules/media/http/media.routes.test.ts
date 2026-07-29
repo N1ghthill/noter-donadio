@@ -26,7 +26,13 @@ function mediaService() {
   return new MediaAccessService({
     async findAccessible(workspaceId, messageId) {
       return workspaceId === WORKSPACE_ID && messageId === MESSAGE_ID
-        ? { storageKey: `${WORKSPACE_ID}/${MESSAGE_ID}.wav`, mimeType: 'audio/wav', durationSeconds: 1 }
+        ? {
+            storageKey: `${WORKSPACE_ID}/${MESSAGE_ID}.wav`,
+            mimeType: 'audio/wav',
+            durationSeconds: 1,
+            fileName: 'audio.wav',
+            disposition: 'inline' as const,
+          }
         : null;
     },
   }, {
@@ -75,6 +81,41 @@ test('conteúdo valida assinatura e mantém cache privado desabilitado', async (
   await app.close();
 });
 
+test('documento usa nome seguro e força download autenticado', async () => {
+  const service = new MediaAccessService({
+    async findAccessible() {
+      return {
+        storageKey: `${WORKSPACE_ID}/${MESSAGE_ID}.pdf`,
+        mimeType: 'application/pdf',
+        durationSeconds: null,
+        fileName: 'proposta fictícia.pdf',
+        disposition: 'attachment',
+      };
+    },
+  }, {
+    async write() {},
+    async read() { return Buffer.from('pdf-ficticio'); },
+    async delete() {},
+  }, 'segredo-de-teste-com-mais-de-trinta-e-dois-caracteres');
+  const app = buildApp({ sessionAuthenticator: authenticator, mediaAccessService: service });
+  const access = await app.inject({
+    method: 'GET',
+    url: `/api/media/${MESSAGE_ID}/access`,
+    headers: { cookie: SESSION_COOKIE },
+  });
+  const content = await app.inject({
+    method: 'GET',
+    url: access.json<{ url: string }>().url,
+    headers: { cookie: SESSION_COOKIE },
+  });
+  assert.equal(content.statusCode, 200);
+  assert.equal(
+    content.headers['content-disposition'],
+    "attachment; filename*=UTF-8''proposta%20fict%C3%ADcia.pdf",
+  );
+  await app.close();
+});
+
 test('catálogo de arquivos usa workspace da sessão e filtros validados', async () => {
   let received: Parameters<ContactFileRepository['list']>[0] | undefined;
   const repository: ContactFileRepository = {
@@ -85,11 +126,14 @@ test('catálogo de arquivos usa workspace da sessão e filtros validados', async
         contactId: '3a3db76b-c51a-4584-ab4b-6d3e70952e44',
         contactName: 'Contato fictício',
         negotiationId: null,
+        messageType: 'audio',
+        direction: 'inbound',
         fileName: 'audio-2026-07-29.ogg',
         mimeType: 'audio/ogg',
         fileSizeBytes: '1024',
         durationSeconds: 3,
         transcriptionState: 'pending',
+        caption: null,
         occurredAt: '2026-07-29T12:00:00.000Z',
       }];
     },
@@ -106,7 +150,10 @@ test('catálogo de arquivos usa workspace da sessão e filtros validados', async
   })).statusCode, 400);
   const response = await app.inject({
     method: 'GET',
-    url: '/api/files?contactId=3a3db76b-c51a-4584-ab4b-6d3e70952e44&search=Contato&limit=20',
+    url: '/api/files?contactId=3a3db76b-c51a-4584-ab4b-6d3e70952e44&search=Contato'
+      + '&fileType=image&direction=inbound'
+      + '&occurredFrom=2026-07-29T00%3A00%3A00.000Z'
+      + '&occurredTo=2026-07-30T00%3A00%3A00.000Z&limit=20',
     headers: { cookie: SESSION_COOKIE },
   });
   assert.equal(response.statusCode, 200);
@@ -114,8 +161,18 @@ test('catálogo de arquivos usa workspace da sessão e filtros validados', async
   assert.equal(received?.workspaceId, WORKSPACE_ID);
   assert.equal(received?.contactId, '3a3db76b-c51a-4584-ab4b-6d3e70952e44');
   assert.equal(received?.search, 'Contato');
+  assert.equal(received?.fileType, 'image');
+  assert.equal(received?.direction, 'inbound');
+  assert.deepEqual(received?.occurredFrom, new Date('2026-07-29T00:00:00.000Z'));
+  assert.deepEqual(received?.occurredTo, new Date('2026-07-30T00:00:00.000Z'));
   assert.equal(received?.limit, 20);
   assert.ok(received?.now instanceof Date);
   assert.doesNotMatch(response.body, /storageKey|storage_key/);
+  assert.equal((await app.inject({
+    method: 'GET',
+    url: '/api/files?occurredFrom=2026-07-30T00%3A00%3A00.000Z'
+      + '&occurredTo=2026-07-29T00%3A00%3A00.000Z',
+    headers: { cookie: SESSION_COOKIE },
+  })).statusCode, 400);
   await app.close();
 });

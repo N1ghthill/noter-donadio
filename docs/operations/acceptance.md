@@ -13,10 +13,15 @@ corte temporal e nova homologação.
 
 Atualização de 29/07/2026: os adapters OpenAI de transcrição e análise
 estruturada foram implementados com corte obrigatório de autorização, chave
-restrita aos workers e bloqueio do backlog. A validação local aprovou 185 testes
-(1 contratos, 149 backend e 35 frontend), lint, typecheck, build, auditoria de
+restrita aos workers e bloqueio do backlog. A validação local aprovou 200 testes
+(1 contratos, 157 backend e 42 frontend), lint, typecheck, build, auditoria de
 produção e os perfis Compose `baileys+assistive`. A aceitação real depende da
 injeção interativa da chave e de uma chamada homologada no áudio autorizado.
+
+Na evolução da biblioteca de arquivos, o mesmo pipeline privado passou a
+receber também imagens e documentos novos, com filtros por contato, direção,
+período e tipo. Documentos usam download forçado, imagens exigem ação explícita
+para carregar a prévia e nenhuma mídia é exposta por URL pública permanente.
 
 Na mesma auditoria, API e interface passaram a impedir uma nova configuração
 por QR quando a sessão Baileys já está conectada. Essa proteção elimina o fluxo

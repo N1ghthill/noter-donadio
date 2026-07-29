@@ -50,6 +50,7 @@ export interface NegotiationDetailView extends NegotiationView {
       readonly transcriptionText: string | null;
       readonly durationSeconds: number | null;
       readonly mimeType: string | null;
+      readonly fileName: string | null;
       readonly playbackAvailable: boolean;
     } | null;
   }[];

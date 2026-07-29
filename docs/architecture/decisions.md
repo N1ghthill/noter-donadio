@@ -607,3 +607,23 @@ e ainda dentro da retenção. Ele expõe metadados e IDs internos, nunca
 vinculada ao workspace. Upload de documentos e uma agenda independente ficam
 fora desta decisão até existirem requisitos de domínio que justifiquem novos
 agregados.
+
+## ADR-062 — Imagens e documentos usam o mesmo pipeline privado de mídia
+
+Imagens e documentos novos do Baileys seguem a mesma garantia já aplicada ao
+áudio: mensagem, ativo pendente, referência mínima cifrada e outbox são
+persistidos na mesma transação; o download só acontece depois do commit e o job
+transporta apenas IDs. `MediaAsset.originalFileName` preserva o nome informado
+pelo WhatsApp depois de remover caminho e caracteres de controle.
+
+O downloader aceita áudio, JPEG, PNG, WebP, GIF, PDF, texto, CSV, ZIP e os
+formatos usuais de Microsoft Office. HTML e SVG são recusados para impedir
+conteúdo ativo sob a origem autenticada da aplicação. Imagens podem ser
+exibidas inline; documentos sempre usam `Content-Disposition: attachment`.
+Ambos dependem de sessão, workspace, assinatura HMAC e prazo curto, sem URL
+pública ou chave física de armazenamento.
+
+Mídias não sonoras não entram na fila de transcrição. Ao concluir seu download,
+um evento sanitizado `message.media.available`, contendo apenas IDs, solicita
+reconciliação REST da interface. Upload manual e compartilhamento externo
+continuam fora desta fase.

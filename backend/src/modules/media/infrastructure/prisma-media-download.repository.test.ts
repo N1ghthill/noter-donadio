@@ -107,4 +107,58 @@ test('conclusão do download libera transcrição pela outbox na mesma transaç�
     where: { aggregateId: messageId, eventType: 'message.audio.ingested' },
   });
   assert.deepEqual(event.payload, { workspaceId, messageId, negotiationId });
+
+  const imageMessageId = randomUUID();
+  await prisma.message.create({
+    data: {
+      id: imageMessageId,
+      workspaceId,
+      whatsappAccountId: accountId,
+      externalMessageId: 'wamid.image-download-synthetic',
+      contactId,
+      negotiationId,
+      direction: 'outbound',
+      messageType: 'image',
+      occurredAt: new Date('2026-07-28T06:02:00Z'),
+      mediaAsset: {
+        create: {
+          externalMediaId: 'image-media-synthetic',
+          mimeType: 'image/jpeg',
+          originalFileName: 'imagem-ficticia.jpg',
+          downloadState: 'pending',
+          transcriptionState: 'completed',
+        },
+      },
+    },
+  });
+  const imageAttemptId = randomUUID();
+  const imageClaim = await repository.claim({
+    workspaceId,
+    messageId: imageMessageId,
+    attemptId: imageAttemptId,
+    now: new Date('2026-07-28T06:03:00Z'),
+    staleBefore: new Date('2026-07-28T05:58:00Z'),
+  });
+  assert.equal(imageClaim.status, 'claimed');
+  if (imageClaim.status === 'claimed') assert.equal(imageClaim.target.messageType, 'image');
+  assert.equal(await repository.complete({
+    workspaceId,
+    messageId: imageMessageId,
+    attemptId: imageAttemptId,
+    externalMediaId: 'image-media-synthetic',
+    storageKey: `${workspaceId}/${imageAttemptId}.media`,
+    fileSizeBytes: 4,
+    mimeType: 'image/jpeg',
+    durationSeconds: null,
+    retentionUntil: new Date('2026-08-27T06:03:00Z'),
+  }), true);
+  const imageEvent = await prisma.outboxEvent.findFirstOrThrow({
+    where: { aggregateId: imageMessageId, eventType: 'message.media.available' },
+  });
+  assert.deepEqual(imageEvent.payload, {
+    workspaceId,
+    messageId: imageMessageId,
+    contactId,
+    negotiationId,
+  });
 });
