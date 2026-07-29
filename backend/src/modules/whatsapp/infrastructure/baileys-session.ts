@@ -153,6 +153,13 @@ export class BaileysSession {
         DisconnectReason.forbidden,
         DisconnectReason.connectionReplaced,
       ].includes(statusCode as DisconnectReason);
+      this.logger.warn(
+        {
+          disconnectCode: statusCode ?? 'unknown',
+          reconnectScheduled: !terminal,
+        },
+        'Sessão Baileys encerrada',
+      );
       await this.connectionRepository.markStatus(
         this.binding.workspaceId,
         this.binding.accountId,

@@ -1,6 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+diagnose_baileys=0
+for argument in "$@"; do
+  case "${argument}" in
+    --diagnose-baileys)
+      diagnose_baileys=1
+      ;;
+    *)
+      printf 'Argumento desconhecido: %s\n' "${argument}" >&2
+      exit 2
+      ;;
+  esac
+done
+
 project_directory="${PROJECT_DIRECTORY:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 compose_file="${COMPOSE_FILE:-compose.vps-demo.yaml}"
 
@@ -41,3 +54,7 @@ grep --quiet '^permitrootlogin no$' <<<"${ssh_configuration}"
 grep --quiet '^allowusers noterops$' <<<"${ssh_configuration}"
 
 printf '%s\n' "Aplicação e dependências saudáveis; endpoint interno bloqueado; firewall e SSH endurecidos."
+
+if test "${diagnose_baileys}" = "1"; then
+  docker compose "${compose_arguments[@]}" logs --tail 100 --no-color baileys
+fi
