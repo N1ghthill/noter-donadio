@@ -98,6 +98,7 @@ export class PrismaConversationRepository implements ConversationRepository {
       WHERE ${where}
       ORDER BY ranked.occurred_at DESC, ranked.id DESC
       LIMIT ${filters.limit}
+      OFFSET ${filters.offset}
     `;
 
     return messages.map((message) => ({

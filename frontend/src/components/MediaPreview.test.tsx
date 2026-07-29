@@ -42,4 +42,38 @@ describe('pré-visualização privada de mídia', () => {
       'proposta.pdf',
     );
   });
+
+  it('descarta uma URL de imagem expirada e permite solicitar outra', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        url: '/api/media/message-3/content?expires=123&signature=first',
+        expiresAt: '2026-07-29T12:02:00.000Z',
+        mimeType: 'image/jpeg',
+        durationSeconds: null,
+        fileName: 'imagem.jpg',
+        disposition: 'inline',
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        url: '/api/media/message-3/content?expires=456&signature=second',
+        expiresAt: '2026-07-29T12:04:00.000Z',
+        mimeType: 'image/jpeg',
+        durationSeconds: null,
+        fileName: 'imagem.jpg',
+        disposition: 'inline',
+      }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    render(<MediaPreview messageId="message-3" messageType="image" fileName="imagem.jpg" />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ver imagem' }));
+    const image = await screen.findByRole('img', { name: 'Pré-visualização de imagem.jpg' });
+    fireEvent.error(image);
+    expect(await screen.findByText('O acesso à imagem expirou. Carregue-a novamente.')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ver imagem' }));
+    expect(await screen.findByRole('img', { name: 'Pré-visualização de imagem.jpg' })).toHaveAttribute(
+      'src',
+      '/api/media/message-3/content?expires=456&signature=second',
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
 });

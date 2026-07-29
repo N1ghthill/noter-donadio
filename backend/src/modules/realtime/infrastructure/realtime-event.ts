@@ -12,6 +12,11 @@ const eventSchemas = {
     workspaceId,
     contactId: z.uuid(),
   }),
+  'contact.merged': z.object({
+    workspaceId,
+    contactId: z.uuid(),
+    sourceContactId: z.uuid(),
+  }),
   'negotiation.stage.changed': z.object({
     workspaceId,
     negotiationId: z.uuid(),
@@ -72,6 +77,7 @@ const eventSchemas = {
 export type RealtimeEvent =
   | { type: 'contact.updated'; workspaceId: string; contactId: string; changedFields: string[] }
   | { type: 'contact.deleted'; workspaceId: string; contactId: string }
+  | { type: 'contact.merged'; workspaceId: string; contactId: string; sourceContactId: string }
   | { type: 'negotiation.stage.changed'; workspaceId: string; negotiationId: string; stage: string }
   | { type: 'negotiation.created'; workspaceId: string; negotiationId: string; contactId: string; stage: string }
   | { type: 'negotiation.updated'; workspaceId: string; negotiationId: string; changedFields: string[] }
@@ -87,6 +93,9 @@ export function parseRealtimeEvent(name: string, data: unknown): RealtimeEvent {
     return { type: name, ...eventSchemas[name].parse(data) };
   }
   if (name === 'contact.deleted') {
+    return { type: name, ...eventSchemas[name].parse(data) };
+  }
+  if (name === 'contact.merged') {
     return { type: name, ...eventSchemas[name].parse(data) };
   }
   if (name === 'negotiation.stage.changed') {

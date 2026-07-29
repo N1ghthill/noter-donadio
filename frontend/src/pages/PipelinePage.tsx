@@ -21,8 +21,13 @@ export function PipelinePage() {
   const [draggedId, setDraggedId] = useState<string>();
   const [updatingId, setUpdatingId] = useState<string>();
   const [error, setError] = useState<string>();
+  const [nextOffset, setNextOffset] = useState<number | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [moreContactsAvailable, setMoreContactsAvailable] = useState(false);
+  const [contactSearch, setContactSearch] = useState('');
+  const [searchingContacts, setSearchingContacts] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (offset = 0, append = false) => {
     setError(undefined);
     try {
       const [negotiations, contactList] = await Promise.all([
@@ -30,11 +35,19 @@ export function PipelinePage() {
           ...(stageFilter ? { stage: stageFilter } : {}),
           ...(followUpFilter ? { followUp: followUpFilter } : {}),
           ...(appliedSearch ? { search: appliedSearch } : {}),
+          limit: 100,
+          offset,
         }),
-        api.contacts(),
+        api.contacts(undefined, { limit: 100 }),
       ]);
-      setItems(negotiations.data);
+      setItems((current) => append && current
+        ? [...current, ...negotiations.data.filter((item) => (
+            !current.some((existing) => existing.id === item.id)
+          ))]
+        : negotiations.data);
+      setNextOffset(negotiations.meta.nextOffset);
       setContacts(contactList.data);
+      setMoreContactsAvailable(contactList.meta.hasMore);
     }
     catch { setError('Não foi possível carregar o pipeline.'); }
   }, [appliedSearch, followUpFilter, stageFilter]);
@@ -75,6 +88,21 @@ export function PipelinePage() {
     }
   }
 
+  async function searchContacts(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    setSearchingContacts(true);
+    setError(undefined);
+    try {
+      const response = await api.contacts(contactSearch.trim() || undefined, { limit: 100 });
+      setContacts(response.data);
+      setMoreContactsAvailable(response.meta.hasMore);
+    } catch {
+      setError('Não foi possível buscar os contatos.');
+    } finally {
+      setSearchingContacts(false);
+    }
+  }
+
   async function move(id: string, stage: NegotiationStage) {
     const currentItems = items;
     const current = currentItems?.find((item) => item.id === id);
@@ -112,6 +140,13 @@ export function PipelinePage() {
     }
   }
 
+  async function loadMore(): Promise<void> {
+    if (nextOffset === null) return;
+    setLoadingMore(true);
+    await load(nextOffset, true);
+    setLoadingMore(false);
+  }
+
   if ((!items || !contacts) && !error) return <LoadingState label="Carregando pipeline…" />;
   if (!items) return <ErrorState message={error ?? 'Não foi possível carregar o pipeline.'} retry={() => void load()} />;
 
@@ -127,6 +162,19 @@ export function PipelinePage() {
         <section className="panel form-panel" aria-labelledby="negotiation-form-title">
           <div className="panel-heading"><h2 id="negotiation-form-title">Criar negociação</h2></div>
           {contacts?.length === 0 ? <p className="muted">Cadastre um contato antes de criar uma negociação.</p> : null}
+          <form className="search-bar contact-picker-search" onSubmit={(event) => void searchContacts(event)}>
+            <label className="visually-hidden" htmlFor="pipeline-contact-search">Buscar contato para a negociação</label>
+            <input
+              id="pipeline-contact-search"
+              value={contactSearch}
+              onChange={(event) => setContactSearch(event.target.value)}
+              placeholder="Buscar contato por nome ou telefone"
+            />
+            <button className="button secondary" type="submit" disabled={searchingContacts}>
+              {searchingContacts ? 'Buscando…' : 'Buscar contato'}
+            </button>
+          </form>
+          {moreContactsAvailable ? <p className="muted">Há mais resultados. Refine a busca para localizar o contato desejado.</p> : null}
           <form className="negotiation-form" onSubmit={(event) => void create(event)}>
             <label>Contato
               <select name="contactId" required defaultValue="" disabled={contacts?.length === 0}>
@@ -210,6 +258,13 @@ export function PipelinePage() {
           );
         })}
       </section>
+      {nextOffset !== null ? (
+        <div className="pagination-actions">
+          <button className="button secondary" type="button" disabled={loadingMore} onClick={() => void loadMore()}>
+            {loadingMore ? 'Carregando…' : 'Carregar mais negociações'}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

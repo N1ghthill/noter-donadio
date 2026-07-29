@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 
 import { ApiError, api } from '../api/client.js';
 import { EmptyState, ErrorState, LoadingState } from '../components/Feedback.js';
-import { AudioPlayer } from '../components/AudioPlayer.js';
+import { MediaPreview } from '../components/MediaPreview.js';
 import {
   AUDIT_ACTION_LABELS,
   AUDIT_FIELD_LABELS,
@@ -38,6 +38,7 @@ export function NegotiationDetailPage() {
   const [commercialError, setCommercialError] = useState<string>();
   const [followUpBusy, setFollowUpBusy] = useState(false);
   const [followUpError, setFollowUpError] = useState<string>();
+  const [loadingOlderMessages, setLoadingOlderMessages] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -173,6 +174,26 @@ export function NegotiationDetailPage() {
       }
     } finally {
       setFollowUpBusy(false);
+    }
+  };
+
+  const loadOlderMessages = async () => {
+    if (!id || !detail || detail.messagesPage.nextOffset === null) return;
+    setLoadingOlderMessages(true);
+    try {
+      const older = await api.negotiation(id, 'negotiation', {
+        limit: detail.messagesPage.limit,
+        offset: detail.messagesPage.nextOffset,
+      });
+      setDetail((current) => current?.id === older.id ? {
+        ...current,
+        messages: [...older.messages, ...current.messages],
+        messagesPage: older.messagesPage,
+      } : current);
+    } catch {
+      setError('Não foi possível carregar as mensagens anteriores.');
+    } finally {
+      setLoadingOlderMessages(false);
     }
   };
 
@@ -351,24 +372,38 @@ export function NegotiationDetailPage() {
       </section>
 
       <section className="panel timeline-panel">
-        <div className="panel-heading"><div><p className="eyebrow">Conversa</p><h2>Histórico de mensagens</h2></div><small>Até 100 mensagens recentes</small></div>
+        <div className="panel-heading"><div><p className="eyebrow">Conversa</p><h2>Histórico de mensagens</h2></div><small>{detail.messages.length} mensagem(ns) carregada(s)</small></div>
         {detail.messages.length === 0 ? <EmptyState title="Nenhuma mensagem" description="O histórico aparecerá quando a conversa for ingerida." /> : (
           <div className="timeline">
+            {detail.messagesPage.hasMore ? (
+              <button className="button secondary older-messages" type="button" disabled={loadingOlderMessages} onClick={() => void loadOlderMessages()}>
+                {loadingOlderMessages ? 'Carregando…' : 'Carregar mensagens anteriores'}
+              </button>
+            ) : null}
             {detail.messages.map((message) => (
               <article className={`message ${message.direction}`} key={message.id}>
                 <small>{message.direction === 'inbound' ? detail.contact.displayName : 'Você'} · {formatDate(message.occurredAt)}</small>
                 <p>{message.content ?? (message.messageType === 'audio' ? 'Mensagem de áudio' : 'Conteúdo indisponível')}</p>
                 {message.media ? (
                   <>
-                    <AudioPlayer messageId={message.id} playbackAvailable={message.media.playbackAvailable} />
-                    <div className="transcription">
+                    {message.media.playbackAvailable && isDetailMediaType(message.messageType) ? (
+                      <MediaPreview
+                        messageId={message.id}
+                        messageType={message.messageType}
+                        fileName={message.media.fileName ?? 'Arquivo da conversa'}
+                      />
+                    ) : <p className="media-unavailable">Arquivo indisponível ou removido pela retenção.</p>}
+                    {message.media.retentionUntil ? (
+                      <small className="retention-note">Disponível até {formatDate(message.media.retentionUntil)}</small>
+                    ) : null}
+                    {message.messageType === 'audio' ? <div className="transcription">
                       <strong>Transcrição · {PROCESSING_LABELS[message.media.transcriptionState]}</strong>
                       <p>{message.media.transcriptionText ?? (message.media.transcriptionState === 'failed'
                         ? 'Não foi possível transcrever este áudio.'
                         : capabilities?.audioTranscriptionEnabled
                           ? 'Aguardando transcrição.'
                           : 'Transcrição ainda não ativada. O áudio original continua disponível.')}</p>
-                    </div>
+                    </div> : null}
                   </>
                 ) : null}
               </article>
@@ -378,4 +413,8 @@ export function NegotiationDetailPage() {
       </section>
     </div>
   );
+}
+
+function isDetailMediaType(value: string): value is 'audio' | 'image' | 'document' {
+  return value === 'audio' || value === 'image' || value === 'document';
 }

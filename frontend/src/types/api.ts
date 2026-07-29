@@ -1,6 +1,18 @@
 import type { NegotiationStage, ProcessingState } from '@noter/contracts';
 import type { WhatsappConnectionStatus } from '@noter/contracts';
 
+export interface PageMeta {
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+  nextOffset: number | null;
+}
+
+export interface Paginated<T> {
+  data: T[];
+  meta: PageMeta;
+}
+
 export interface SessionUser {
   userId: string;
   workspaceId: string;
@@ -69,8 +81,10 @@ export interface NegotiationDetail extends Negotiation {
       mimeType: string | null;
       fileName: string | null;
       playbackAvailable: boolean;
+      retentionUntil: string | null;
     } | null;
   }>;
+  messagesPage: PageMeta;
   analyses: Array<{
     id: string;
     state: ProcessingState;
@@ -118,7 +132,7 @@ export interface Dashboard {
 
 export interface AuditEvent {
   id: string;
-  action: 'contact_created' | 'contact_updated' | 'contact_deleted' | 'negotiation_created' | 'negotiation_updated' | 'negotiation_stage_changed' | 'negotiation_follow_up_completed' | 'analysis_accepted' | 'analysis_ignored' | 'workspace_exported' | 'whatsapp_auth_reset';
+  action: 'contact_created' | 'contact_updated' | 'contact_deleted' | 'contact_merged' | 'negotiation_created' | 'negotiation_updated' | 'negotiation_stage_changed' | 'negotiation_follow_up_completed' | 'analysis_accepted' | 'analysis_ignored' | 'workspace_exported' | 'whatsapp_auth_reset';
   actorDisplayName: string;
   changedFields: string[];
   previousVersion: number | null;
@@ -206,6 +220,7 @@ export interface ContactFile {
   fileSizeBytes: string | null;
   durationSeconds: number | null;
   transcriptionState: ProcessingState;
+  retentionUntil: string | null;
   caption: string | null;
   occurredAt: string;
 }

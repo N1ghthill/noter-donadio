@@ -64,6 +64,7 @@ test('lista somente arquivos acessíveis do contato e não expõe a chave privad
     fileType: 'image',
     direction: 'inbound',
     limit: 20,
+    offset: 0,
     now: new Date('2026-07-29T13:00:00.000Z'),
   });
 
@@ -74,5 +75,6 @@ test('lista somente arquivos acessíveis do contato e não expõe a chave privad
   assert.equal(result[0]?.fileName, 'proposta-ficticia.jpg');
   assert.equal(result[0]?.caption, 'Imagem da proposta fictícia');
   assert.equal(result[0]?.fileSizeBytes, '1024');
+  assert.equal(result[0]?.retentionUntil, '2026-08-29T12:00:00.000Z');
   assert.doesNotMatch(JSON.stringify(result), /storageKey|private/);
 });

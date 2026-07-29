@@ -6,6 +6,8 @@ import { SESSION_COOKIE_NAME } from '../../auth/http/auth.routes.js';
 import {
   CrmConflictError,
   CrmCloseReasonRequiredError,
+  CrmContactMergeConflictError,
+  CrmContactPhoneExistsError,
   CrmDecisionConflictError,
   CrmNotFoundError,
   CrmNoNextActionError,
@@ -38,9 +40,28 @@ export function registerCrmRoutes(
   app.get('/api/contacts', async (request, reply) => {
     const workspaceId = await authenticatedWorkspace(request, options.sessionAuthenticator);
     if (!workspaceId) return reply.code(401).send({ error: 'unauthorized' });
-    const query = z.object({ search: z.string().trim().max(255).optional(), limit: z.coerce.number().int().min(1).max(100).default(50) }).safeParse(request.query);
+    const query = z.object({
+      search: z.string().trim().max(255).optional(),
+      limit: z.coerce.number().int().min(1).max(100).default(50),
+      offset: z.coerce.number().int().min(0).max(100_000).default(0),
+    }).strict().safeParse(request.query);
     if (!query.success) return reply.code(400).send({ error: 'invalid_request' });
-    return { data: await options.repository.listContacts(workspaceId, query.data.search, query.data.limit) };
+    const contacts = await options.repository.listContacts(
+      workspaceId,
+      query.data.search,
+      query.data.limit + 1,
+      query.data.offset,
+    );
+    const hasMore = contacts.length > query.data.limit;
+    return {
+      data: contacts.slice(0, query.data.limit),
+      meta: {
+        limit: query.data.limit,
+        offset: query.data.offset,
+        hasMore,
+        nextOffset: hasMore ? query.data.offset + query.data.limit : null,
+      },
+    };
   });
 
   app.post('/api/contacts', async (request, reply) => {
@@ -48,8 +69,15 @@ export function registerCrmRoutes(
     if (!user) return reply.code(401).send({ error: 'unauthorized' });
     const body = z.object({ displayName: z.string().trim().min(1).max(255), phoneNumber: phoneSchema, tags: z.array(z.string().trim().min(1).max(50)).max(20).default([]), notes: z.string().max(10_000).optional() }).safeParse(request.body);
     if (!body.success) return reply.code(400).send({ error: 'invalid_request' });
-    const contact = await options.repository.createContact({ workspaceId: user.workspaceId, userId: user.userId, ...body.data });
-    return reply.code(201).send(contact);
+    try {
+      const contact = await options.repository.createContact({ workspaceId: user.workspaceId, userId: user.userId, ...body.data });
+      return reply.code(201).send(contact);
+    } catch (error: unknown) {
+      if (error instanceof CrmContactPhoneExistsError) {
+        return reply.code(409).send({ error: 'contact_phone_exists' });
+      }
+      throw error;
+    }
   });
 
   app.patch('/api/contacts/:id', async (request, reply) => {
@@ -72,6 +100,37 @@ export function registerCrmRoutes(
       });
     } catch (error: unknown) {
       if (error instanceof CrmNotFoundError) return reply.code(404).send({ error: 'not_found' });
+      if (error instanceof CrmContactPhoneExistsError) {
+        return reply.code(409).send({ error: 'contact_phone_exists' });
+      }
+      throw error;
+    }
+  });
+
+  app.post('/api/contacts/:id/merge', async (request, reply) => {
+    const user = await authenticatedUser(request, options.sessionAuthenticator);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const params = z.object({ id: z.uuid() }).safeParse(request.params);
+    const body = z.object({
+      sourceContactId: z.uuid(),
+      confirmation: z.uuid(),
+    }).strict().refine((value) => value.sourceContactId === value.confirmation).safeParse(request.body);
+    if (!params.success || !body.success || params.data.id === body.data.sourceContactId) {
+      return reply.code(400).send({ error: 'invalid_request' });
+    }
+    try {
+      return await options.repository.mergeContacts({
+        workspaceId: user.workspaceId,
+        userId: user.userId,
+        targetContactId: params.data.id,
+        sourceContactId: body.data.sourceContactId,
+      });
+    } catch (error: unknown) {
+      if (error instanceof CrmNotFoundError) return reply.code(404).send({ error: 'not_found' });
+      if (error instanceof CrmContactMergeConflictError) {
+        return reply.code(409).send({ error: 'contact_merge_conflict' });
+      }
+      if (error instanceof CrmTagLimitError) return reply.code(409).send({ error: 'contact_tag_limit' });
       throw error;
     }
   });
@@ -85,9 +144,23 @@ export function registerCrmRoutes(
       activeOnly: z.enum(['true']).transform(() => true).optional(),
       search: z.string().trim().min(1).max(255).optional(),
       limit: z.coerce.number().int().min(1).max(200).default(200),
+      offset: z.coerce.number().int().min(0).max(100_000).default(0),
     }).strict().safeParse(request.query);
     if (!query.success) return reply.code(400).send({ error: 'invalid_request' });
-    return { data: await options.repository.listNegotiations(workspaceId, query.data) };
+    const negotiations = await options.repository.listNegotiations(workspaceId, {
+      ...query.data,
+      limit: query.data.limit + 1,
+    });
+    const hasMore = negotiations.length > query.data.limit;
+    return {
+      data: negotiations.slice(0, query.data.limit),
+      meta: {
+        limit: query.data.limit,
+        offset: query.data.offset,
+        hasMore,
+        nextOffset: hasMore ? query.data.offset + query.data.limit : null,
+      },
+    };
   });
 
   app.post('/api/negotiations', async (request, reply) => {
@@ -122,13 +195,19 @@ export function registerCrmRoutes(
     const workspaceId = await authenticatedWorkspace(request, options.sessionAuthenticator);
     if (!workspaceId) return reply.code(401).send({ error: 'unauthorized' });
     const params = z.object({ id: z.uuid() }).safeParse(request.params);
-    const query = z.object({ messageScope: z.literal('contact').optional() }).strict().safeParse(request.query);
+    const query = z.object({
+      messageScope: z.literal('contact').optional(),
+      messageLimit: z.coerce.number().int().min(1).max(100).default(100),
+      messageOffset: z.coerce.number().int().min(0).max(100_000).default(0),
+    }).strict().safeParse(request.query);
     if (!params.success || !query.success) return reply.code(400).send({ error: 'invalid_request' });
     try {
       return await options.repository.getNegotiation(
         workspaceId,
         params.data.id,
         query.data.messageScope ?? 'negotiation',
+        query.data.messageLimit,
+        query.data.messageOffset,
       );
     } catch (error: unknown) {
       if (error instanceof CrmNotFoundError) return reply.code(404).send({ error: 'not_found' });

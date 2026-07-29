@@ -647,3 +647,44 @@ reescreve silenciosamente dados comerciais existentes.
 Uma eventual consolidação física de contatos ou negociações exige ferramenta
 própria, confirmação explícita, auditoria e regras para resolver campos
 comerciais divergentes. Ela não é executada automaticamente por esta decisão.
+
+## ADR-064 — Listagens operacionais usam paginação por offset explícita
+
+Contatos, negociações, conversas e arquivos aceitam `limit` e `offset` e
+retornam `hasMore` e `nextOffset`. O detalhe comercial pagina mensagens por
+`messageLimit` e `messageOffset`, sempre buscando do registro mais recente para
+o mais antigo e devolvendo cada página em ordem cronológica. O navegador
+concatena por ID e o estado completo continua reconciliável pela API REST.
+
+Offset foi escolhido para o volume atual do MVP e por manter filtros e telas
+simples. Antes de volumes que tornem páginas profundas relevantes, a condição
+de migração é adotar cursor estável composto por data e ID.
+
+## ADR-065 — Acesso de mídia expira e pode ser renovado
+
+`retentionUntil` faz parte das projeções de arquivos e mensagens. Áudio, imagem
+e documento continuam sem URL pública permanente: cada ação solicita uma URL
+curta vinculada à sessão e ao workspace. Erro de reprodução ou expiração limpa
+a URL no navegador e permite nova solicitação. Renovar o acesso não altera a
+retenção do ativo.
+
+## ADR-066 — Consolidação física de contato é explícita e auditada
+
+Cadastro e edição manual recusam outro contato do mesmo workspace com telefone
+normalizado já existente. Duplicados históricos ainda podem existir por
+identidades técnicas antigas; a interface só oferece consolidação quando os
+telefones coincidem e exige confirmação do contato de origem.
+
+A transação bloqueia os dois contatos, preserva mensagens e negociações,
+combina tags e observações, mantém o JID telefônico quando disponível, move a
+auditoria anterior, remove o duplicado e grava `contact_merged` e
+`contact.merged`. Se houver mais de uma negociação ativa no conjunto, a ação
+recusa: escolher qual oportunidade encerrar é uma decisão comercial humana.
+
+## ADR-067 — Alertas respeitam capacidades assistivas deliberadamente desligadas
+
+As métricas publicam `noter_pipeline_enabled` para download, transcrição e
+análise. A idade pendente de uma capacidade desligada é exposta como zero e as
+regras de backlog exigem o indicador habilitado. Mensagens e mídias originais
+permanecem preservadas, mas a ausência intencional de chave OpenAI não produz
+um falso incidente operacional.

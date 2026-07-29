@@ -53,6 +53,7 @@ function isRealtimeEvent(event: unknown): boolean {
   if (typeof event !== 'object' || event === null || !('type' in event)) return false;
   return event.type === 'contact.updated'
     || event.type === 'contact.deleted'
+    || event.type === 'contact.merged'
     || event.type === 'negotiation.stage.changed'
         || event.type === 'negotiation.created'
         || event.type === 'negotiation.updated'

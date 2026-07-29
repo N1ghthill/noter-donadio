@@ -2,6 +2,7 @@ export const AUDIT_ACTIONS = [
   'contact_created',
   'contact_updated',
   'contact_deleted',
+  'contact_merged',
   'negotiation_created',
   'negotiation_updated',
   'negotiation_stage_changed',

@@ -2,11 +2,11 @@
 
 ## Estado
 
-O Baileys foi autorizado e chegou a ser conectado na VPS, mas a sessão anterior
-foi encerrada com código terminal `401`. O novo pareamento foi adiado até a
-aquisição de outro número controlado. O runtime e toda configuração da API
-oficial da Meta foram removidos por decisão
-do produto. Transcrição e análise falsas ficaram restritas ao profile `demo`.
+O Baileys foi autorizado e conectado novamente na VPS por QR após o
+encerramento terminal da sessão anterior. A rodada controlada mais recente
+validou texto, áudio, imagem e documento; o aplicativo continua sem endpoint de
+envio. O runtime e toda configuração da API oficial da Meta foram removidos por
+decisão do produto. Transcrição e análise falsas ficaram restritas ao profile `demo`.
 Os adapters OpenAI e o bloqueio temporal de backlog estão implementados; a
 ativação na VPS depende somente da injeção interativa da chave e da homologação
 autorizada.

@@ -12,6 +12,7 @@ export interface ContactFileView {
   readonly fileSizeBytes: string | null;
   readonly durationSeconds: number | null;
   readonly transcriptionState: ProcessingState;
+  readonly retentionUntil: string | null;
   readonly caption: string | null;
   readonly occurredAt: string;
 }
@@ -26,6 +27,7 @@ export interface ContactFileRepository {
     readonly occurredFrom?: Date | undefined;
     readonly occurredTo?: Date | undefined;
     readonly limit: number;
+    readonly offset: number;
     readonly now: Date;
   }): Promise<readonly ContactFileView[]>;
 }

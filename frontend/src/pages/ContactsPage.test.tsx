@@ -35,7 +35,10 @@ describe('contatos', () => {
         deleted = true;
         return new Response(null, { status: 204 });
       }
-      return new Response(JSON.stringify({ data: deleted ? [] : [contact] }), { status: 200 });
+      return new Response(JSON.stringify({
+        data: deleted ? [] : [contact],
+        meta: { limit: 50, offset: 0, hasMore: false, nextOffset: null },
+      }), { status: 200 });
     });
     vi.stubGlobal('confirm', confirmMock);
     vi.stubGlobal('fetch', fetchMock);

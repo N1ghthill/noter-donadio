@@ -21,7 +21,7 @@ describe('pipeline', () => {
 
   it('cria uma negociação manual sem enviar identidade confiada pelo cliente', async () => {
     const fetchMock = vi.fn().mockImplementation(async (path: string, init?: RequestInit) => {
-      if (path === '/api/contacts') {
+      if (path === '/api/contacts?limit=100') {
         return new Response(JSON.stringify({
           data: [{
             id: contactId,
@@ -33,6 +33,7 @@ describe('pipeline', () => {
             notes: null,
             lastInteractionAt: null,
           }],
+          meta: { limit: 100, offset: 0, hasMore: false, nextOffset: null },
         }), { status: 200 });
       }
       if (path === '/api/negotiations' && init?.method === 'POST') {
@@ -59,7 +60,7 @@ describe('pipeline', () => {
           version: 2, updatedAt: '2026-07-21T12:00:00.000Z',
         }), { status: 200 });
       }
-      if (path === '/api/negotiations') {
+      if (path === '/api/negotiations?limit=100&offset=0') {
         return new Response(JSON.stringify({
           data: [{
             id: '278b2fa9-b1bf-49a4-8beb-d8fa7020d5bb',
@@ -75,6 +76,7 @@ describe('pipeline', () => {
             version: 1,
             updatedAt: '2026-07-21T12:00:00.000Z',
           }],
+          meta: { limit: 100, offset: 0, hasMore: false, nextOffset: null },
         }), { status: 200 });
       }
       return new Response(JSON.stringify({ data: [] }), { status: 200 });
@@ -136,7 +138,8 @@ describe('pipeline', () => {
 
     fireEvent.change(screen.getByLabelText('Acompanhamento'), { target: { value: 'overdue' } });
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
-      '/api/negotiations?followUp=overdue', expect.objectContaining({ credentials: 'include' }),
+      '/api/negotiations?followUp=overdue&limit=100&offset=0',
+      expect.objectContaining({ credentials: 'include' }),
     ));
   });
 });

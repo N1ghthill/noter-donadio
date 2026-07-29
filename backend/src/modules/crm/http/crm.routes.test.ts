@@ -28,6 +28,7 @@ class FakeCrmRepository implements CrmRepository {
   public lastMessageScope?: 'negotiation' | 'contact';
   public lastContactCreate?: Parameters<CrmRepository['createContact']>[0];
   public lastContactUpdate?: { workspaceId: string; userId: string; contactId: string; displayName?: string };
+  public lastContactMerge?: Parameters<CrmRepository['mergeContacts']>[0];
   public lastNegotiationCreate?: Parameters<CrmRepository['createNegotiation']>[0];
   public lastNegotiationUpdate?: Parameters<CrmRepository['updateNegotiation']>[0];
   public lastStageUpdate?: Parameters<CrmRepository['updateNegotiationStage']>[0];
@@ -43,7 +44,12 @@ class FakeCrmRepository implements CrmRepository {
       wonCount: 1, lostCount: 1, winRatePercent: '50.00', stages: [], recentNegotiations: [],
     };
   }
-  public async listContacts(workspaceId: string): Promise<ContactView[]> {
+  public async listContacts(
+    workspaceId: string,
+    _search: string | undefined,
+    _limit: number,
+    _offset: number,
+  ): Promise<ContactView[]> {
     this.lastWorkspaceId = workspaceId;
     return [];
   }
@@ -67,6 +73,21 @@ class FakeCrmRepository implements CrmRepository {
     return {
       id: input.contactId,
       displayName: input.displayName ?? 'Contato',
+      phoneNumber: '5571999999999',
+      tags: [],
+      source: 'manual',
+      status: 'active',
+      notes: null,
+      lastInteractionAt: null,
+    };
+  }
+  public async mergeContacts(
+    input: Parameters<CrmRepository['mergeContacts']>[0],
+  ): Promise<ContactView> {
+    this.lastContactMerge = input;
+    return {
+      id: input.targetContactId,
+      displayName: 'Contato consolidado',
       phoneNumber: '5571999999999',
       tags: [],
       source: 'manual',
@@ -138,6 +159,7 @@ class FakeCrmRepository implements CrmRepository {
         notes: null, lastInteractionAt: null,
       },
       messages: [],
+      messagesPage: { limit: 100, offset: 0, hasMore: false, nextOffset: null },
       analyses: [],
       auditTrail: [],
       followUpHistory: [],
@@ -233,6 +255,45 @@ class FakeCrmRepository implements CrmRepository {
   }
 }
 
+test('mesclagem de contatos exige confirmação do duplicado e usa a identidade da sessão', async (context) => {
+  const repository = new FakeCrmRepository();
+  const app = buildApp({
+    crmRepository: repository,
+    sessionAuthenticator: new FakeSessionAuthenticator(),
+  });
+  context.after(async () => app.close());
+  const sourceContactId = '65d36874-08db-4ced-a22f-4043e75f27df';
+
+  const invalid = await app.inject({
+    method: 'POST',
+    url: `/api/contacts/${CONTACT_ID}/merge`,
+    headers: { cookie: SESSION_COOKIE },
+    payload: {
+      sourceContactId,
+      confirmation: CONTACT_ID,
+    },
+  });
+  assert.equal(invalid.statusCode, 400);
+  assert.equal(repository.lastContactMerge, undefined);
+
+  const response = await app.inject({
+    method: 'POST',
+    url: `/api/contacts/${CONTACT_ID}/merge`,
+    headers: { cookie: SESSION_COOKIE },
+    payload: {
+      sourceContactId,
+      confirmation: sourceContactId,
+    },
+  });
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(repository.lastContactMerge, {
+    workspaceId: WORKSPACE_ID,
+    userId: USER_ID,
+    targetContactId: CONTACT_ID,
+    sourceContactId,
+  });
+});
+
 class FakeSessionAuthenticator implements SessionAuthenticator {
   public async authenticate(token: string | undefined) {
     return token === 'valid-session-token-with-more-than-forty-characters'
@@ -307,7 +368,8 @@ test('filtros do pipeline são validados e limitados na fronteira HTTP', async (
     stage: 'qualified',
     followUp: 'overdue',
     search: 'Projeto',
-    limit: 25,
+    limit: 26,
+    offset: 0,
   });
 });
 

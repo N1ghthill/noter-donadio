@@ -32,9 +32,12 @@ export function ConversationsPage() {
   const [editingFollowUp, setEditingFollowUp] = useState(false);
   const [content, setContent] = useState('Olá! Esta é uma nova mensagem simulada para validar a caixa de entrada.');
   const [busy, setBusy] = useState<'text' | 'audio'>();
+  const [nextOffset, setNextOffset] = useState<number | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const [error, setError] = useState<string>();
 
-  const loadConversations = useCallback(async () => {
+  const loadConversations = useCallback(async (offset = 0, append = false) => {
     try {
       const range = conversationRange(period);
       const response = await api.conversations({
@@ -42,12 +45,21 @@ export function ConversationsPage() {
         ...(stage ? { stage } : {}),
         ...(aiStage ? { aiStage } : {}),
         ...(search.trim() ? { search: search.trim() } : {}),
+        limit: 50,
+        offset,
       });
-      setConversations(response.data);
+      setConversations((current) => append && current
+        ? [...current, ...response.data.filter((item) => (
+            !current.some((existing) => existing.negotiationId === item.negotiationId)
+          ))]
+        : response.data);
+      setNextOffset(response.meta.nextOffset);
       setError(undefined);
-      setSelectedId((current) => response.data.some((item) => item.negotiationId === current)
-        ? current
-        : response.data[0]?.negotiationId);
+      if (!append) {
+        setSelectedId((current) => response.data.some((item) => item.negotiationId === current)
+          ? current
+          : response.data[0]?.negotiationId);
+      }
     } catch {
       setError('Não foi possível carregar as conversas.');
     }
@@ -108,6 +120,33 @@ export function ConversationsPage() {
     setAiStage('');
     setSearchDraft('');
     setSearch('');
+  }
+
+  async function loadMore(): Promise<void> {
+    if (nextOffset === null) return;
+    setLoadingMore(true);
+    await loadConversations(nextOffset, true);
+    setLoadingMore(false);
+  }
+
+  async function loadOlderMessages(): Promise<void> {
+    if (!detail || detail.messagesPage.nextOffset === null) return;
+    setLoadingOlder(true);
+    try {
+      const older = await api.negotiation(detail.id, 'contact', {
+        limit: detail.messagesPage.limit,
+        offset: detail.messagesPage.nextOffset,
+      });
+      setDetail((current) => current?.id === older.id ? {
+        ...current,
+        messages: [...older.messages, ...current.messages],
+        messagesPage: older.messagesPage,
+      } : current);
+    } catch {
+      setError('Não foi possível carregar as mensagens anteriores.');
+    } finally {
+      setLoadingOlder(false);
+    }
   }
 
   async function simulateMessage(messageType: 'text' | 'audio', message?: string) {
@@ -214,6 +253,13 @@ export function ConversationsPage() {
             ))}
           </div>
         )}
+        {nextOffset !== null ? (
+          <div className="pagination-actions">
+            <button className="button secondary" type="button" disabled={loadingMore} onClick={() => void loadMore()}>
+              {loadingMore ? 'Carregando…' : 'Carregar mais conversas'}
+            </button>
+          </div>
+        ) : null}
       </section>
 
       <article className="panel conversation-detail">
@@ -256,6 +302,11 @@ export function ConversationsPage() {
                 ) : null}
               </section>
               <div className="timeline conversation-timeline">
+                {detail.messagesPage.hasMore ? (
+                  <button className="button secondary older-messages" type="button" disabled={loadingOlder} onClick={() => void loadOlderMessages()}>
+                    {loadingOlder ? 'Carregando…' : 'Carregar mensagens anteriores'}
+                  </button>
+                ) : null}
                 {detail.messages.map((message) => (
                   <article className={`message ${message.direction}`} key={message.id}>
                     <small>{message.direction === 'inbound' ? 'Recebida' : 'Enviada'} · {formatDate(message.occurredAt)}</small>
@@ -266,6 +317,11 @@ export function ConversationsPage() {
                           <strong>{messageTypeLabel(message.messageType)}</strong>
                           <small>{message.media.fileName ?? 'Nome não informado'}</small>
                         </div>
+                        {message.media.retentionUntil ? (
+                          <small className="retention-note">
+                            Disponível até {formatDate(message.media.retentionUntil)}
+                          </small>
+                        ) : null}
                         {message.media.playbackAvailable && isSupportedMediaType(message.messageType)
                           ? <MediaPreview
                               messageId={message.id}

@@ -2,6 +2,7 @@ import type { NegotiationStage, ProcessingState } from '@noter/contracts';
 
 export interface ConversationListFilters {
   readonly limit: number;
+  readonly offset: number;
   readonly startedFrom?: Date | undefined;
   readonly startedTo?: Date | undefined;
   readonly stage?: NegotiationStage | undefined;

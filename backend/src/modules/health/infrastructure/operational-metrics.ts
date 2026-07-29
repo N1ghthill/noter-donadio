@@ -19,6 +19,10 @@ export class PrismaBullMqOperationalMetricsCollector implements OperationalMetri
     private readonly prisma: PrismaClient,
     redisUrl: string,
     prefix?: string,
+    private readonly capabilities: {
+      readonly transcriptionEnabled: boolean;
+      readonly analysisEnabled: boolean;
+    } = { transcriptionEnabled: true, analysisEnabled: true },
   ) {
     this.connection = new Redis(redisUrl, {
       enableOfflineQueue: false,
@@ -73,6 +77,11 @@ export class PrismaBullMqOperationalMetricsCollector implements OperationalMetri
     ]);
 
     return {
+      pipelinesEnabled: {
+        media_download: true,
+        transcription: this.capabilities.transcriptionEnabled,
+        analysis: this.capabilities.analysisEnabled,
+      },
       outbox: countGroups(OUTBOX_STATUSES, outboxGroups.map((group) => [group.status, group._count._all])),
       mediaDownloads: countGroups(PROCESSING_STATES, mediaDownloadGroups.map((group) => [group.downloadState, group._count._all])),
       transcriptions: countGroups(PROCESSING_STATES, transcriptionGroups.map((group) => [group.transcriptionState, group._count._all])),
@@ -80,8 +89,12 @@ export class PrismaBullMqOperationalMetricsCollector implements OperationalMetri
       mediaDeletionTasks,
       oldestPendingOutboxAgeSeconds: ageSeconds(oldestOutbox?.createdAt, now),
       oldestPendingMediaDownloadAgeSeconds: ageSeconds(oldestMediaDownload?.createdAt, now),
-      oldestPendingTranscriptionAgeSeconds: ageSeconds(oldestTranscription?.createdAt, now),
-      oldestPendingAnalysisAgeSeconds: ageSeconds(oldestAnalysis?.createdAt, now),
+      oldestPendingTranscriptionAgeSeconds: this.capabilities.transcriptionEnabled
+        ? ageSeconds(oldestTranscription?.createdAt, now)
+        : 0,
+      oldestPendingAnalysisAgeSeconds: this.capabilities.analysisEnabled
+        ? ageSeconds(oldestAnalysis?.createdAt, now)
+        : 0,
       queues: Object.fromEntries(QUEUE_NAMES.map((name, index) => [
         name,
         countGroups(QUEUE_STATES, Object.entries(queueCounts[index] ?? {})),

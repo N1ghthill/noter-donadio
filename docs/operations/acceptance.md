@@ -13,8 +13,8 @@ corte temporal e nova homologação.
 
 Atualização de 29/07/2026: os adapters OpenAI de transcrição e análise
 estruturada foram implementados com corte obrigatório de autorização, chave
-restrita aos workers e bloqueio do backlog. A validação local aprovou 202 testes
-(1 contratos, 157 backend e 44 frontend), lint, typecheck, build, auditoria de
+restrita aos workers e bloqueio do backlog. A validação local aprovou 208 testes
+(1 contratos, 161 backend e 46 frontend), lint, typecheck, build, auditoria de
 produção e os perfis Compose `baileys+assistive`. A aceitação real depende da
 injeção interativa da chave e de uma chamada homologada no áudio autorizado.
 
@@ -28,15 +28,19 @@ por QR quando a sessão Baileys já está conectada. Essa proteção elimina o f
 inútil que aguardava um novo código e terminava em erro, sem desconectar ou
 alterar a sessão real existente.
 
-Após o deploy, a aplicação permaneceu saudável, porém o WhatsApp encerrou a
-sessão Baileys com código terminal `401`. O processo se comportou de forma
-segura: marcou a conta como desconectada e não entrou em loop. A conexão real
-volta a fazer parte da aceitação somente depois de novo pareamento autorizado.
+Depois do encerramento terminal da sessão anterior, o responsável realizou novo
+pareamento por QR e validou manualmente a conexão. A rodada seguinte confirmou
+texto e uma unidade de áudio, imagem e documento, todos preservados e com
+download privado concluído. O fluxo de substituição continua separado: exige
+confirmação, recusa sessão conectada e preserva o histórico ao remover apenas
+as credenciais antigas.
 
-O pareamento foi adiado até a aquisição de outro número. O fluxo de substituição
-foi implementado e validado sem ser executado na VPS: exige confirmação,
-recusa sessão conectada e preserva todo o histórico ao remover apenas as
-credenciais antigas.
+Na consolidação desta fase, as listagens críticas receberam paginação
+explícita, o histórico passou a carregar páginas anteriores e o acesso
+temporário de mídia pode ser renovado. Contatos manuais repetidos são recusados;
+duplicados existentes podem ser consolidados somente por confirmação explícita,
+com preservação de mensagens e negociações e auditoria. Duas negociações ativas
+não são resolvidas silenciosamente pela mesclagem.
 
 ## Resultado
 

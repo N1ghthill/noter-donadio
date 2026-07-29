@@ -15,8 +15,14 @@ describe('arquivos por contato', () => {
   it('lista mídia sem expor chave interna e oferece o contexto comercial', async () => {
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
-      if (url === '/api/contacts') return response({ data: [contact] });
-      if (url.startsWith('/api/files')) return response({ data: [file] });
+      if (url === '/api/contacts') return response({
+        data: [contact],
+        meta: { limit: 50, offset: 0, hasMore: false, nextOffset: null },
+      });
+      if (url.startsWith('/api/files')) return response({
+        data: [file],
+        meta: { limit: 50, offset: 0, hasMore: false, nextOffset: null },
+      });
       return response({ error: 'not_found' }, 404);
     }));
 
@@ -36,7 +42,7 @@ describe('arquivos por contato', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: 'Documentos' }));
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(
-      '/api/files?fileType=document',
+      '/api/files?fileType=document&limit=50&offset=0',
       expect.objectContaining({ credentials: 'include' }),
     ));
     expect(document.body).not.toHaveTextContent('storage/');
@@ -67,6 +73,7 @@ const file = {
   transcriptionState: 'completed',
   caption: 'Imagem da proposta fictícia',
   occurredAt: '2026-07-29T12:00:00.000Z',
+  retentionUntil: '2027-01-29T12:00:00.000Z',
 };
 
 function response(body: unknown, status = 200): Response {

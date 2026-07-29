@@ -22,20 +22,23 @@ Nenhum token, telefone ou conteúdo deve aparecer em logs ou exemplos versionado
 - `GET /api/privacy/workspace-export`: baixa a exportação administrativa versionada do workspace;
 - `GET /api/audit-events`: lista até 100 eventos minimizados do workspace; aceita `limit` e `action`;
 - `GET /api/dashboard`: retorna indicadores agregados; `periodDays` aceita `30`, `90` ou `365`;
-- `GET /api/contacts`: lista e busca contatos do workspace;
+- `GET /api/contacts`: lista e busca contatos do workspace; aceita `limit` e `offset`;
 - `POST /api/contacts`: cria contato manual;
 - `PATCH /api/contacts/:id`: edita nome, telefone, tags e observações do contato;
+- `POST /api/contacts/:id/merge`: consolida um contato duplicado no contato
+  mantido após confirmar o UUID de origem; exige mesmo telefone e não resolve
+  automaticamente o conflito de duas negociações ativas;
 - `DELETE /api/contacts/:id`: exclui o contato e seus agregados após confirmação explícita do mesmo UUID;
-- `GET /api/negotiations`: lista o pipeline com filtros opcionais `stage`, `followUp`, `activeOnly`, `search` e `limit`; cada item inclui, quando existente, resumo e classificação da análise mais recente;
+- `GET /api/negotiations`: lista o pipeline com filtros opcionais `stage`, `followUp`, `activeOnly`, `search`, `limit` e `offset`; cada item inclui, quando existente, resumo e classificação da análise mais recente;
 - `POST /api/negotiations`: cria uma negociação manual para um contato do workspace;
-- `GET /api/negotiations/:id`: retorna contato, até 100 mensagens cronológicas, mídia/transcrição, até 20 análises, auditoria e até 50 acompanhamentos concluídos;
+- `GET /api/negotiations/:id`: retorna contato, mensagens cronológicas paginadas por `messageLimit` e `messageOffset`, mídia/transcrição, até 20 análises, auditoria e até 50 acompanhamentos concluídos;
 - `PATCH /api/negotiations/:id`: edita título, valor, produto, previsão de fechamento, próxima ação e prazo com `expectedVersion`;
 - `PATCH /api/negotiations/:id/stage`: mudança manual com `expectedVersion`; etapas finais exigem `closeReason`;
 - `POST /api/negotiations/:id/next-action/complete`: arquiva a próxima ação e limpa o acompanhamento atual com controle de versão;
 - `POST /api/negotiations/:id/analyses/:analysisId/decision`: aceita uma seleção editável de etapa, tags, valor, produto, previsões e próxima ação ou ignora a sugestão, com UUID idempotente e `expectedVersion`;
-- `GET /api/conversations`: lista até 50 conversas, usando a mensagem mais recente de cada negociação; aceita `startedFrom`, `startedTo`, `stage`, `aiStage`, `search` e `limit`;
+- `GET /api/conversations`: lista conversas paginadas, usando a mensagem mais recente de cada negociação; aceita `startedFrom`, `startedTo`, `stage`, `aiStage`, `search`, `limit` e `offset`;
 - `GET /api/files`: lista mídias privadas acessíveis; aceita `contactId`,
-  `search`, `fileType`, `direction`, `occurredFrom`, `occurredTo` e `limit`, sem
+  `search`, `fileType`, `direction`, `occurredFrom`, `occurredTo`, `limit` e `offset`, sem
   expor a chave física de armazenamento;
 - `GET /api/whatsapp/connection`: consulta o estado da conta principal;
 - `POST /api/whatsapp/setup`: inicia setup e retorna QR efêmero no adapter falso;
@@ -45,6 +48,12 @@ Nenhum token, telefone ou conteúdo deve aparecer em logs ou exemplos versionado
 - `GET /api/media/:messageId/content`: entrega a mídia somente com sessão ativa, workspace correspondente, prazo e assinatura válidos.
 
 Uma versão desatualizada na edição comercial, mudança de etapa, conclusão de acompanhamento ou decisão assistiva retorna `409 version_conflict`. O cliente deve recarregar a negociação antes de tentar novamente.
+
+As listagens paginadas retornam `meta` com `limit`, `offset`, `hasMore` e
+`nextOffset`. O frontend usa `nextOffset` e elimina repetições por ID ao
+concatenar páginas. O catálogo e o detalhe de mídia também expõem
+`retentionUntil`; URLs assinadas expiradas são renovadas por nova ação
+autenticada, sem transformar a URL em referência permanente.
 
 `POST /api/whatsapp/setup` retorna `409 already_connected` quando a sessão já
 está ativa. A interface remove a ação nesse estado para não substituir uma

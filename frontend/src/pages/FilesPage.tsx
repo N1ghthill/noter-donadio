@@ -25,6 +25,8 @@ export function FilesPage() {
   const [period, setPeriod] = useState<Period>(periodFrom(searchParams.get('period')));
   const [searchDraft, setSearchDraft] = useState(searchParams.get('search') ?? '');
   const [search, setSearch] = useState((searchParams.get('search') ?? '').trim());
+  const [nextOffset, setNextOffset] = useState<number | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(false);
 
   useEffect(() => {
@@ -42,7 +44,7 @@ export function FilesPage() {
     setSearchParams(params, { replace: true });
   }, [contactId, direction, fileType, period, search, setSearchParams]);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (offset = 0, append = false) => {
     setError(false);
     const range = periodRange(period);
     try {
@@ -54,10 +56,17 @@ export function FilesPage() {
           ...(fileType !== 'all' ? { fileType } : {}),
           ...(direction !== 'all' ? { direction } : {}),
           ...range,
+          limit: 50,
+          offset,
         }),
       ]);
       setContacts(contactResponse.data);
-      setFiles(fileResponse.data);
+      setFiles((current) => append && current
+        ? [...current, ...fileResponse.data.filter((file) => (
+            !current.some((existing) => existing.messageId === file.messageId)
+          ))]
+        : fileResponse.data);
+      setNextOffset(fileResponse.meta.nextOffset);
     } catch {
       setError(true);
     }
@@ -72,6 +81,13 @@ export function FilesPage() {
     setPeriod('all');
     setSearchDraft('');
     setSearch('');
+  }
+
+  async function loadMore(): Promise<void> {
+    if (nextOffset === null) return;
+    setLoadingMore(true);
+    await load(nextOffset, true);
+    setLoadingMore(false);
   }
 
   if (error && (!contacts || !files)) {
@@ -167,6 +183,9 @@ export function FilesPage() {
                     {file.messageType === 'audio'
                       ? <div><dt>Transcrição</dt><dd>{PROCESSING_LABELS[file.transcriptionState]}</dd></div>
                       : null}
+                    {file.retentionUntil
+                      ? <div><dt>Disponível até</dt><dd>{formatDateTime(file.retentionUntil)}</dd></div>
+                      : null}
                   </dl>
                   {file.negotiationId
                     ? <div className="file-card-links">
@@ -179,6 +198,13 @@ export function FilesPage() {
             ))}
           </div>
         )}
+        {nextOffset !== null ? (
+          <div className="pagination-actions">
+            <button className="button secondary" type="button" disabled={loadingMore} onClick={() => void loadMore()}>
+              {loadingMore ? 'Carregando…' : 'Carregar mais arquivos'}
+            </button>
+          </div>
+        ) : null}
       </section>
     </div>
   );

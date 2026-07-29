@@ -47,3 +47,20 @@ test('fecha com segurança antes de a conexão Redis terminar de abrir', async (
   );
   await collector.close();
 });
+
+test('não envelhece backlog de capacidades deliberadamente desligadas', async (context) => {
+  const collector = new PrismaBullMqOperationalMetricsCollector(
+    prisma,
+    environment.REDIS_URL,
+    `metrics-disabled-test-${randomUUID()}`,
+    { transcriptionEnabled: false, analysisEnabled: false },
+  );
+  context.after(async () => collector.close());
+
+  const snapshot = await collector.collect();
+
+  assert.equal(snapshot.pipelinesEnabled.transcription, false);
+  assert.equal(snapshot.pipelinesEnabled.analysis, false);
+  assert.equal(snapshot.oldestPendingTranscriptionAgeSeconds, 0);
+  assert.equal(snapshot.oldestPendingAnalysisAgeSeconds, 0);
+});

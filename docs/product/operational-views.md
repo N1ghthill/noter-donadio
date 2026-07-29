@@ -76,6 +76,16 @@ negociação. Um atalho vindo da conversa abre a biblioteca já filtrada pelo
 contato. Upload manual, pastas e compartilhamento externo não fazem parte
 desta fatia.
 
+Contatos, pipeline, conversas e arquivos carregam páginas adicionais sob
+demanda. O histórico começa pelas mensagens mais recentes e permite buscar
+páginas anteriores sem repetir itens. A data de retenção fica visível e o
+usuário pode renovar uma URL assinada expirada enquanto o arquivo ainda existe.
+
+Contatos com o mesmo telefone podem ser consolidados após escolher
+explicitamente qual registro será mantido. A operação preserva mensagens e
+negociações e fica auditada; duas negociações ativas precisam ser resolvidas
+manualmente antes da consolidação.
+
 ## Estados sem integrações externas
 
 As telas continuam funcionais com WhatsApp desconectado. Novas conversas só

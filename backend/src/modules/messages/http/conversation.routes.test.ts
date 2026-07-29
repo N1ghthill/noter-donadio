@@ -54,7 +54,8 @@ test('lista conversas somente do workspace autenticado', async (context) => {
   assert.equal(response.statusCode, 200);
   assert.equal(requestedWorkspace, WORKSPACE_ID);
   assert.deepEqual(requestedFilters, {
-    limit: 25,
+    limit: 26,
+    offset: 0,
     stage: 'qualified',
     aiStage: 'proposal_sent',
     startedFrom: new Date('2026-07-29T00:00:00.000Z'),

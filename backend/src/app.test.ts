@@ -94,6 +94,7 @@ test('métricas operacionais exigem token e usam formato Prometheus sem cache', 
     metricsCollector: {
       async collect() {
         return {
+          pipelinesEnabled: { media_download: true, transcription: false, analysis: false },
           outbox: { pending: 1, processing: 0, published: 2, failed: 0 },
           mediaDownloads: { pending: 0, processing: 0, completed: 1, failed: 0 },
           transcriptions: { pending: 0, processing: 0, completed: 1, failed: 0 },

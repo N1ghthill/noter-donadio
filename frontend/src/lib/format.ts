@@ -28,6 +28,7 @@ export const AUDIT_ACTION_LABELS = {
   contact_created: 'Contato criado manualmente',
   contact_updated: 'Contato atualizado',
   contact_deleted: 'Contato excluído',
+  contact_merged: 'Contato consolidado',
   negotiation_created: 'Negociação criada manualmente',
   negotiation_updated: 'Negociação atualizada manualmente',
   negotiation_stage_changed: 'Etapa alterada manualmente',
@@ -53,6 +54,8 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   nextActionDueDate: 'prazo da próxima ação',
   closeReason: 'motivo do fechamento',
   whatsappAuthentication: 'autenticação do WhatsApp',
+  messages: 'mensagens',
+  negotiations: 'negociações',
 };
 
 export function formatDateOnly(value: string | null): string {

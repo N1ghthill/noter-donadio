@@ -9,6 +9,7 @@ import type {
   Negotiation,
   NegotiationDetail,
   ProductCapabilities,
+  Paginated,
   SessionUser,
   SessionInfo,
   WorkspaceAuditEvent,
@@ -96,9 +97,13 @@ export const api = {
     return request<Dashboard>(`/api/dashboard?periodDays=${periodDays}`);
   },
 
-  async contacts(search?: string) {
-    const query = search ? `?search=${encodeURIComponent(search)}` : '';
-    return request<{ data: Contact[] }>(`/api/contacts${query}`);
+  async contacts(search?: string, page?: { limit?: number; offset?: number }) {
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (page?.limit !== undefined) params.set('limit', String(page.limit));
+    if (page?.offset !== undefined) params.set('offset', String(page.offset));
+    const query = params.size ? `?${params.toString()}` : '';
+    return request<Paginated<Contact>>(`/api/contacts${query}`);
   },
 
   async createContact(input: {
@@ -132,19 +137,30 @@ export const api = {
     });
   },
 
+  async mergeContacts(targetContactId: string, sourceContactId: string) {
+    return request<Contact>(`/api/contacts/${targetContactId}/merge`, {
+      method: 'POST',
+      body: JSON.stringify({ sourceContactId, confirmation: sourceContactId }),
+    });
+  },
+
   async negotiations(filters?: {
     stage?: NegotiationStage;
     followUp?: 'overdue' | 'today' | 'upcoming' | 'missing';
     activeOnly?: boolean;
     search?: string;
+    limit?: number;
+    offset?: number;
   }) {
     const params = new URLSearchParams();
     if (filters?.stage) params.set('stage', filters.stage);
     if (filters?.followUp) params.set('followUp', filters.followUp);
     if (filters?.activeOnly) params.set('activeOnly', 'true');
     if (filters?.search) params.set('search', filters.search);
+    if (filters?.limit !== undefined) params.set('limit', String(filters.limit));
+    if (filters?.offset !== undefined) params.set('offset', String(filters.offset));
     const query = params.size ? `?${params.toString()}` : '';
-    return request<{ data: Negotiation[] }>(`/api/negotiations${query}`);
+    return request<Paginated<Negotiation>>(`/api/negotiations${query}`);
   },
 
   async createNegotiation(input: {
@@ -163,8 +179,16 @@ export const api = {
     });
   },
 
-  async negotiation(id: string, messageScope: 'negotiation' | 'contact' = 'negotiation') {
-    const query = messageScope === 'contact' ? '?messageScope=contact' : '';
+  async negotiation(
+    id: string,
+    messageScope: 'negotiation' | 'contact' = 'negotiation',
+    messages?: { limit?: number; offset?: number },
+  ) {
+    const params = new URLSearchParams();
+    if (messageScope === 'contact') params.set('messageScope', 'contact');
+    if (messages?.limit !== undefined) params.set('messageLimit', String(messages.limit));
+    if (messages?.offset !== undefined) params.set('messageOffset', String(messages.offset));
+    const query = params.size ? `?${params.toString()}` : '';
     return request<NegotiationDetail>(`/api/negotiations/${id}${query}`);
   },
 
@@ -258,6 +282,8 @@ export const api = {
     stage?: NegotiationStage;
     aiStage?: NegotiationStage;
     search?: string;
+    limit?: number;
+    offset?: number;
   }) {
     const params = new URLSearchParams();
     if (filters?.startedFrom) params.set('startedFrom', filters.startedFrom);
@@ -265,8 +291,10 @@ export const api = {
     if (filters?.stage) params.set('stage', filters.stage);
     if (filters?.aiStage) params.set('aiStage', filters.aiStage);
     if (filters?.search) params.set('search', filters.search);
+    if (filters?.limit !== undefined) params.set('limit', String(filters.limit));
+    if (filters?.offset !== undefined) params.set('offset', String(filters.offset));
     const query = params.size ? `?${params.toString()}` : '';
-    return request<{ data: ConversationSummary[] }>(`/api/conversations${query}`);
+    return request<Paginated<ConversationSummary>>(`/api/conversations${query}`);
   },
 
   async files(filters?: {
@@ -276,6 +304,8 @@ export const api = {
     direction?: 'inbound' | 'outbound';
     occurredFrom?: string;
     occurredTo?: string;
+    limit?: number;
+    offset?: number;
   }) {
     const params = new URLSearchParams();
     if (filters?.contactId) params.set('contactId', filters.contactId);
@@ -284,8 +314,10 @@ export const api = {
     if (filters?.direction) params.set('direction', filters.direction);
     if (filters?.occurredFrom) params.set('occurredFrom', filters.occurredFrom);
     if (filters?.occurredTo) params.set('occurredTo', filters.occurredTo);
+    if (filters?.limit !== undefined) params.set('limit', String(filters.limit));
+    if (filters?.offset !== undefined) params.set('offset', String(filters.offset));
     const query = params.size ? `?${params.toString()}` : '';
-    return request<{ data: ContactFile[] }>(`/api/files${query}`);
+    return request<Paginated<ContactFile>>(`/api/files${query}`);
   },
 
   async simulateInboundMessage(input: {

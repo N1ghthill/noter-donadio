@@ -9,6 +9,7 @@ export function MediaPreview(props: {
   fileName: string;
 }) {
   const [source, setSource] = useState<string>();
+  const [expiresAt, setExpiresAt] = useState<string>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
 
@@ -22,6 +23,7 @@ export function MediaPreview(props: {
     try {
       const access = await api.mediaAccess(props.messageId);
       setSource(access.url);
+      setExpiresAt(access.expiresAt);
     } catch {
       setError('O arquivo não está mais disponível.');
     } finally {
@@ -32,8 +34,20 @@ export function MediaPreview(props: {
   if (props.messageType === 'image' && source) {
     return (
       <div className="image-preview">
-        <img src={source} alt={`Pré-visualização de ${props.fileName}`} loading="lazy" />
+        <img
+          src={source}
+          alt={`Pré-visualização de ${props.fileName}`}
+          loading="lazy"
+          onError={() => {
+            setSource(undefined);
+            setExpiresAt(undefined);
+            setError('O acesso à imagem expirou. Carregue-a novamente.');
+          }}
+        />
         <a href={source} target="_blank" rel="noreferrer">Abrir imagem</a>
+        <button className="button-link media-renew" type="button" onClick={() => void prepare()}>
+          Renovar acesso
+        </button>
       </div>
     );
   }
@@ -41,9 +55,15 @@ export function MediaPreview(props: {
   return (
     <div className="media-action">
       {source ? (
-        <a className="button secondary" href={source} download={props.fileName}>
-          Baixar documento
-        </a>
+        <>
+          <a className="button secondary" href={source} download={props.fileName}>
+            Baixar documento
+          </a>
+          <button className="button-link media-renew" type="button" onClick={() => void prepare()}>
+            Renovar acesso
+          </button>
+          {expiresAt ? <small>Acesso temporário preparado.</small> : null}
+        </>
       ) : (
         <button className="button secondary" type="button" disabled={loading} onClick={() => void prepare()}>
           {loading

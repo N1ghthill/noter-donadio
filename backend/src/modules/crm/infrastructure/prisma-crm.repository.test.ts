@@ -145,6 +145,7 @@ test('criação manual de negociação é atômica, auditável e isolada por wor
     followUp: 'overdue',
     search: 'Ligar',
     limit: 10,
+    offset: 0,
   });
   assert.deepEqual(overdue.map((item) => item.id), [created.id]);
   const dashboard = await repository.getDashboard(workspaceId, 30);
@@ -413,4 +414,134 @@ test('aceite é atômico, auditável e idempotente no PostgreSQL', async (contex
     }),
     CrmDecisionConflictError,
   );
+});
+
+test('mesclagem preserva mensagens e negociações e registra auditoria sem conteúdo comercial', async (context) => {
+  const databaseUrl = process.env.DATABASE_URL;
+  assert.ok(databaseUrl, 'DATABASE_URL é obrigatória para o teste de integração');
+  const prisma = createPrismaClient(databaseUrl);
+  const workspaceId = randomUUID();
+  const userId = randomUUID();
+  const accountId = randomUUID();
+  const targetContactId = randomUUID();
+  const sourceContactId = randomUUID();
+  const targetNegotiationId = randomUUID();
+  const sourceNegotiationId = randomUUID();
+  const sourceMessageId = randomUUID();
+  context.after(async () => {
+    await prisma.auditEvent.deleteMany({ where: { workspaceId } });
+    await prisma.workspace.deleteMany({ where: { id: workspaceId } });
+    await prisma.$disconnect();
+  });
+
+  await prisma.workspace.create({
+    data: {
+      id: workspaceId,
+      slug: `merge-${workspaceId}`,
+      name: 'Workspace fictício para mesclagem',
+      users: {
+        create: {
+          id: userId,
+          email: `admin-${workspaceId}@example.test`,
+          displayName: 'Administrador fictício',
+          passwordHash: 'hash-ficticio-nao-utilizavel',
+        },
+      },
+      whatsappAccounts: {
+        create: { id: accountId, identifier: `fake-${workspaceId}` },
+      },
+      contacts: {
+        create: [
+          {
+            id: targetContactId,
+            displayName: 'Contato principal fictício',
+            phoneNumber: '5571000000099',
+            jid: '5571000000099@s.whatsapp.net',
+            source: 'whatsapp_auto',
+            tags: ['principal'],
+            notes: 'Nota principal fictícia',
+          },
+          {
+            id: sourceContactId,
+            displayName: 'Contato duplicado fictício',
+            phoneNumber: '5571000000099',
+            jid: '123456789012345@lid',
+            source: 'whatsapp_auto',
+            tags: ['duplicado'],
+            notes: 'Nota duplicada fictícia',
+          },
+        ],
+      },
+    },
+  });
+  await prisma.negotiation.createMany({
+    data: [
+      {
+        id: targetNegotiationId,
+        workspaceId,
+        contactId: targetContactId,
+        stage: 'qualified',
+      },
+      {
+        id: sourceNegotiationId,
+        workspaceId,
+        contactId: sourceContactId,
+        stage: 'closed_lost',
+      },
+    ],
+  });
+  await prisma.message.create({
+    data: {
+      id: sourceMessageId,
+      workspaceId,
+      whatsappAccountId: accountId,
+      externalMessageId: `fake-${sourceMessageId}`,
+      contactId: sourceContactId,
+      negotiationId: sourceNegotiationId,
+      direction: 'inbound',
+      messageType: 'text',
+      content: 'Mensagem fictícia preservada na mesclagem.',
+      occurredAt: new Date('2026-07-29T12:00:00.000Z'),
+    },
+  });
+
+  const repository = new PrismaCrmRepository(prisma);
+  const merged = await repository.mergeContacts({
+    workspaceId,
+    userId,
+    targetContactId,
+    sourceContactId,
+  });
+
+  assert.equal(merged.id, targetContactId);
+  assert.deepEqual(merged.tags, ['principal', 'duplicado']);
+  assert.match(merged.notes ?? '', /Nota principal fictícia/);
+  assert.match(merged.notes ?? '', /Nota duplicada fictícia/);
+  assert.equal(await prisma.contact.findUnique({ where: { id: sourceContactId } }), null);
+  const negotiations = await prisma.negotiation.findMany({
+    where: { id: { in: [targetNegotiationId, sourceNegotiationId] } },
+    orderBy: { id: 'asc' },
+  });
+  assert.equal(negotiations.length, 2);
+  assert.equal(negotiations.every((negotiation) => negotiation.contactId === targetContactId), true);
+  const message = await prisma.message.findUniqueOrThrow({ where: { id: sourceMessageId } });
+  assert.equal(message.contactId, targetContactId);
+  assert.equal(message.negotiationId, sourceNegotiationId);
+
+  const audit = await prisma.auditEvent.findFirstOrThrow({
+    where: { workspaceId, action: 'contact_merged' },
+  });
+  assert.equal(audit.userId, userId);
+  assert.equal(audit.contactId, targetContactId);
+  assert.deepEqual(audit.details, { sourceContactId });
+  const outbox = await prisma.outboxEvent.findFirstOrThrow({
+    where: { workspaceId, eventType: 'contact.merged' },
+  });
+  assert.deepEqual(outbox.payload, {
+    workspaceId,
+    contactId: targetContactId,
+    sourceContactId,
+  });
+  assert.equal(JSON.stringify(outbox).includes('Mensagem fictícia'), false);
+  assert.equal(JSON.stringify(outbox).includes('Nota principal'), false);
 });

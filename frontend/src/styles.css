@@ -12,6 +12,12 @@ button, input, textarea { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 h1, h2, h3, p { margin-top: 0; }
 a { color: inherit; }
+button:focus-visible, a:focus-visible, [tabindex]:focus-visible {
+  outline: 3px solid #8ab34a;
+  outline-offset: 3px;
+}
+.skip-link { position: fixed; top: .5rem; left: .5rem; z-index: 100; padding: .65rem .85rem; border-radius: .5rem; color: #17261f; background: #c9f065; transform: translateY(-150%); }
+.skip-link:focus { transform: translateY(0); }
 
 .app-frame { display: grid; grid-template-columns: 15.5rem minmax(0, 1fr); min-height: 100vh; }
 .sidebar { position: sticky; top: 0; display: flex; flex-direction: column; height: 100vh; padding: 2rem 1.25rem 1.25rem; color: #e9f1ec; background: #17261f; }
@@ -31,6 +37,7 @@ a { color: inherit; }
 .realtime-status { grid-column: 1 / -1; display: flex; align-items: center; gap: .4rem; color: #8fa097; font-size: .68rem; }
 .realtime-status > span { width: .45rem; height: .45rem; border-radius: 50%; background: #a96e68; }
 .realtime-status.online > span { background: #c9f065; box-shadow: 0 0 .55rem rgb(201 240 101 / 55%); }
+.mobile-session { display: none; }
 
 .app-content { min-width: 0; padding: clamp(1.5rem, 4vw, 3.5rem); }
 .page-stack { display: grid; gap: 1.5rem; width: min(100%, 88rem); margin-inline: auto; }
@@ -98,6 +105,7 @@ a { color: inherit; }
 .filter-clear { grid-column: auto; min-height: 2.65rem; color: #587065; white-space: nowrap; }
 .notion-panel { overflow: hidden; }
 .notion-panel > .panel-heading > span { color: #75817a; font-size: .78rem; }
+.pagination-actions { display: flex; justify-content: center; padding-top: 1rem; }
 .notion-table { overflow-x: auto; border: 1px solid #e5e8e4; border-radius: .65rem; }
 .notion-row { display: grid; min-width: 70rem; border: 0; border-top: 1px solid #e8ebe7; color: #3e4d45; background: #fff; text-align: left; }
 .notion-row:first-child { border-top: 0; }
@@ -282,6 +290,8 @@ label { display: grid; gap: .4rem; color: #4c5b53; font-size: .8rem; font-weight
 .image-preview a { color: #496655; font-size: .72rem; font-weight: 750; }
 .media-action { display: grid; gap: .45rem; justify-items: center; }
 .media-action .button { font-size: .75rem; }
+.media-renew { grid-column: auto; color: #496655; }
+.retention-note { display: block; margin-top: .4rem; color: #7b8580; font-size: .7rem; }
 .card-actions { display: flex; grid-column: 1 / -1; justify-content: flex-end; gap: .8rem; }
 .button-link.danger { color: #994d46; }
 .button-link:disabled { opacity: .55; cursor: wait; }
@@ -332,6 +342,10 @@ label { display: grid; gap: .4rem; color: #4c5b53; font-size: .8rem; font-weight
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
+
 @media (max-width: 55rem) {
   .app-frame { grid-template-columns: 1fr; }
   .sidebar { position: static; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 1rem; height: auto; padding: 1rem; }
@@ -339,6 +353,9 @@ label { display: grid; gap: .4rem; color: #4c5b53; font-size: .8rem; font-weight
   .sidebar nav { display: flex; overflow-x: auto; }
   .nav-link { white-space: nowrap; }
   .sidebar-user { display: none; }
+  .mobile-session { display: flex; grid-column: 1 / -1; justify-content: space-between; align-items: center; }
+  .mobile-session .realtime-status { grid-column: auto; }
+  .mobile-session .button-link { grid-column: auto; min-height: 2.5rem; padding-inline: .75rem; color: #e9f1ec; }
   .metric-grid { grid-template-columns: 1fr; }
   .home-priorities, .function-grid { grid-template-columns: 1fr; }
   .compact-table a { grid-template-columns: 1fr; }

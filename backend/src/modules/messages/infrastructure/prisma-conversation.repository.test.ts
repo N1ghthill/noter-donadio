@@ -118,6 +118,7 @@ test('lista conversas por início e expõe classificação mais recente sem apli
 
   const result = await new PrismaConversationRepository(prisma).list(workspaceId, {
     limit: 20,
+    offset: 0,
     startedFrom: new Date('2026-07-29T00:00:00.000Z'),
     startedTo: new Date('2026-07-30T00:00:00.000Z'),
     stage: 'lead',

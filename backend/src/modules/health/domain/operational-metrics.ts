@@ -14,6 +14,7 @@ type QueueName = typeof QUEUE_NAMES[number];
 type QueueState = typeof QUEUE_STATES[number];
 
 export interface OperationalMetricsSnapshot {
+  readonly pipelinesEnabled: Readonly<Record<'media_download' | 'transcription' | 'analysis', boolean>>;
   readonly outbox: Readonly<Record<OutboxStatus, number>>;
   readonly mediaDownloads: Readonly<Record<ProcessingState, number>>;
   readonly transcriptions: Readonly<Record<ProcessingState, number>>;
@@ -53,6 +54,11 @@ export function renderPrometheusMetrics(snapshot: OperationalMetricsSnapshot): s
     `noter_oldest_pending_age_seconds{pipeline="media_download"} ${formatNumber(snapshot.oldestPendingMediaDownloadAgeSeconds)}`,
     `noter_oldest_pending_age_seconds{pipeline="transcription"} ${formatNumber(snapshot.oldestPendingTranscriptionAgeSeconds)}`,
     `noter_oldest_pending_age_seconds{pipeline="analysis"} ${formatNumber(snapshot.oldestPendingAnalysisAgeSeconds)}`,
+    '# HELP noter_pipeline_enabled Whether processing is intentionally enabled for a pipeline.',
+    '# TYPE noter_pipeline_enabled gauge',
+    ...Object.entries(snapshot.pipelinesEnabled).map(([pipeline, enabled]) => (
+      `noter_pipeline_enabled{pipeline="${pipeline}"} ${enabled ? 1 : 0}`
+    )),
     '# HELP noter_queue_jobs Number of BullMQ jobs by queue and state.',
     '# TYPE noter_queue_jobs gauge',
     ...QUEUE_NAMES.flatMap((queue) => QUEUE_STATES.map((state) => (

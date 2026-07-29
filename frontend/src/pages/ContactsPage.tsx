@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 
-import { api } from '../api/client.js';
+import { ApiError, api } from '../api/client.js';
 import { EmptyState, ErrorState, LoadingState } from '../components/Feedback.js';
 import { formatDate } from '../lib/format.js';
 import type { Contact } from '../types/api.js';
@@ -15,11 +15,20 @@ export function ContactsPage() {
   const [error, setError] = useState<string>();
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string>();
+  const [mergingId, setMergingId] = useState<string>();
+  const [nextOffset, setNextOffset] = useState<number | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const load = useCallback(async (term = search) => {
+  const load = useCallback(async (term = search, offset = 0, append = false) => {
     setError(undefined);
     try {
-      setContacts((await api.contacts(term.trim() || undefined)).data);
+      const response = await api.contacts(term.trim() || undefined, { limit: 50, offset });
+      setContacts((current) => append && current
+        ? [...current, ...response.data.filter((contact) => (
+            !current.some((existing) => existing.id === contact.id)
+          ))]
+        : response.data);
+      setNextOffset(response.meta.nextOffset);
     } catch {
       setError('Não foi possível carregar os contatos.');
     }
@@ -54,8 +63,10 @@ export function ContactsPage() {
       setEditing(undefined);
       setSearch('');
       await load('');
-    } catch {
-      setError(`Não foi possível ${editing ? 'atualizar' : 'cadastrar'} o contato. Confira os dados e tente novamente.`);
+    } catch (caught: unknown) {
+      setError(caught instanceof ApiError && caught.code === 'contact_phone_exists'
+        ? 'Já existe um contato com este telefone. Localize-o antes de criar outro.'
+        : `Não foi possível ${editing ? 'atualizar' : 'cadastrar'} o contato. Confira os dados e tente novamente.`);
     } finally {
       setSaving(false);
     }
@@ -79,6 +90,35 @@ export function ContactsPage() {
       setError('Não foi possível excluir o contato. Tente novamente.');
     } finally {
       setDeletingId(undefined);
+    }
+  }
+
+  async function loadMore(): Promise<void> {
+    if (nextOffset === null) return;
+    setLoadingMore(true);
+    await load(search, nextOffset, true);
+    setLoadingMore(false);
+  }
+
+  async function merge(target: Contact, source: Contact): Promise<void> {
+    if (!window.confirm(
+      `Consolidar "${source.displayName}" em "${target.displayName}"? Mensagens, arquivos e negociações serão preservados no contato mantido.`,
+    )) return;
+    setMergingId(source.id);
+    setError(undefined);
+    try {
+      await api.mergeContacts(target.id, source.id);
+      if (editing?.id === source.id) {
+        setEditing(undefined);
+        setShowForm(false);
+      }
+      await load();
+    } catch (caught: unknown) {
+      setError(caught instanceof ApiError && caught.code === 'contact_merge_conflict'
+        ? 'A consolidação exige o mesmo telefone e no máximo uma negociação ativa entre os dois contatos.'
+        : 'Não foi possível consolidar os contatos.');
+    } finally {
+      setMergingId(undefined);
     }
   }
 
@@ -121,6 +161,23 @@ export function ContactsPage() {
                 <div className="tag-list">{contact.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
                 <small>{formatDate(contact.lastInteractionAt)}</small>
                 <div className="card-actions">
+                  {contacts.find((candidate) => (
+                    candidate.id !== contact.id && candidate.phoneNumber === contact.phoneNumber
+                  )) ? (
+                    <button
+                      className="button-link"
+                      type="button"
+                      disabled={Boolean(deletingId || mergingId)}
+                      onClick={() => {
+                        const source = contacts.find((candidate) => (
+                          candidate.id !== contact.id && candidate.phoneNumber === contact.phoneNumber
+                        ));
+                        if (source) void merge(contact, source);
+                      }}
+                    >
+                      {mergingId ? 'Consolidando…' : 'Manter este e consolidar duplicado'}
+                    </button>
+                  ) : null}
                   <button className="button-link" type="button" disabled={Boolean(deletingId)} onClick={() => { setEditing(contact); setShowForm(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Editar</button>
                   <button className="button-link danger" type="button" disabled={Boolean(deletingId)} onClick={() => void remove(contact)}>
                     {deletingId === contact.id ? 'Excluindo…' : 'Excluir'}
@@ -130,6 +187,13 @@ export function ContactsPage() {
             ))}
           </div>
         )}
+        {nextOffset !== null ? (
+          <div className="pagination-actions">
+            <button className="button secondary" type="button" disabled={loadingMore} onClick={() => void loadMore()}>
+              {loadingMore ? 'Carregando…' : 'Carregar mais contatos'}
+            </button>
+          </div>
+        ) : null}
       </section>
     </div>
   );

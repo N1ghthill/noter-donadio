@@ -52,8 +52,15 @@ export interface NegotiationDetailView extends NegotiationView {
       readonly mimeType: string | null;
       readonly fileName: string | null;
       readonly playbackAvailable: boolean;
+      readonly retentionUntil: string | null;
     } | null;
   }[];
+  readonly messagesPage: {
+    readonly limit: number;
+    readonly offset: number;
+    readonly hasMore: boolean;
+    readonly nextOffset: number | null;
+  };
   readonly analyses: readonly {
     readonly id: string;
     readonly state: ProcessingState;
@@ -86,7 +93,7 @@ export interface NegotiationDetailView extends NegotiationView {
 
 export interface AuditEventView {
   readonly id: string;
-  readonly action: 'contact_created' | 'contact_updated' | 'contact_deleted' | 'negotiation_created' | 'negotiation_updated' | 'negotiation_stage_changed' | 'negotiation_follow_up_completed' | 'analysis_accepted' | 'analysis_ignored' | 'workspace_exported' | 'whatsapp_auth_reset';
+  readonly action: 'contact_created' | 'contact_updated' | 'contact_deleted' | 'contact_merged' | 'negotiation_created' | 'negotiation_updated' | 'negotiation_stage_changed' | 'negotiation_follow_up_completed' | 'analysis_accepted' | 'analysis_ignored' | 'workspace_exported' | 'whatsapp_auth_reset';
   readonly actorDisplayName: string;
   readonly changedFields: readonly string[];
   readonly previousVersion: number | null;
@@ -118,6 +125,8 @@ export class CrmDecisionConflictError extends Error {}
 export class CrmTagLimitError extends Error {}
 export class CrmCloseReasonRequiredError extends Error {}
 export class CrmNoNextActionError extends Error {}
+export class CrmContactMergeConflictError extends Error {}
+export class CrmContactPhoneExistsError extends Error {}
 
 export interface NegotiationListFilters {
   readonly stage?: NegotiationStage | undefined;
@@ -125,6 +134,7 @@ export interface NegotiationListFilters {
   readonly activeOnly?: boolean | undefined;
   readonly search?: string | undefined;
   readonly limit: number;
+  readonly offset: number;
 }
 
 export interface DashboardView {
@@ -148,7 +158,12 @@ export interface DashboardView {
 
 export interface CrmRepository {
   getDashboard(workspaceId: string, periodDays: 30 | 90 | 365): Promise<DashboardView>;
-  listContacts(workspaceId: string, search: string | undefined, limit: number): Promise<ContactView[]>;
+  listContacts(
+    workspaceId: string,
+    search: string | undefined,
+    limit: number,
+    offset: number,
+  ): Promise<ContactView[]>;
   createContact(input: {
     workspaceId: string;
     userId: string;
@@ -165,6 +180,12 @@ export interface CrmRepository {
     phoneNumber?: string | undefined;
     tags?: readonly string[] | undefined;
     notes?: string | null | undefined;
+  }): Promise<ContactView>;
+  mergeContacts(input: {
+    workspaceId: string;
+    userId: string;
+    targetContactId: string;
+    sourceContactId: string;
   }): Promise<ContactView>;
   listNegotiations(workspaceId: string, filters: NegotiationListFilters): Promise<NegotiationView[]>;
   createNegotiation(input: {
@@ -184,6 +205,8 @@ export interface CrmRepository {
     workspaceId: string,
     negotiationId: string,
     messageScope?: 'negotiation' | 'contact',
+    messageLimit?: number,
+    messageOffset?: number,
   ): Promise<NegotiationDetailView>;
   updateNegotiation(input: {
     workspaceId: string;

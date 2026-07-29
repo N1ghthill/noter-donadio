@@ -42,7 +42,8 @@ groups:
           runbook: docs/operations/observability.md#outbox-atrasado-ou-com-falha
 
       - alert: NoterProcessingBacklogWarning
-        expr: noter_oldest_pending_age_seconds{pipeline=~"media_download|transcription|analysis"} > 600
+        expr: (noter_oldest_pending_age_seconds{pipeline=~"media_download|transcription|analysis"} > 600)
+          and on(pipeline) (noter_pipeline_enabled == 1)
         for: 5m
         labels:
           severity: warning
@@ -53,7 +54,8 @@ groups:
           runbook: docs/operations/observability.md#transcricao-ou-analise-atrasada
 
       - alert: NoterProcessingBacklogCritical
-        expr: noter_oldest_pending_age_seconds{pipeline=~"media_download|transcription|analysis"} > 1800
+        expr: (noter_oldest_pending_age_seconds{pipeline=~"media_download|transcription|analysis"} > 1800)
+          and on(pipeline) (noter_pipeline_enabled == 1)
         for: 5m
         labels:
           severity: critical

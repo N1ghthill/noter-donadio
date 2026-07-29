@@ -31,16 +31,17 @@ export function registerMediaRoutes(
         occurredFrom: z.coerce.date().optional(),
         occurredTo: z.coerce.date().optional(),
         limit: z.coerce.number().int().min(1).max(200).default(100),
+        offset: z.coerce.number().int().min(0).max(100_000).default(0),
       }).strict().refine(
         (value) => !value.occurredFrom || !value.occurredTo || value.occurredFrom < value.occurredTo,
         { message: 'invalid_date_range' },
       ).safeParse(request.query);
       if (!query.success) return reply.code(400).send({ error: 'invalid_request' });
       reply.header('cache-control', 'no-store');
-      return {
-        data: await contactFileRepository.list({
+      const files = await contactFileRepository.list({
           workspaceId,
-          limit: query.data.limit,
+          limit: query.data.limit + 1,
+          offset: query.data.offset,
           now: new Date(),
           ...(query.data.contactId ? { contactId: query.data.contactId } : {}),
           ...(query.data.search ? { search: query.data.search } : {}),
@@ -48,7 +49,16 @@ export function registerMediaRoutes(
           ...(query.data.direction ? { direction: query.data.direction } : {}),
           ...(query.data.occurredFrom ? { occurredFrom: query.data.occurredFrom } : {}),
           ...(query.data.occurredTo ? { occurredTo: query.data.occurredTo } : {}),
-        }),
+        });
+      const hasMore = files.length > query.data.limit;
+      return {
+        data: files.slice(0, query.data.limit),
+        meta: {
+          limit: query.data.limit,
+          offset: query.data.offset,
+          hasMore,
+          nextOffset: hasMore ? query.data.offset + query.data.limit : null,
+        },
       };
     });
   }

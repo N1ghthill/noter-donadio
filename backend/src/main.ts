@@ -38,7 +38,15 @@ const contactDeletionService = new ContactDeletionService(
   mediaStorage,
 );
 const readinessProbe = new DependencyReadinessProbe(prisma, environment.REDIS_URL);
-const metricsCollector = new PrismaBullMqOperationalMetricsCollector(prisma, environment.REDIS_URL);
+const metricsCollector = new PrismaBullMqOperationalMetricsCollector(
+  prisma,
+  environment.REDIS_URL,
+  undefined,
+  {
+    transcriptionEnabled: environment.TRANSCRIPTION_FEATURE_ENABLED,
+    analysisEnabled: environment.AI_ANALYSIS_FEATURE_ENABLED,
+  },
+);
 const demoMessageService = environment.WHATSAPP_ADAPTER === 'fake'
   ? new DemoMessageService(
       new PrismaConnectedWhatsappAccountRepository(prisma),

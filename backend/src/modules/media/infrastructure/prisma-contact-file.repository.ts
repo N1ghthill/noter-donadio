@@ -13,6 +13,7 @@ export class PrismaContactFileRepository implements ContactFileRepository {
     occurredFrom?: Date | undefined;
     occurredTo?: Date | undefined;
     limit: number;
+    offset: number;
     now: Date;
   }) {
     const media = await this.prisma.mediaAsset.findMany({
@@ -49,6 +50,7 @@ export class PrismaContactFileRepository implements ContactFileRepository {
         durationSeconds: true,
         originalFileName: true,
         transcriptionState: true,
+        retentionUntil: true,
         message: {
           select: {
             contactId: true,
@@ -63,6 +65,7 @@ export class PrismaContactFileRepository implements ContactFileRepository {
       },
       orderBy: { message: { occurredAt: 'desc' } },
       take: input.limit,
+      skip: input.offset,
     });
 
     return media.flatMap((item) => {
@@ -80,6 +83,7 @@ export class PrismaContactFileRepository implements ContactFileRepository {
       fileSizeBytes: item.fileSizeBytes?.toString() ?? null,
       durationSeconds: item.durationSeconds,
       transcriptionState: item.transcriptionState,
+      retentionUntil: item.retentionUntil?.toISOString() ?? null,
       caption: item.message.content,
       occurredAt: item.message.occurredAt.toISOString(),
       }];

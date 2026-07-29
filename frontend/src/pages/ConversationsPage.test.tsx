@@ -20,7 +20,10 @@ describe('caixa de conversas', () => {
         audioTranscriptionEnabled: true,
         messageAnalysisEnabled: true,
       });
-      if (url.startsWith('/api/conversations?')) return response({ data: [conversation] });
+      if (url.startsWith('/api/conversations?')) return response({
+        data: [conversation],
+        meta: { limit: 50, offset: 0, hasMore: false, nextOffset: null },
+      });
       if (url === '/api/negotiations/deal-1?messageScope=contact') return response(detail);
       if (url === '/api/whatsapp/demo/messages' && init?.method === 'POST') {
         return response({ messageId: 'message-2', contactId: 'contact-1', negotiationId: 'deal-1', duplicate: false }, 201);
@@ -136,7 +139,10 @@ describe('caixa de conversas', () => {
         audioTranscriptionEnabled: false,
         messageAnalysisEnabled: false,
       });
-      if (url.startsWith('/api/conversations?')) return response({ data: [conversation] });
+      if (url.startsWith('/api/conversations?')) return response({
+        data: [conversation],
+        meta: { limit: 50, offset: 0, hasMore: false, nextOffset: null },
+      });
       if (url === '/api/negotiations/deal-1?messageScope=contact') return response(mediaDetail);
       return response({ error: 'not_found' }, 404);
     }));
@@ -198,6 +204,7 @@ const detail = {
     id: 'message-1', direction: 'inbound', messageType: 'text', content: 'Histórico preservado.',
     occurredAt: '2026-07-21T12:00:00.000Z', media: null,
   }],
+  messagesPage: { limit: 50, offset: 0, hasMore: false, nextOffset: null },
   analyses: [],
 };
 

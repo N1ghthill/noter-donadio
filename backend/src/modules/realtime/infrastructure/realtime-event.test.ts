@@ -39,6 +39,22 @@ test('evento de exclusão carrega somente identificadores para reconciliação',
   });
 });
 
+test('evento de mesclagem carrega somente os identificadores reconciliáveis', () => {
+  const event = parseRealtimeEvent('contact.merged', {
+    workspaceId: WORKSPACE_ID,
+    contactId: '3a3db76b-c51a-4584-ab4b-6d3e70952e44',
+    sourceContactId: '65d36874-08db-4ced-a22f-4043e75f27df',
+    displayName: 'Não deve atravessar o evento',
+    phoneNumber: '5571999999999',
+  });
+  assert.deepEqual(event, {
+    type: 'contact.merged',
+    workspaceId: WORKSPACE_ID,
+    contactId: '3a3db76b-c51a-4584-ab4b-6d3e70952e44',
+    sourceContactId: '65d36874-08db-4ced-a22f-4043e75f27df',
+  });
+});
+
 test('evento de criação de negociação descarta campos comerciais adicionais', () => {
   const event = parseRealtimeEvent('negotiation.created', {
     workspaceId: '0e723f84-ec81-441e-b816-f3f179f25fe2',

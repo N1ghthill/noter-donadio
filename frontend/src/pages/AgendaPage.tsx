@@ -21,16 +21,25 @@ export function AgendaPage() {
   const [error, setError] = useState<string>();
   const [busyId, setBusyId] = useState<string>();
   const [editingId, setEditingId] = useState<string>();
+  const [nextOffset, setNextOffset] = useState<number | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (offset = 0, append = false) => {
     setError(undefined);
     try {
       const response = await api.negotiations({
         activeOnly: true,
         ...(followUp !== 'all' ? { followUp } : {}),
         ...(search.trim() ? { search: search.trim() } : {}),
+        limit: 100,
+        offset,
       });
-      setTasks(response.data);
+      setTasks((current) => append && current
+        ? [...current, ...response.data.filter((task) => (
+            !current.some((existing) => existing.id === task.id)
+          ))]
+        : response.data);
+      setNextOffset(response.meta.nextOffset);
     } catch {
       setError('Não foi possível carregar a agenda.');
     }
@@ -73,6 +82,13 @@ export function AgendaPage() {
     setFollowUp('all');
     setSearchDraft('');
     setSearch('');
+  }
+
+  async function loadMore(): Promise<void> {
+    if (nextOffset === null) return;
+    setLoadingMore(true);
+    await load(nextOffset, true);
+    setLoadingMore(false);
   }
 
   if (!tasks && error) return <ErrorState message={error} retry={() => void load()} />;
@@ -141,6 +157,13 @@ export function AgendaPage() {
             ))}
           </div>
         )}
+        {nextOffset !== null ? (
+          <div className="pagination-actions">
+            <button className="button secondary" type="button" disabled={loadingMore} onClick={() => void loadMore()}>
+              {loadingMore ? 'Carregando…' : 'Carregar mais tarefas'}
+            </button>
+          </div>
+        ) : null}
       </section>
     </div>
   );

@@ -21,6 +21,7 @@ export function AppShell() {
 
   return (
     <div className="app-frame">
+      <a className="skip-link" href="#main-content">Ir para o conteúdo principal</a>
       <aside className="sidebar">
         <div>
           <p className="brand-mark">n.</p>
@@ -51,8 +52,16 @@ export function AppShell() {
             <span aria-hidden="true" />{realtime.connected ? 'Tempo real ativo' : 'Reconectando…'}
           </span>
         </div>
+        <div className="mobile-session">
+          <span className={`realtime-status${realtime.connected ? ' online' : ''}`}>
+            <span aria-hidden="true" />{realtime.connected ? 'Tempo real ativo' : 'Reconectando…'}
+          </span>
+          <button className="button-link" type="button" onClick={() => void auth.logout()}>
+            Sair
+          </button>
+        </div>
       </aside>
-      <main className="app-content">
+      <main className="app-content" id="main-content">
         <Outlet />
       </main>
     </div>

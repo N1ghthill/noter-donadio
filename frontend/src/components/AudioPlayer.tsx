@@ -37,7 +37,17 @@ export function AudioPlayer(props: { messageId: string; playbackAvailable: boole
 
   return (
     <div className="audio-player">
-      <audio controls preload="metadata" src={source}>Seu navegador não oferece reprodução de áudio.</audio>
+      <audio
+        controls
+        preload="metadata"
+        src={source}
+        onError={() => {
+          setSource(undefined);
+          setError('O acesso ao áudio expirou. Carregue-o novamente.');
+        }}
+      >
+        Seu navegador não oferece reprodução de áudio.
+      </audio>
       {error ? <small className="inline-error" role="alert">{error}</small> : null}
     </div>
   );

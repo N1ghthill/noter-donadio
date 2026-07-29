@@ -5,6 +5,8 @@ import { normalizePhoneNumber } from '../../../shared/domain/phone.js';
 import {
   CrmConflictError,
   CrmCloseReasonRequiredError,
+  CrmContactMergeConflictError,
+  CrmContactPhoneExistsError,
   CrmDecisionConflictError,
   CrmNotFoundError,
   CrmNoNextActionError,
@@ -89,7 +91,12 @@ export class PrismaCrmRepository implements CrmRepository {
     };
   }
 
-  public async listContacts(workspaceId: string, search: string | undefined, limit: number) {
+  public async listContacts(
+    workspaceId: string,
+    search: string | undefined,
+    limit: number,
+    offset: number,
+  ) {
     const phoneSearch = search ? normalizeSearchPhone(search) : '';
     const contacts = await this.prisma.contact.findMany({
       where: {
@@ -105,6 +112,7 @@ export class PrismaCrmRepository implements CrmRepository {
       },
       orderBy: [{ lastInteractionAt: 'desc' }, { displayName: 'asc' }],
       take: limit,
+      skip: offset,
     });
     return contacts.map(toContactView);
   }
@@ -118,11 +126,22 @@ export class PrismaCrmRepository implements CrmRepository {
     notes?: string | undefined;
   }) {
     return this.prisma.$transaction(async (transaction) => {
+      const phoneNumber = normalizePhoneNumber(input.phoneNumber);
+      await transaction.$executeRaw(Prisma.sql`
+        SELECT pg_advisory_xact_lock(
+          hashtextextended(${`${input.workspaceId}:${phoneNumber}`}, 0)
+        )
+      `);
+      const existing = await transaction.contact.findFirst({
+        where: { workspaceId: input.workspaceId, phoneNumber },
+        select: { id: true },
+      });
+      if (existing) throw new CrmContactPhoneExistsError();
       const contact = await transaction.contact.create({
         data: {
           workspaceId: input.workspaceId,
           displayName: input.displayName,
-          phoneNumber: normalizePhoneNumber(input.phoneNumber),
+          phoneNumber,
           tags: [...input.tags],
           notes: input.notes ?? null,
           source: 'manual',
@@ -161,6 +180,25 @@ export class PrismaCrmRepository implements CrmRepository {
         select: { id: true },
       });
       if (!current) throw new CrmNotFoundError();
+      const phoneNumber = input.phoneNumber !== undefined
+        ? normalizePhoneNumber(input.phoneNumber)
+        : undefined;
+      if (phoneNumber !== undefined) {
+        await transaction.$executeRaw(Prisma.sql`
+          SELECT pg_advisory_xact_lock(
+            hashtextextended(${`${input.workspaceId}:${phoneNumber}`}, 0)
+          )
+        `);
+        const existing = await transaction.contact.findFirst({
+          where: {
+            workspaceId: input.workspaceId,
+            phoneNumber,
+            id: { not: input.contactId },
+          },
+          select: { id: true },
+        });
+        if (existing) throw new CrmContactPhoneExistsError();
+      }
 
       const changedFields = [
         input.displayName !== undefined ? 'displayName' : undefined,
@@ -173,7 +211,7 @@ export class PrismaCrmRepository implements CrmRepository {
         where: { id: input.contactId },
         data: {
           ...(input.displayName !== undefined ? { displayName: input.displayName } : {}),
-          ...(input.phoneNumber !== undefined ? { phoneNumber: normalizePhoneNumber(input.phoneNumber) } : {}),
+          ...(phoneNumber !== undefined ? { phoneNumber } : {}),
           ...(input.tags !== undefined ? { tags: [...input.tags] } : {}),
           ...(input.notes !== undefined ? { notes: input.notes } : {}),
         },
@@ -198,6 +236,99 @@ export class PrismaCrmRepository implements CrmRepository {
       });
       return toContactView(contact);
     });
+  }
+
+  public async mergeContacts(input: {
+    workspaceId: string;
+    userId: string;
+    targetContactId: string;
+    sourceContactId: string;
+  }) {
+    return this.prisma.$transaction(async (transaction) => {
+      const contactIds = [input.targetContactId, input.sourceContactId].toSorted();
+      const locked = await transaction.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+        SELECT id
+        FROM contacts
+        WHERE workspace_id = ${input.workspaceId}::uuid
+          AND id IN (${Prisma.join(contactIds.map((id) => Prisma.sql`${id}::uuid`))})
+        ORDER BY id
+        FOR UPDATE
+      `);
+      if (locked.length !== 2) throw new CrmNotFoundError();
+
+      const [target, source] = await Promise.all([
+        transaction.contact.findUniqueOrThrow({ where: { id: input.targetContactId } }),
+        transaction.contact.findUniqueOrThrow({ where: { id: input.sourceContactId } }),
+      ]);
+      if (target.phoneNumber !== source.phoneNumber) throw new CrmContactMergeConflictError();
+      const activeNegotiations = await transaction.negotiation.count({
+        where: {
+          workspaceId: input.workspaceId,
+          contactId: { in: [target.id, source.id] },
+          stage: { notIn: ['closed_won', 'closed_lost'] },
+        },
+      });
+      if (activeNegotiations > 1) throw new CrmContactMergeConflictError();
+
+      const tags = [...new Set([...target.tags, ...source.tags])];
+      if (tags.length > 20) throw new CrmTagLimitError();
+      const jid = preferredContactJid(target.jid, source.jid);
+      const notes = mergedContactNotes(target.notes, source.notes);
+      const metadata = mergedContactMetadata(target.metadata, source.metadata, source.id, source.displayName);
+
+      await transaction.contact.update({
+        where: { id: source.id },
+        data: { jid: null },
+      });
+      await transaction.message.updateMany({
+        where: { workspaceId: input.workspaceId, contactId: source.id },
+        data: { contactId: target.id },
+      });
+      await transaction.negotiation.updateMany({
+        where: { workspaceId: input.workspaceId, contactId: source.id },
+        data: { contactId: target.id },
+      });
+      await transaction.auditEvent.updateMany({
+        where: { workspaceId: input.workspaceId, contactId: source.id },
+        data: { contactId: target.id },
+      });
+      const merged = await transaction.contact.update({
+        where: { id: target.id },
+        data: {
+          jid,
+          tags,
+          notes,
+          metadata,
+          profilePictureUrl: target.profilePictureUrl ?? source.profilePictureUrl,
+          lastInteractionAt: latestDate(target.lastInteractionAt, source.lastInteractionAt),
+        },
+      });
+      await transaction.contact.delete({ where: { id: source.id } });
+      await transaction.auditEvent.create({
+        data: {
+          workspaceId: input.workspaceId,
+          userId: input.userId,
+          contactId: target.id,
+          action: 'contact_merged',
+          changedFields: ['messages', 'negotiations', 'tags', 'notes'],
+          details: { sourceContactId: source.id },
+        },
+      });
+      await transaction.outboxEvent.create({
+        data: {
+          workspaceId: input.workspaceId,
+          aggregateType: 'contact',
+          aggregateId: target.id,
+          eventType: 'contact.merged',
+          payload: {
+            workspaceId: input.workspaceId,
+            contactId: target.id,
+            sourceContactId: source.id,
+          },
+        },
+      });
+      return toContactView(merged);
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
   public async listNegotiations(workspaceId: string, filters: NegotiationListFilters) {
@@ -233,6 +364,7 @@ export class PrismaCrmRepository implements CrmRepository {
       },
       orderBy: [{ stage: 'asc' }, { priority: 'desc' }, { updatedAt: 'desc' }],
       take: filters.limit,
+      skip: filters.offset,
     });
     return negotiations.map(toNegotiationView);
   }
@@ -326,6 +458,8 @@ export class PrismaCrmRepository implements CrmRepository {
     workspaceId: string,
     negotiationId: string,
     messageScope: 'negotiation' | 'contact' = 'negotiation',
+    messageLimit = 100,
+    messageOffset = 0,
   ): Promise<NegotiationDetailView> {
     const now = new Date();
     const negotiation = await this.prisma.negotiation.findFirst({
@@ -334,7 +468,8 @@ export class PrismaCrmRepository implements CrmRepository {
         contact: true,
         messages: {
           orderBy: { occurredAt: 'desc' },
-          take: 100,
+          take: messageLimit + 1,
+          skip: messageOffset,
           include: { mediaAsset: true },
         },
         aiAnalyses: {
@@ -357,7 +492,8 @@ export class PrismaCrmRepository implements CrmRepository {
             contact: { phoneNumber: negotiation.contact.phoneNumber },
           },
           orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
-          take: 100,
+          take: messageLimit + 1,
+          skip: messageOffset,
           include: { mediaAsset: true },
         })
       : negotiation.messages;
@@ -366,7 +502,7 @@ export class PrismaCrmRepository implements CrmRepository {
         workspaceId,
         OR: [{ negotiationId }, { contactId: negotiation.contactId }],
         action: { in: [
-          'contact_created', 'contact_updated', 'contact_deleted', 'negotiation_created',
+          'contact_created', 'contact_updated', 'contact_deleted', 'contact_merged', 'negotiation_created',
           'negotiation_updated', 'negotiation_stage_changed', 'negotiation_follow_up_completed',
           'analysis_accepted', 'analysis_ignored',
         ] },
@@ -387,7 +523,7 @@ export class PrismaCrmRepository implements CrmRepository {
       nextActionConfirmedAt: negotiation.nextActionConfirmedAt?.toISOString() ?? null,
       nextActionDueDateConfirmedAt: negotiation.nextActionDueDateConfirmedAt?.toISOString() ?? null,
       contact: toContactView(negotiation.contact),
-      messages: conversationMessages.toReversed().map((message) => ({
+      messages: conversationMessages.slice(0, messageLimit).toReversed().map((message) => ({
         id: message.id,
         direction: message.direction,
         messageType: message.messageType,
@@ -404,8 +540,17 @@ export class PrismaCrmRepository implements CrmRepository {
             && !message.mediaAsset.removedAt
             && (!message.mediaAsset.retentionUntil || message.mediaAsset.retentionUntil > now),
           ),
+          retentionUntil: message.mediaAsset.retentionUntil?.toISOString() ?? null,
         } : null,
       })),
+      messagesPage: {
+        limit: messageLimit,
+        offset: messageOffset,
+        hasMore: conversationMessages.length > messageLimit,
+        nextOffset: conversationMessages.length > messageLimit
+          ? messageOffset + messageLimit
+          : null,
+      },
       analyses: negotiation.aiAnalyses.map((analysis) => ({
         id: analysis.id,
         state: analysis.state,
@@ -984,6 +1129,51 @@ function isNegotiationStage(value: unknown): value is NegotiationStage {
 
 function normalizeSearchPhone(search: string): string {
   return search.replace(/\D/g, '');
+}
+
+function preferredContactJid(first: string | null, second: string | null): string | null {
+  const candidates = [first, second].filter((value): value is string => value !== null);
+  return candidates.find((value) => value.endsWith('@s.whatsapp.net')) ?? candidates[0] ?? null;
+}
+
+function mergedContactNotes(target: string | null, source: string | null): string | null {
+  if (!source || source === target) return target;
+  if (!target) return source;
+  return `${target}\n\n--- Contato consolidado ---\n\n${source}`;
+}
+
+function mergedContactMetadata(
+  target: Prisma.JsonValue,
+  source: Prisma.JsonValue,
+  sourceContactId: string,
+  sourceDisplayName: string,
+): Prisma.InputJsonObject {
+  const targetObject = jsonObject(target);
+  const sourceObject = jsonObject(source);
+  const previousIds = Array.isArray(targetObject.mergedContactIds)
+    ? targetObject.mergedContactIds.filter((value): value is string => typeof value === 'string')
+    : [];
+  const previousAliases = Array.isArray(targetObject.mergedContactAliases)
+    ? targetObject.mergedContactAliases.filter((value): value is string => typeof value === 'string')
+    : [];
+  return {
+    ...sourceObject,
+    ...targetObject,
+    mergedContactIds: [...new Set([...previousIds, sourceContactId])],
+    mergedContactAliases: [...new Set([...previousAliases, sourceDisplayName])],
+  };
+}
+
+function jsonObject(value: Prisma.JsonValue): Prisma.JsonObject {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? value
+    : {};
+}
+
+function latestDate(first: Date | null, second: Date | null): Date | null {
+  if (!first) return second;
+  if (!second) return first;
+  return first > second ? first : second;
 }
 
 function toContactView(contact: {

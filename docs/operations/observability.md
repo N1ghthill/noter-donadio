@@ -45,6 +45,11 @@ curl --fail --silent 'http://127.0.0.1:9090/api/v1/query?query=up%7Bjob%3D%22not
 
 O alvo `noter-backend` deve aparecer como `UP`, o Prometheus deve mostrar o Alertmanager como ativo em **Status > Runtime & Build Information**, o dashboard **noter.donadio — Operação** deve existir na pasta **noter.donadio** e `/api/internal/metrics` deve continuar inacessível pelo proxy público. O Grafana provisiona Prometheus e Alertmanager como datasources não editáveis; alertas gerenciados pelo próprio Grafana não são encaminhados automaticamente.
 
+`noter_pipeline_enabled{pipeline=...}` diferencia backlog real de uma
+capacidade deliberadamente desligada. As regras de atraso de transcrição e
+análise só disparam quando o indicador vale `1`; desligar OpenAI não oculta as
+mensagens originais nem produz falso incidente.
+
 Valide configuração e regras sem iniciar a stack:
 
 ```bash

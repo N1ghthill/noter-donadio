@@ -133,6 +133,7 @@ test('catálogo de arquivos usa workspace da sessão e filtros validados', async
         fileSizeBytes: '1024',
         durationSeconds: 3,
         transcriptionState: 'pending',
+        retentionUntil: '2026-08-29T12:00:00.000Z',
         caption: null,
         occurredAt: '2026-07-29T12:00:00.000Z',
       }];
@@ -165,7 +166,8 @@ test('catálogo de arquivos usa workspace da sessão e filtros validados', async
   assert.equal(received?.direction, 'inbound');
   assert.deepEqual(received?.occurredFrom, new Date('2026-07-29T00:00:00.000Z'));
   assert.deepEqual(received?.occurredTo, new Date('2026-07-30T00:00:00.000Z'));
-  assert.equal(received?.limit, 20);
+  assert.equal(received?.limit, 21);
+  assert.equal(received?.offset, 0);
   assert.ok(received?.now instanceof Date);
   assert.doesNotMatch(response.body, /storageKey|storage_key/);
   assert.equal((await app.inject({

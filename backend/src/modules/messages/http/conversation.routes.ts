@@ -28,6 +28,7 @@ export function registerConversationRoutes(
     if (!workspaceId) return reply.code(401).send({ error: 'unauthorized' });
     const query = z.object({
       limit: z.coerce.number().int().min(1).max(100).default(50),
+      offset: z.coerce.number().int().min(0).max(100_000).default(0),
       startedFrom: z.iso.datetime({ offset: true }).optional(),
       startedTo: z.iso.datetime({ offset: true }).optional(),
       stage: stageSchema.optional(),
@@ -37,15 +38,24 @@ export function registerConversationRoutes(
       !value.startedFrom || !value.startedTo || value.startedFrom < value.startedTo
     )).safeParse(request.query);
     if (!query.success) return reply.code(400).send({ error: 'invalid_request' });
-    return {
-      data: await options.repository.list(workspaceId, {
-        limit: query.data.limit,
+    const conversations = await options.repository.list(workspaceId, {
+        limit: query.data.limit + 1,
+        offset: query.data.offset,
         ...(query.data.startedFrom ? { startedFrom: new Date(query.data.startedFrom) } : {}),
         ...(query.data.startedTo ? { startedTo: new Date(query.data.startedTo) } : {}),
         ...(query.data.stage ? { stage: query.data.stage } : {}),
         ...(query.data.aiStage ? { aiStage: query.data.aiStage } : {}),
         ...(query.data.search ? { search: query.data.search } : {}),
-      }),
+      });
+    const hasMore = conversations.length > query.data.limit;
+    return {
+      data: conversations.slice(0, query.data.limit),
+      meta: {
+        limit: query.data.limit,
+        offset: query.data.offset,
+        hasMore,
+        nextOffset: hasMore ? query.data.offset + query.data.limit : null,
+      },
     };
   });
 

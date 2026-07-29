@@ -41,6 +41,7 @@ describe('detalhe da negociação', () => {
         occurredAt: '2026-07-20T18:30:00.000Z',
         media: { transcriptionState: 'completed', transcriptionText: 'Podemos agendar uma apresentação?', durationSeconds: 18, mimeType: 'audio/ogg', playbackAvailable: true },
       }],
+      messagesPage: { limit: 50, offset: 0, hasMore: false, nextOffset: null },
       analyses: [{
         id: 'analysis-1', state: 'completed', summary: 'Contato interessado.', sentiment: 'positive',
         entities: { product: 'Produto fictício', amount: '7500.25', deadline: '2026-09-30' },

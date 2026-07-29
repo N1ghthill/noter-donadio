@@ -14,7 +14,7 @@ describe('cliente HTTP', () => {
 
     await api.contacts('Ana & Cia');
 
-    expect(fetchMock).toHaveBeenCalledWith('/api/contacts?search=Ana%20%26%20Cia', expect.objectContaining({
+    expect(fetchMock).toHaveBeenCalledWith('/api/contacts?search=Ana+%26+Cia', expect.objectContaining({
       credentials: 'include',
     }));
   });
@@ -239,6 +239,24 @@ describe('cliente HTTP', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/contacts/contact-1', expect.objectContaining({
       method: 'DELETE',
       body: JSON.stringify({ confirmation: 'contact-1' }),
+    }));
+  });
+
+  it('confirma a consolidação usando somente os identificadores dos contatos', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(
+      JSON.stringify({ id: 'contact-target' }),
+      { status: 200 },
+    ));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await api.mergeContacts('contact-target', 'contact-source');
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/contacts/contact-target/merge', expect.objectContaining({
+      method: 'POST',
+      body: JSON.stringify({
+        sourceContactId: 'contact-source',
+        confirmation: 'contact-source',
+      }),
     }));
   });
 
