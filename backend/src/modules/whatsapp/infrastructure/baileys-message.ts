@@ -1,5 +1,6 @@
 import {
   extractMessageContent,
+  type MessageUpsertType,
   type WAMessage,
 } from 'baileys';
 
@@ -35,6 +36,17 @@ export function toBaileysTextEvent(message: WAMessage): BaileysTextEvent | null 
     text,
     occurredAt,
   };
+}
+
+export function shouldIngestBaileysUpsert(
+  type: MessageUpsertType,
+  message: WAMessage,
+  connectedAt: Date | undefined,
+): boolean {
+  if (type === 'notify') return true;
+  if (!connectedAt || message.key.fromMe !== true) return false;
+  const occurredAt = toDate(message.messageTimestamp);
+  return occurredAt !== null && occurredAt.getTime() >= connectedAt.getTime();
 }
 
 function toDate(value: WAMessage['messageTimestamp']): Date | null {

@@ -3,7 +3,10 @@ import test from 'node:test';
 
 import type { WAMessage } from 'baileys';
 
-import { toBaileysTextEvent } from './baileys-message.js';
+import {
+  shouldIngestBaileysUpsert,
+  toBaileysTextEvent,
+} from './baileys-message.js';
 
 test('adapta texto novo do Baileys sem carregar o envelope externo adiante', () => {
   const event = toBaileysTextEvent({
@@ -53,4 +56,23 @@ test('ignora protocolo, mídia e LID sem identidade telefônica resolvida', () =
     ...base,
     message: { audioMessage: { url: 'https://invalid.example.test/audio' } },
   } as WAMessage), null);
+});
+
+test('aceita append somente para mensagem própria posterior à conexão atual', () => {
+  const connectedAt = new Date('2026-07-28T10:39:00.000Z');
+  const recentOwnMessage = {
+    key: { fromMe: true },
+    messageTimestamp: 1_785_235_200,
+  } as WAMessage;
+  assert.equal(shouldIngestBaileysUpsert('append', recentOwnMessage, connectedAt), true);
+  assert.equal(shouldIngestBaileysUpsert('append', {
+    ...recentOwnMessage,
+    key: { fromMe: false },
+  } as WAMessage, connectedAt), false);
+  assert.equal(shouldIngestBaileysUpsert('append', {
+    ...recentOwnMessage,
+    messageTimestamp: 1_785_235_100,
+  } as WAMessage, connectedAt), false);
+  assert.equal(shouldIngestBaileysUpsert('append', recentOwnMessage, undefined), false);
+  assert.equal(shouldIngestBaileysUpsert('notify', recentOwnMessage, undefined), true);
 });

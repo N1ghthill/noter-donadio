@@ -472,3 +472,15 @@ A configuração aceita somente três inteiros separados por ponto e é passada
 explicitamente ao socket. O processo não consulta `master` do GitHub a cada
 inicialização; mudanças futuras exigem validação e atualização operacional
 consciente.
+
+## ADR-055 — Mensagem própria em `append` exige corte temporal da conexão
+
+O Baileys pode entregar mensagens enviadas pelo telefone principal como
+`append`, inclusive no autochat. Ignorar todo `append` perde mensagens
+`outbound`; aceitá-lo sem filtro importaria histórico.
+
+O conector aceita todo `notify`, mas aceita `append` somente quando
+`fromMe=true`, existe uma conexão aberta nesta execução e o horário da mensagem
+é igual ou posterior à abertura. Entregas antigas, mensagens recebidas em
+`append` e eventos anteriores ao estado conectado continuam descartados. A
+chave externa da mensagem mantém a ingestão idempotente.

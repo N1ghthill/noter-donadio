@@ -14,7 +14,10 @@ import {
 import type { PrismaBaileysAuthStateRepository } from './prisma-baileys-auth-state.repository.js';
 import type { PrismaWhatsappConnectionRepository } from './prisma-whatsapp.repository.js';
 import type { RedisBaileysControl } from './redis-baileys.gateway.js';
-import { toBaileysTextEvent } from './baileys-message.js';
+import {
+  shouldIngestBaileysUpsert,
+  toBaileysTextEvent,
+} from './baileys-message.js';
 
 const RECONNECT_DELAY_MS = 2_000;
 
@@ -28,6 +31,7 @@ export class BaileysSession {
   private generation = 0;
   private restartChain: Promise<void> = Promise.resolve();
   private stopping = false;
+  private connectedAt: Date | undefined;
 
   public constructor(
     private readonly binding: BaileysSessionBinding,
@@ -67,6 +71,7 @@ export class BaileysSession {
   private async openSocket(): Promise<void> {
     if (this.stopping) return;
     const generation = ++this.generation;
+    this.connectedAt = undefined;
     this.socket?.end(new Error('session_restarted'));
     await this.control.clearQr(this.binding.workspaceId, this.binding.accountId);
     const auth = await this.authRepository.load(this.binding);
@@ -87,8 +92,10 @@ export class BaileysSession {
       });
     });
     socket.ev.on('messages.upsert', ({ messages, type }) => {
-      if (type !== 'notify' || generation !== this.generation) return;
-      for (const message of messages) void this.ingest(message);
+      if (generation !== this.generation) return;
+      for (const message of messages) {
+        if (shouldIngestBaileysUpsert(type, message, this.connectedAt)) void this.ingest(message);
+      }
     });
     socket.ev.on('connection.update', (update) => {
       if (generation !== this.generation) return;
@@ -139,6 +146,7 @@ export class BaileysSession {
       );
     }
     if (update.connection === 'open') {
+      this.connectedAt = new Date(Math.floor(Date.now() / 1_000) * 1_000);
       await this.control.clearQr(this.binding.workspaceId, this.binding.accountId);
       const phoneNumber = phoneFromJid(socket.user?.id);
       if (phoneNumber) {
