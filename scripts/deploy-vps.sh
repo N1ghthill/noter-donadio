@@ -4,6 +4,7 @@ set -euo pipefail
 reboot_if_required=0
 enable_baileys=0
 reset_admin_password=0
+reset_workspace_data=0
 
 for argument in "$@"; do
   case "${argument}" in
@@ -15,6 +16,9 @@ for argument in "$@"; do
       ;;
     --reset-admin-password)
       reset_admin_password=1
+      ;;
+    --reset-workspace-data)
+      reset_workspace_data=1
       ;;
     *)
       printf 'Argumento desconhecido: %s\n' "${argument}" >&2
@@ -121,6 +125,17 @@ docker compose "${compose_arguments[@]}" config --quiet
 
 if test "${SKIP_BACKUP:-0}" != "1"; then
   COMPOSE_FILE="${compose_file}" scripts/backup-vps.sh
+elif test "${reset_workspace_data}" = "1"; then
+  printf '%s\n' "O reset de dados exige o snapshot automático; remova SKIP_BACKUP=1." >&2
+  exit 1
+fi
+
+if test "${reset_workspace_data}" = "1"; then
+  docker compose "${compose_arguments[@]}" --profile demo --profile assistive --profile baileys \
+    stop backend outbox realtime baileys media-download retention analysis transcription
+  CONFIRM_RESET_WORKSPACE_DATA=1 \
+  COMPOSE_FILE="${compose_file}" \
+    scripts/reset-workspace-data.sh
 fi
 
 docker compose "${compose_arguments[@]}" build backend frontend

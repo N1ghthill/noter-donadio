@@ -119,6 +119,23 @@ execute o deploy com reinicialização condicionada ao health check:
 sudo /opt/noter-donadio/scripts/deploy-vps.sh --reboot-if-required
 ```
 
+### Zerar dados de teste
+
+Para iniciar uma nova rodada de testes sem perder o login, o workspace ou a
+autenticação Baileys, use a opção explícita:
+
+```bash
+sudo /opt/noter-donadio/scripts/deploy-vps.sh --enable-baileys --reset-workspace-data
+```
+
+O deploy cria e valida primeiro o snapshot local obrigatório, interrompe os
+processos que poderiam ingerir ou processar eventos durante a operação, remove
+contatos, negociações, mensagens, mídias, análises, follow-ups e eventos
+operacionais do workspace configurado, esvazia as filas Redis e volta a subir
+os serviços. Usuários, sessões, conta do WhatsApp, chaves Baileys e eventos de
+auditoria de autenticação/exportação são preservados. `SKIP_BACKUP=1` é
+recusado junto dessa opção.
+
 A opção não reinicia a VPS quando `/var/run/reboot-required` estiver ausente.
 
 O `.env` remoto permanece fora do Git, com permissão `600`. Segredos não devem aparecer em comandos versionados, tickets ou logs. Para este perfil, mantenha:
