@@ -30,6 +30,26 @@ describe('configuração simulada do WhatsApp', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Simular leitura do QR' }));
     expect(await screen.findByRole('heading', { name: 'Conexão simulada concluída' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Iniciar configuração' })).not.toBeInTheDocument();
+    expect(screen.getByText(/Um novo QR só será necessário/)).toBeInTheDocument();
+  });
+
+  it('não oferece novo setup quando o Baileys já está conectado', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({
+      accountId: 'account-1',
+      phoneNumber: '5571000000001',
+      updatedAt: '2026-07-29T00:00:00.000Z',
+      adapter: 'baileys',
+      canSimulate: false,
+      status: 'connected',
+      qrCode: null,
+    })));
+
+    render(<RealtimeProvider><WhatsappSetupPage /></RealtimeProvider>);
+
+    expect(await screen.findByRole('heading', { name: 'WhatsApp conectado' })).toBeInTheDocument();
+    expect(screen.getByText(/mensagens de texto e áudio/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /configuração|QR/i })).not.toBeInTheDocument();
   });
 });
 

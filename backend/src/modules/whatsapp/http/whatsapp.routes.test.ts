@@ -108,6 +108,12 @@ test('leitura simulada conecta apenas após QR válido', async (context) => {
   assert.equal(connected.statusCode, 200);
   assert.equal(connected.json().status, 'connected');
   assert.equal(connected.json().qrCode, null);
+
+  const repeatedSetup = await app.inject({
+    method: 'POST', url: '/api/whatsapp/setup', headers: { cookie: SESSION_COOKIE },
+  });
+  assert.equal(repeatedSetup.statusCode, 409);
+  assert.equal(repeatedSetup.json().error, 'already_connected');
 });
 
 test('contrato Baileys não expõe ação de simulação', async (context) => {

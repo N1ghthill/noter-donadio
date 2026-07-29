@@ -4,6 +4,7 @@ import type { SessionAuthenticator } from '../../auth/domain/auth.service.js';
 import { SESSION_COOKIE_NAME } from '../../auth/http/auth.routes.js';
 import {
   QrCodeUnavailableError,
+  WhatsappAlreadyConnectedError,
   WhatsappSimulationUnavailableError,
   type WhatsappConnectionService,
 } from '../domain/whatsapp-connection.js';
@@ -29,6 +30,9 @@ export function registerWhatsappRoutes(
     try {
       return await options.service.startSetup(workspaceId);
     } catch (error: unknown) {
+      if (error instanceof WhatsappAlreadyConnectedError) {
+        return reply.code(409).send({ error: 'already_connected' });
+      }
       if (error instanceof QrCodeUnavailableError) {
         return reply.code(503).send({ error: 'qr_unavailable' });
       }

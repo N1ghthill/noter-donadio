@@ -32,7 +32,14 @@ export function WhatsappSetupPage() {
     setBusy(true);
     setError(undefined);
     try { setConnection(await api.startWhatsappSetup()); }
-    catch { setError('Não foi possível gerar o QR do WhatsApp. Tente novamente em alguns instantes.'); }
+    catch (caught: unknown) {
+      if (caught instanceof ApiError && caught.code === 'already_connected') {
+        setError('A sessão já está conectada. Não é necessário gerar outro QR.');
+        await load();
+      } else {
+        setError('Não foi possível gerar o QR do WhatsApp. Tente novamente em alguns instantes.');
+      }
+    }
     finally { setBusy(false); }
   }
 
@@ -69,9 +76,11 @@ export function WhatsappSetupPage() {
             <div><dt>Número</dt><dd>{connection.phoneNumber ?? 'Ainda não vinculado'}</dd></div>
             <div><dt>Atualizado</dt><dd>{connection.updatedAt ? new Date(connection.updatedAt).toLocaleString('pt-BR') : 'Sem atividade'}</dd></div>
           </dl>
-          <button className="button primary" type="button" disabled={busy} onClick={() => void startSetup()}>
-            {busy ? 'Processando…' : connection.qrCode ? 'Gerar outro QR' : 'Iniciar configuração'}
-          </button>
+          {connection.status !== 'connected' ? (
+            <button className="button primary" type="button" disabled={busy} onClick={() => void startSetup()}>
+              {busy ? 'Processando…' : connection.qrCode ? 'Gerar outro QR' : 'Iniciar configuração'}
+            </button>
+          ) : <small>A sessão está ativa. Um novo QR só será necessário se ela for desconectada.</small>}
         </article>
 
         <article className="panel qr-card">
@@ -92,7 +101,7 @@ export function WhatsappSetupPage() {
               <small>Expira em {new Date(connection.qrCode.expiresAt).toLocaleTimeString('pt-BR')}.</small>
             </>
           ) : connection.status === 'connected' ? (
-            <div className="connection-success"><span>✓</span><h3>{connection.adapter === 'fake' ? 'Conexão simulada concluída' : 'WhatsApp conectado'}</h3><p>{connection.adapter === 'fake' ? 'O simulador está pronto para a demonstração.' : 'Novas mensagens de texto serão organizadas automaticamente no CRM.'}</p></div>
+            <div className="connection-success"><span>✓</span><h3>{connection.adapter === 'fake' ? 'Conexão simulada concluída' : 'WhatsApp conectado'}</h3><p>{connection.adapter === 'fake' ? 'O simulador está pronto para a demonstração.' : 'Novas mensagens de texto e áudio serão organizadas automaticamente no CRM.'}</p></div>
           ) : (
             <div className="connection-placeholder"><span aria-hidden="true">▦</span><p>Inicie a configuração para gerar um QR efêmero.</p></div>
           )}

@@ -8,6 +8,9 @@ transcrição são exclusivos do ambiente sintético local. Antes de alterar
 código, leia [AGENTS.md](AGENTS.md), o [escopo do MVP](docs/product/mvp.md) e as
 [decisões arquiteturais](docs/architecture/decisions.md).
 
+O estado requisito por requisito está em
+[`docs/product/mvp-status.md`](docs/product/mvp-status.md).
+
 ## Requisitos
 
 - Node.js 24 LTS;

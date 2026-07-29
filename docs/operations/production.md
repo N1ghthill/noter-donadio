@@ -87,16 +87,19 @@ scripts/verify-postgres-backup.sh /caminho/privado/noter-AAAAMMDDTHHMMSSZ.dump
 
 A verificação confere o checksum quando disponível, restaura com `--exit-on-error` e confirma a tabela de migrations. O container temporário é removido ao terminar. Armazene dumps criptografados fora do host da aplicação, aplique retenção e registre data, resultado e responsável por cada teste periódico.
 
-## Checklist pendente antes de dados reais
+## Checklist pendente antes de ampliar dados reais
 
 - validar termos e aceitar formalmente o risco operacional do Baileys;
-- validar a sessão Baileys com número controlado e acompanhar reconexão;
-- implementar referência criptografada e download de áudio pelo Baileys;
-- implementar adapters aprovados de transcrição e IA, com contratos, retenção e custos revisados;
 - substituir filesystem por armazenamento de objeto privado criptografado;
 - aprovar o protocolo de exclusão integral de workspace, prazo de auditoria e procedimento de atendimento ao titular; a exportação síncrona atual deve se tornar assíncrona para grandes volumes;
-- configurar TLS e rate limiting no proxy, conectar um destino aprovado aos alertas já versionados e testar backup e restauração periodicamente;
+- conectar um destino aprovado aos alertas já versionados;
+- automatizar backup criptografado fora da VPS e testar restauração periodicamente;
 - executar avaliação de segurança e privacidade antes do primeiro workspace real.
+
+Já estão implementados e validados na VPS: TLS, rate limiting da aplicação,
+sessão Baileys controlada com reconexão, referência cifrada e download de áudio,
+adapters OpenAI isolados e restauração de backup sintético. Os adapters
+assistivos continuam sem chave e, portanto, sem homologação real.
 
 O inventário de portões por integração está em [`provider-readiness.md`](provider-readiness.md), e a evidência do marco atual em [`acceptance.md`](acceptance.md).
 

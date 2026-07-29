@@ -557,3 +557,16 @@ pendentes com código sanitizado e preserva mensagem e áudio originais.
 A chave é lida sem eco pelo TTY, permanece no `.env` da VPS com modo `600` e é
 injetada somente nos dois workers. Jobs e eventos continuam contendo apenas
 IDs; logs não recebem conteúdo, arquivo, transcrição ou segredo.
+
+## ADR-059 — Sessão conectada não inicia novo setup
+
+`POST /api/whatsapp/setup` existe apenas para uma conta sem sessão ativa.
+Quando o estado persistido é `connected`, a API responde
+`409 already_connected` antes de alterar estado ou publicar comando Redis. A
+interface não apresenta o botão de setup nesse estado.
+
+Desconexões transitórias são responsabilidade da reconexão Baileys com auth
+state existente. Um novo QR não é tratado como retry e somente poderá ser
+solicitado depois que a sessão estiver efetivamente desconectada. Isso evita o
+fluxo observado em que uma conta saudável era colocada em setup, aguardava o
+timeout do QR e mostrava erro ao usuário.

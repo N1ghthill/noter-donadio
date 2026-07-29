@@ -2,7 +2,11 @@
 
 ## Escopo
 
-Esta demonstração apresenta o fluxo assistivo do noter.donadio em `https://leadcontrol.online`. Todos os contatos, telefones, mensagens, áudios e valores usados são fictícios. WhatsApp, transcrição e IA executam adapters locais; nenhuma conta real ou provedor pago participa da jornada.
+Esta demonstração apresenta o CRM do noter.donadio em
+`https://leadcontrol.online`. A VPS usa uma conta Baileys controlada e pode
+conter mensagens enviadas pelo próprio responsável para homologação. Não use
+dados de clientes. Transcrição e análise novas permanecem desligadas enquanto a
+chave OpenAI não for configurada.
 
 O objetivo é validar a experiência comercial e colher decisões de produto. A demonstração não representa autorização para inserir dados reais.
 
@@ -22,13 +26,16 @@ Em um checkout de desenvolvimento com Node 24, execute o smoke autenticado somen
 scripts/run-acceptance-vps.sh
 ```
 
-Para preparar novamente o cenário fictício e repetir toda a homologação:
+O modo mutável abaixo é exclusivo do profile local `demo`; não funciona nem
+deve ser habilitado na VPS Baileys:
 
 ```bash
 scripts/run-acceptance-vps.sh --mutations
 ```
 
-O modo mutável cria ou atualiza `Empresa Aurora — cenário fictício`, deixa sua negociação `Implantação CRM — homologação` em `proposal_sent` e acrescenta mensagens simuladas à caixa de conversas. Ele nunca apaga dados.
+No ambiente local, ele cria ou atualiza `Empresa Aurora — cenário fictício`,
+deixa sua negociação `Implantação CRM — homologação` em `proposal_sent` e
+acrescenta mensagens simuladas à caixa de conversas. Ele nunca apaga dados.
 
 O wrapper solicita a senha sem exibi-la e usa Node 24 quando disponível. O usuário restrito da VPS não executa containers arbitrários; por isso, a homologação automatizada é disparada pelo checkout de desenvolvimento contra o domínio público.
 
@@ -67,21 +74,27 @@ Abra a negociação de homologação. Mostre:
 - motivo obrigatório ao fechar uma negociação;
 - reabertura preservada na auditoria.
 
-### 4. Conversas e processamento
+### 4. Conversas e mídia
 
-Abra Conversas e use a conexão simulada.
+Abra Conversas e apresente as mensagens controladas já persistidas.
 
-Demonstre uma mensagem de texto fictícia e, em seguida, um áudio fictício. Mostre que:
+Mostre que:
 
 - a mensagem original aparece antes do processamento;
-- reenvio com a mesma chave não duplica a mensagem;
+- a deduplicação é validada por testes e pelo ID externo do WhatsApp;
 - transcrição é artefato do áudio, não uma segunda mensagem;
 - falha de IA ou transcrição não remove o conteúdo original;
 - atualização em tempo real é reconciliada pela API.
 
-### 5. IA assistiva
+Se o responsável decidir enviar nova mensagem durante a reunião, ele próprio
+deve fazê-lo pelo WhatsApp conectado. O noter.donadio não possui endpoint de
+envio e não executa resposta automática.
 
-No detalhe da negociação criada pela conversa, apresente resumo, tags e próxima ação sugeridos.
+### 5. IA assistiva preparada
+
+Apresente uma análise sintética histórica apenas se ela estiver identificada
+como demonstração. Explique que o contrato de sugestão, edição e aceite está
+implementado, mas novas chamadas OpenAI estão desligadas.
 
 Edite se necessário e aceite explicitamente uma sugestão. Destaque que dados confirmados manualmente têm precedência e que nenhuma mensagem é enviada automaticamente.
 
@@ -108,8 +121,8 @@ Peça ao cliente decisões sobre:
 ## Limitações que devem ser declaradas
 
 - O roteiro histórico da tag `v0.2.0-mvp` usa WhatsApp, IA e transcrição
-  simulados. Na homologação atual, WhatsApp e download de áudio são reais; IA e
-  transcrição permanecem desativadas.
+  simulados. Na VPS atual, WhatsApp e download de áudio são reais; IA e
+  transcrição novas permanecem desativadas.
 - Não existe envio autônomo de mensagens.
 - Banco, Redis, aplicação e backups locais compartilham a mesma VPS.
 - Não há backup off-host nesta fase, por decisão aceita para dados fictícios.

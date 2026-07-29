@@ -43,6 +43,7 @@ export interface WhatsappGateway {
 
 export class QrCodeUnavailableError extends Error {}
 export class WhatsappSimulationUnavailableError extends Error {}
+export class WhatsappAlreadyConnectedError extends Error {}
 
 export class WhatsappConnectionService {
   public constructor(
@@ -57,6 +58,8 @@ export class WhatsappConnectionService {
   }
 
   public async startSetup(workspaceId: string): Promise<WhatsappConnectionView> {
+    const current = await this.repository.find(workspaceId);
+    if (current?.status === 'connected') throw new WhatsappAlreadyConnectedError();
     const stored = await this.repository.markSetupStarted(workspaceId);
     const qrCode = await this.gateway.createQrCode(workspaceId, stored.accountId);
     return { ...toStoredView(stored), qrCode, ...this.gatewayCapabilities() };

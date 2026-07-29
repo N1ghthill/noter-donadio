@@ -8,15 +8,20 @@ escopo. As evidências abaixo acompanham o estado atual da `main`.
 Atualização de 29/07/2026: Baileys, QR, reconexão, texto, identidade LID,
 referência cifrada e download privado de áudio foram implantados na VPS. Os
 workers falsos foram removidos do profile real. Transcrição e análise reais
-continuam fora desta aceitação até escolha de provedor, decisão sobre backlog e
-nova homologação.
+continuam fora desta aceitação até configuração da chave OpenAI, autorização do
+corte temporal e nova homologação.
 
 Atualização de 29/07/2026: os adapters OpenAI de transcrição e análise
 estruturada foram implementados com corte obrigatório de autorização, chave
-restrita aos workers e bloqueio do backlog. A validação local aprovou 179 testes
-(1 contratos, 146 backend e 32 frontend), lint, typecheck, build, auditoria de
+restrita aos workers e bloqueio do backlog. A validação local aprovou 180 testes
+(1 contratos, 146 backend e 33 frontend), lint, typecheck, build, auditoria de
 produção e os perfis Compose `baileys+assistive`. A aceitação real depende da
 injeção interativa da chave e de uma chamada homologada no áudio autorizado.
+
+Na mesma auditoria, API e interface passaram a impedir uma nova configuração
+por QR quando a sessão Baileys já está conectada. Essa proteção elimina o fluxo
+inútil que aguardava um novo código e terminava em erro, sem desconectar ou
+alterar a sessão real existente.
 
 ## Resultado
 
@@ -75,18 +80,21 @@ O procedimento reproduzível e o roteiro da reunião estão em [`client-demo.md`
 
 ## Aceitação manual
 
-O responsável pelo produto informou que testou manualmente pipeline, mensagens e demais jornadas principais com resultado satisfatório. Em cada nova candidata a release, repetir ao menos:
+O responsável pelo produto informou que testou manualmente pipeline, mensagens
+e demais jornadas principais com resultado satisfatório. No ambiente Baileys
+publicado, repetir as jornadas sem usar os endpoints locais de simulação:
 
 1. entrar e revogar uma segunda sessão;
 2. criar contato e negociação com próxima ação;
 3. filtrar e localizar a negociação no pipeline;
 4. concluir a ação e conferir o histórico;
 5. fechar como ganho e perdido, confirmar a exigência do motivo e reabrir;
-6. simular texto e áudio duplicados e confirmar uma única mensagem;
+6. conferir texto e áudio controlados já persistidos e sua deduplicação;
 7. aceitar uma sugestão editada e confirmar que ela não sobrescreve dado manual;
 8. recarregar as telas após eventos em tempo real e conferir reconciliação REST.
 
-Use somente fixtures fictícias. Conta real do WhatsApp, áudio real e chamadas pagas não fazem parte desta aceitação.
+Use somente dados controlados autorizados. Não envie mensagens pelo aplicativo;
+chamadas pagas não fazem parte desta aceitação.
 
 ## Critérios que ainda bloqueiam dados reais
 
