@@ -95,7 +95,8 @@ O usuário conecta uma conta do WhatsApp por QR via Baileys, recebe novas conver
 ## Estado da integração real
 
 A direção aprovada é Baileys 7 com processo dedicado. A dependência fixada e o
-auth state criptografado no PostgreSQL já formam a base do conector, mas o
-socket real ainda não está habilitado e a VPS usa o simulador. A fronteira de
-texto normaliza mensagens recebidas e enviadas por `fromMe`; conexão, QR real e
-mídia real ainda precisam ser integrados.
+auth state criptografado no PostgreSQL sustentam o conector real na VPS. QR,
+reconexão e mensagens novas recebidas ou enviadas pelo usuário estão
+integrados. Áudio é persistido com referência mínima cifrada e baixado
+pós-commit para o volume privado. Análise e transcrição reais ainda dependem de
+adapters aprovados; os fakes ficam restritos à demonstração sintética.

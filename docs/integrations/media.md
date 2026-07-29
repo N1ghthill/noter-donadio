@@ -8,8 +8,10 @@ Para áudio externo, a mensagem, a referência de mídia em estado `pending` e
 `message.audio.download_requested` são persistidos juntos. O worker recebe
 somente IDs internos, adquire um lease, baixa para uma chave `.media` exclusiva
 da tentativa e confirma condicionalmente o registro antes de liberar a
-transcrição. O pipeline é independente do conector, mas ainda não existe
-downloader real do Baileys.
+transcrição. No Baileys, `url`, `directPath` e `mediaKey` são criptografados com
+AES-256-GCM e AAD vinculada a workspace, conta e mensagem antes do commit. O
+downloader reabre essa referência somente no worker, impõe timeout de 30
+segundos e `MEDIA_MAX_BYTES` e não transporta credencial ou bytes pelo Redis.
 
 O arquivo não é servido como conteúdo estático. A timeline autenticada informa apenas se a reprodução está disponível. Ao clicar em **Carregar áudio**, o frontend solicita `GET /api/media/:messageId/access`, que retorna uma URL relativa assinada válida por dois minutos. A leitura em `GET /api/media/:messageId/content` exige simultaneamente a sessão ativa, o mesmo workspace, prazo válido e assinatura HMAC correta.
 
@@ -45,11 +47,15 @@ associados à mensagem quando a remoção ocorreu apenas por retenção.
 
 ## Limites desta fatia
 
-- nenhum áudio real é baixado enquanto o conector Baileys não estiver implementado;
-- o contrato durável para recuperar mídia do Baileys após o commit ainda precisa ser fechado;
 - não há endpoint público, URL permanente nem chave física na resposta da API;
 - o endpoint entrega o arquivo completo; suporte otimizado a `Range` fica para o adapter de objeto/produção;
+- o downloader usa a referência entregue na mensagem nova; recuperação de uma
+  URL muito antiga por solicitação de reupload do telefone ainda não foi
+  implementada;
 - exclusão manual por contato possui tarefas duráveis e tentativas `.media`
   órfãs são reconciliadas; exclusão integral do workspace ainda será
   implementada antes de produção;
-- `MEDIA_SIGNING_SECRET` deve vir de um gerenciador de segredos em produção, e o armazenamento local deverá ser substituído por objeto privado criptografado.
+- `MEDIA_SIGNING_SECRET` deve vir de um gerenciador de segredos em produção;
+- o volume privado na VPS é adequado à fase controlada aceita pelo proprietário,
+  mas não oferece alta disponibilidade nem recuperação contra perda integral do
+  host; armazenamento de objetos privado permanece a evolução para produção.

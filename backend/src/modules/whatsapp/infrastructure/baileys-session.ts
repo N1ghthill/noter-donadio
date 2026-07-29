@@ -14,9 +14,11 @@ import {
 import type { PrismaBaileysAuthStateRepository } from './prisma-baileys-auth-state.repository.js';
 import type { PrismaWhatsappConnectionRepository } from './prisma-whatsapp.repository.js';
 import type { RedisBaileysControl } from './redis-baileys.gateway.js';
+import type { BaileysMediaReferenceCipher } from './baileys-media-reference.js';
 import {
   resolveBaileysPhoneJid,
   shouldIngestBaileysUpsert,
+  toBaileysAudioEvent,
   toBaileysTextEvent,
 } from './baileys-message.js';
 
@@ -37,6 +39,7 @@ export class BaileysSession {
   public constructor(
     private readonly binding: BaileysSessionBinding,
     private readonly authRepository: PrismaBaileysAuthStateRepository,
+    private readonly mediaReferenceCipher: BaileysMediaReferenceCipher,
     private readonly connectionRepository: PrismaWhatsappConnectionRepository,
     private readonly ingestionService: MessageIngestionService,
     private readonly control: RedisBaileysControl,
@@ -117,16 +120,50 @@ export class BaileysSession {
       socket.user,
       (lid) => socket.signalRepository.lidMapping.getPNForLID(lid),
     );
-    const event = toBaileysTextEvent(message, resolvedPhoneJid);
-    if (!event) return;
     const binding: DomainBinding = {
       workspaceId: this.binding.workspaceId,
       whatsappAccountId: this.binding.accountId,
     };
-    const normalized = normalizeBaileysTextEvent(binding, event);
-    if (!normalized) return;
     try {
-      await this.ingestionService.execute(normalized);
+      const textEvent = toBaileysTextEvent(message, resolvedPhoneJid);
+      if (textEvent) {
+        const normalized = normalizeBaileysTextEvent(binding, textEvent);
+        if (normalized) await this.ingestionService.execute(normalized);
+        return;
+      }
+      const audioEvent = toBaileysAudioEvent(
+        message,
+        (audio) => this.mediaReferenceCipher.fromAudioMessage(audio),
+        resolvedPhoneJid,
+      );
+      if (!audioEvent) return;
+      const encryptedProviderReference = this.mediaReferenceCipher.encrypt(
+        audioEvent.mediaReference,
+        {
+          workspaceId: binding.workspaceId,
+          accountId: binding.whatsappAccountId,
+          externalMessageId: audioEvent.externalMessageId,
+        },
+      );
+      await this.ingestionService.execute({
+        workspaceId: binding.workspaceId,
+        whatsappAccountId: binding.whatsappAccountId,
+        externalMessageId: audioEvent.externalMessageId,
+        remoteJid: audioEvent.remoteJid,
+        phoneNumber: audioEvent.phoneNumber,
+        ...(audioEvent.displayName ? { displayName: audioEvent.displayName } : {}),
+        direction: audioEvent.fromMe ? 'outbound' : 'inbound',
+        messageType: 'audio',
+        occurredAt: audioEvent.occurredAt,
+        pendingMedia: {
+          externalMediaId: audioEvent.externalMessageId,
+          ...(audioEvent.mimeType ? { mimeType: audioEvent.mimeType } : {}),
+          ...(audioEvent.durationSeconds !== undefined
+            ? { durationSeconds: audioEvent.durationSeconds }
+            : {}),
+          encryptedProviderReference,
+        },
+      });
     } catch (error: unknown) {
       this.logger.error(safeError(error), 'Falha ao persistir mensagem normalizada do Baileys');
     }

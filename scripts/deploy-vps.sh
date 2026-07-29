@@ -77,6 +77,7 @@ if test "${enable_baileys}" = "1"; then
   baileys_encryption_key="${BAILEYS_ENCRYPTION_KEY:-$(openssl rand -base64 32)}"
   set_env_value WHATSAPP_ADAPTER baileys
   set_env_value COMPOSE_PROFILES baileys
+  set_env_value MEDIA_DOWNLOAD_ADAPTER baileys
   set_env_value BAILEYS_WORKSPACE_ID "${baileys_workspace_id}"
   set_env_value BAILEYS_ACCOUNT_ID "${baileys_account_id}"
   set_env_value BAILEYS_ENCRYPTION_KEY "${baileys_encryption_key}"

@@ -72,8 +72,9 @@ O processo da outbox publica `message.text.ingested`,
 `message.audio.ready_for_analysis`, `message.persisted` e eventos de atualização
 do CRM nas filas correspondentes. Os jobs e notificações contêm IDs e metadados
 de roteamento, nunca o conteúdo integral da conversa. O processo
-`media-download` é obrigatório para áudio externo. Hoje ele executa somente com
-o adapter falso; o downloader Baileys ainda não está disponível.
+`media-download` é obrigatório para áudio externo. O profile `baileys` usa o
+downloader real com referência cifrada; o adapter falso permanece restrito ao
+profile `demo`.
 
 `GET /health` é somente um liveness público e não consulta nem revela dependências. Readiness e métricas são privados, desabilitam cache e não expõem URLs, credenciais, mensagens de erro ou labels com identificadores de negócio. O proxy de produção devolve `404` para `/api/internal/`; processos autorizados devem acessar essas rotas diretamente pela rede interna do backend.
 

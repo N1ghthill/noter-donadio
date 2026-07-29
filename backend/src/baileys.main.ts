@@ -3,6 +3,7 @@ import { BaileysSession } from './modules/whatsapp/infrastructure/baileys-sessio
 import { PrismaBaileysAuthStateRepository } from './modules/whatsapp/infrastructure/prisma-baileys-auth-state.repository.js';
 import { PrismaWhatsappConnectionRepository } from './modules/whatsapp/infrastructure/prisma-whatsapp.repository.js';
 import { RedisBaileysControl } from './modules/whatsapp/infrastructure/redis-baileys.gateway.js';
+import { BaileysMediaReferenceCipher } from './modules/whatsapp/infrastructure/baileys-media-reference.js';
 import { MessageIngestionService } from './modules/messages/domain/message-ingestion.js';
 import { PrismaMessageIngestionRepository } from './modules/messages/infrastructure/prisma-message-ingestion.repository.js';
 import { readBaileysEnvironment } from './config/baileys-env.js';
@@ -23,6 +24,7 @@ const session = new BaileysSession(
     accountId: environment.BAILEYS_ACCOUNT_ID,
   },
   new PrismaBaileysAuthStateRepository(prisma, cipher),
+  new BaileysMediaReferenceCipher(cipher),
   new PrismaWhatsappConnectionRepository(prisma),
   new MessageIngestionService(new PrismaMessageIngestionRepository(prisma)),
   control,

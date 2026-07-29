@@ -137,13 +137,28 @@ export class PrismaMessageIngestionRepository implements MessageIngestionReposit
               messageId: message.id,
               downloadState: hasStoredMedia ? 'completed' : hasPendingMedia ? 'pending' : 'failed',
               externalMediaId: command.pendingMedia?.externalMediaId ?? null,
+              encryptedProviderReference:
+                command.pendingMedia?.encryptedProviderReference
+                  ? Buffer.from(command.pendingMedia.encryptedProviderReference.encryptedData)
+                  : null,
+              providerReferenceIv:
+                command.pendingMedia?.encryptedProviderReference
+                  ? Buffer.from(command.pendingMedia.encryptedProviderReference.iv)
+                  : null,
+              providerReferenceAuthTag:
+                command.pendingMedia?.encryptedProviderReference
+                  ? Buffer.from(command.pendingMedia.encryptedProviderReference.authTag)
+                  : null,
+              providerReferenceKeyVersion:
+                command.pendingMedia?.encryptedProviderReference?.encryptionKeyVersion ?? null,
               downloadFailureCode: hasStoredMedia || hasPendingMedia
                 ? null
                 : 'MEDIA_REFERENCE_MISSING',
               transcriptionState: 'pending',
               storageKey: command.media?.storageKey ?? null,
               fileSizeBytes: command.media ? BigInt(command.media.fileSizeBytes) : null,
-              durationSeconds: command.media?.durationSeconds ?? null,
+              durationSeconds:
+                command.media?.durationSeconds ?? command.pendingMedia?.durationSeconds ?? null,
               mimeType: command.media?.mimeType ?? command.pendingMedia?.mimeType ?? null,
               retentionUntil: command.media?.retentionUntil ?? null,
             },

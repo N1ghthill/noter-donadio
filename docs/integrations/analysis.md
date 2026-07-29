@@ -1,6 +1,10 @@
 # Análise assistiva de mensagens
 
-Esta fatia executa uma análise estruturada de cada mensagem recebida. No ambiente local, somente o adapter `fake` está disponível: nenhum conteúdo é enviado a um provedor externo.
+Esta fatia executa uma análise estruturada de cada mensagem recebida. No
+ambiente local, somente o adapter `fake` está disponível: nenhum conteúdo é
+enviado a um provedor externo. Ele é exclusivo do profile `demo`; no profile
+`baileys`, o worker permanece desligado para não gerar sugestões fictícias
+sobre conversas reais.
 
 ## Fluxo
 

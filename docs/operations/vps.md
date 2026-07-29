@@ -2,9 +2,19 @@
 
 ## Estado e finalidade
 
-A VPS única é o ambiente compartilhado de desenvolvimento assistido e demonstração da fase atual. Ela executa aplicação, proxy TLS, PostgreSQL, Redis e workers no mesmo host para reduzir custo e complexidade operacional. Essa topologia é adequada enquanto a carga é baixa, os dados são fictícios e a indisponibilidade de um único host é um risco aceito.
+A VPS única é o ambiente compartilhado de desenvolvimento assistido,
+homologação controlada e demonstração da fase atual. Ela executa aplicação,
+proxy TLS, PostgreSQL, Redis e workers no mesmo host para reduzir custo e
+complexidade operacional. Essa topologia é adequada enquanto a carga é baixa e
+a indisponibilidade ou perda integral de um único host é um risco explicitamente
+aceito.
 
-O perfil `compose.vps-demo.yaml` publica `leadcontrol.online` em HTTPS, usa cookies `Secure` e mantém adapters falsos. Ele não é produção real e não pode receber conversas, contatos, áudios ou credenciais reais. Provedores aprovados, armazenamento de mídia externo, backup off-host e revisão de segurança continuam sendo portões obrigatórios para mudar essa classificação.
+O perfil `compose.vps-demo.yaml` publica `leadcontrol.online` em HTTPS, usa
+cookies `Secure` e executa o conector Baileys e o download privado de áudio.
+Adapters falsos de IA e transcrição ficam restritos ao profile `demo` e nunca
+são iniciados junto do profile `baileys`. O ambiente pode receber os dados
+controlados usados na homologação atual, mas ainda não deve ser tratado como
+produção com garantia de disponibilidade ou recuperação de desastre.
 
 ## Topologia
 
@@ -16,7 +26,7 @@ Internet
     └── /api e /socket.io → backend privado
         ├── PostgreSQL em rede Docker privada
         ├── Redis/BullMQ em rede Docker privada
-        └── outbox, realtime, media-download, transcription, analysis e retention
+        └── outbox, realtime, Baileys, media-download e retention
 ```
 
 Somente SSH e o proxy web são publicados pelo host. PostgreSQL, Redis, backend, métricas e painéis operacionais não possuem porta pública.
@@ -68,8 +78,9 @@ sudo /opt/noter-donadio/scripts/deploy-vps.sh --enable-baileys
 
 O script exige exatamente uma conta interna `primary`, resolve os UUIDs no
 PostgreSQL e grava no `.env` da VPS uma chave AES-256 aleatória sem imprimi-la.
-Execuções posteriores preservam a chave existente e mantêm o profile
-`baileys`. O comando não lê o QR nem envia mensagens.
+Execuções posteriores preservam a chave existente, mantêm o profile `baileys`
+e habilitam `MEDIA_DOWNLOAD_ADAPTER=baileys`. O comando não lê o QR nem envia
+mensagens. Transcrição e análise reais continuam desligadas.
 
 Quando o sistema operacional indicar que um novo kernel exige reinicialização,
 execute o deploy com reinicialização condicionada ao health check:
@@ -112,7 +123,12 @@ scripts/backup-vps.sh
 scripts/verify-postgres-backup.sh /var/backups/noter-donadio/AAAAMMDDTHHMMSSZ/noter-AAAAMMDDTHHMMSSZ.dump
 ```
 
-Um snapshot no mesmo disco protege contra erro de aplicação, mas não contra perda da VPS. Nesta fase, o proprietário aceitou operar sem cópia off-host para reduzir complexidade enquanto os dados são fictícios. O impacto aceito é a perda integral de dados e backups em caso de falha ou perda da VPS. Essa exceção deve ser removida antes da entrada de dados reais, copiando snapshots de forma criptografada para armazenamento externo com retenção e restauração testada.
+Um snapshot no mesmo disco protege contra erro de aplicação, mas não contra
+perda da VPS. Nesta fase, o proprietário aceitou operar sem cópia off-host para
+reduzir complexidade. O impacto aceito é a perda integral de dados e backups em
+caso de falha ou perda da VPS. Essa exceção deve ser removida antes de assumir
+compromisso de disponibilidade ou recuperação, copiando snapshots de forma
+criptografada para armazenamento externo com retenção e restauração testada.
 
 ## Observabilidade
 
@@ -137,7 +153,7 @@ Na VPS atual, autenticação SSH por senha, interação de teclado e login remot
 
 O `nftables` aplica `deploy/nftables/noter-host.nft` na inicialização. A política de entrada permite conexões estabelecidas, loopback, ICMP, SSH e web nas portas TCP 22/80/443 e HTTP/3 em UDP 443. Não use `flush ruleset`, pois isso também removeria regras administradas pelo Docker.
 
-## Promoção para dados reais
+## Promoção para produção
 
 O ambiente só pode ser promovido depois de:
 
@@ -145,6 +161,6 @@ O ambiente só pode ser promovido depois de:
 - backup off-host automatizado e restauração comprovada;
 - destino real de alertas e runbook de incidente;
 - resolução ou aceitação formal dos advisories de dependências aplicáveis;
-- adapters reais e contratos de privacidade aprovados;
+- adapters reais de IA/transcrição e contratos de privacidade aprovados;
 - armazenamento privado de mídia fora do filesystem local;
 - avaliação formal de segurança e privacidade.

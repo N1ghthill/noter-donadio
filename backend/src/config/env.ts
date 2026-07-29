@@ -8,7 +8,7 @@ const environmentSchema = z.object({
   REDIS_URL: z.url(),
   INTERNAL_INGESTION_TOKEN: z.string().min(32),
   WHATSAPP_ADAPTER: z.enum(['disabled', 'fake', 'baileys']).default('disabled'),
-  MEDIA_DOWNLOAD_ADAPTER: z.enum(['disabled', 'fake']).default('disabled'),
+  MEDIA_DOWNLOAD_ADAPTER: z.enum(['disabled', 'fake', 'baileys']).default('disabled'),
   TRANSCRIPTION_ADAPTER: z.enum(['disabled', 'fake']).default('disabled'),
   AI_ADAPTER: z.enum(['disabled', 'fake']).default('disabled'),
   MEDIA_STORAGE_PATH: z.string().trim().min(1).default('storage/media'),

@@ -10,9 +10,9 @@ const AUTH_TAG_BYTES = 16;
 const KEY_BYTES = 32;
 
 export interface AuthStateCiphertext {
-  readonly encryptedData: Buffer;
-  readonly iv: Buffer;
-  readonly authTag: Buffer;
+  readonly encryptedData: Uint8Array;
+  readonly iv: Uint8Array;
+  readonly authTag: Uint8Array;
   readonly encryptionKeyVersion: number;
 }
 
@@ -54,12 +54,15 @@ export class AuthStateCipher {
       const decipher = createDecipheriv(
         ALGORITHM,
         this.key(ciphertext.encryptionKeyVersion),
-        ciphertext.iv,
+        Buffer.from(ciphertext.iv),
         { authTagLength: AUTH_TAG_BYTES },
       );
       decipher.setAAD(Buffer.from(associatedData, 'utf8'));
-      decipher.setAuthTag(ciphertext.authTag);
-      return Buffer.concat([decipher.update(ciphertext.encryptedData), decipher.final()]);
+      decipher.setAuthTag(Buffer.from(ciphertext.authTag));
+      return Buffer.concat([
+        decipher.update(Buffer.from(ciphertext.encryptedData)),
+        decipher.final(),
+      ]);
     } catch {
       throw new InvalidAuthStateCiphertextError();
     }

@@ -2,7 +2,11 @@
 
 ## Estado implementado
 
-O MVP possui um worker BullMQ separado para transcrição, habilitado por `TRANSCRIPTION_ADAPTER=fake`. O adapter atual não lê os bytes armazenados nem chama serviços externos: ele retorna um texto explicitamente fictício para validar orquestração, retries, persistência e interface.
+O MVP possui um worker BullMQ separado para transcrição. O único adapter
+disponível ainda é `fake`: ele não lê os bytes armazenados nem chama serviços
+externos e existe somente no profile local `demo`. O profile real `baileys` não
+inicia esse worker, evitando que conversas reais recebam transcrições
+inventadas.
 
 ```text
 mensagem de áudio + referência de mídia pending + outbox
@@ -42,16 +46,8 @@ Falhas persistem somente o código sanitizado `TRANSCRIPTION_PROCESSING_FAILED` 
 - somente uma transcrição concluída produz `message.audio.ready_for_analysis`, contendo IDs;
 - o formulário local de áudio ignora qualquer texto enviado pelo navegador;
 - o áudio de demonstração é um WAV local fictício; o armazenamento privado, a URL curta assinada, o player e a retenção estão descritos em [`media.md`](media.md);
-- o downloader Baileys ainda não foi implementado; ele deverá recuperar mídia
-  pós-commit sem transportar conteúdo ou auth state no job.
-
-## Download futuro pelo Baileys
-
-O processo de conexão deverá persistir uma referência durável e mínima da
-mensagem de áudio. O worker recebe apenas IDs internos, resolve a referência e
-a sessão criptografada no PostgreSQL e grava os bytes no armazenamento privado
-antes de liberar a transcrição.
-
-Não será persistido um diretório `auth_info_baileys`, nem objeto integral de
-mensagem em Redis. O formato exato da referência e a coordenação com o socket
-serão definidos e testados antes de habilitar áudio real.
+- o downloader Baileys recupera mídia pós-commit sem transportar conteúdo ou
+  auth state no job;
+- transcrição real continua pendente de escolha e autorização de adapter;
+- não existe diretório `auth_info_baileys` nem objeto integral da mensagem em
+  Redis.

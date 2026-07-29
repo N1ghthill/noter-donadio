@@ -2,7 +2,11 @@
 
 Pipeline inteligente de contatos e negociações alimentado por conversas do WhatsApp e análise assistiva por IA.
 
-O projeto possui um MVP local funcional com PostgreSQL, Redis, filas, atualização em tempo real e adapters falsos para integrações externas. Antes de alterar código, leia [AGENTS.md](AGENTS.md), o [escopo do MVP](docs/product/mvp.md) e as [decisões arquiteturais](docs/architecture/decisions.md).
+O projeto possui um MVP funcional com PostgreSQL, Redis, filas, atualização em
+tempo real e conexão Baileys controlada na VPS. Adapters falsos de IA e
+transcrição são exclusivos do ambiente sintético local. Antes de alterar
+código, leia [AGENTS.md](AGENTS.md), o [escopo do MVP](docs/product/mvp.md) e as
+[decisões arquiteturais](docs/architecture/decisions.md).
 
 ## Requisitos
 
@@ -52,7 +56,7 @@ O preparo da homologação publicada e o roteiro de apresentação estão em
 O fluxo de exclusão, cascatas, auditoria minimizada e limpeza de mídia está em [`docs/security/privacy-deletion.md`](docs/security/privacy-deletion.md).
 O fluxo da interface e sua execução local estão em [`docs/frontend/mvp-ui.md`](docs/frontend/mvp-ui.md).
 O fluxo Socket.IO, isolamento por workspace e contratos de eventos estão em [`docs/realtime/events.md`](docs/realtime/events.md).
-O setup simulado e a fronteira do adapter de WhatsApp estão em [`docs/integrations/whatsapp.md`](docs/integrations/whatsapp.md).
+O setup local e o conector Baileys estão em [`docs/integrations/whatsapp.md`](docs/integrations/whatsapp.md).
 O worker idempotente e o adapter falso de áudio estão em [`docs/integrations/transcription.md`](docs/integrations/transcription.md).
 O armazenamento privado local, acesso assinado, player e retenção estão em [`docs/integrations/media.md`](docs/integrations/media.md).
 O worker de análise assistiva, seu contrato estrito e seus limites estão em [`docs/integrations/analysis.md`](docs/integrations/analysis.md).
@@ -60,6 +64,6 @@ O empacotamento em containers, secrets, migrations, backup e limites de produç�
 O perfil local de Prometheus, Alertmanager e Grafana, seus alertas e runbooks estão em [`docs/operations/observability.md`](docs/operations/observability.md).
 O perfil transitório para aplicação, PostgreSQL, Redis e workers em uma única VPS está em [`docs/operations/vps.md`](docs/operations/vps.md).
 
-A aceitação do marco de demonstração `v0.2.0-mvp` está registrada em [`docs/operations/acceptance.md`](docs/operations/acceptance.md). Os portões para WhatsApp via Baileys, transcrição e análise reais estão em [`docs/operations/provider-readiness.md`](docs/operations/provider-readiness.md).
+A aceitação do marco de demonstração `v0.2.0-mvp` está registrada em [`docs/operations/acceptance.md`](docs/operations/acceptance.md). Os portões remanescentes para transcrição e análise reais estão em [`docs/operations/provider-readiness.md`](docs/operations/provider-readiness.md).
 
 Com o ambiente local iniciado, `/pipeline` permite filtrar e acompanhar negociações, concluir próximas ações e registrar fechamentos; `/` exibe indicadores agregados e `/administracao` permite revogar sessões, consultar a auditoria global e exportar os dados do workspace. `/conversas` apresenta a caixa de entrada persistida e permite simular uma mensagem recebida sem conectar ou enviar dados a um WhatsApp real.

@@ -9,6 +9,15 @@ export interface StoredMediaDescriptor {
 export interface PendingMediaReference {
   readonly externalMediaId: string;
   readonly mimeType?: string | undefined;
+  readonly durationSeconds?: number | undefined;
+  readonly encryptedProviderReference?: EncryptedProviderReference | undefined;
+}
+
+export interface EncryptedProviderReference {
+  readonly encryptedData: Uint8Array;
+  readonly iv: Uint8Array;
+  readonly authTag: Uint8Array;
+  readonly encryptionKeyVersion: number;
 }
 
 export interface MediaStorage {

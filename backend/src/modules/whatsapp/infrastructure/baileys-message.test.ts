@@ -6,6 +6,7 @@ import type { WAMessage } from 'baileys';
 import {
   resolveBaileysPhoneJid,
   shouldIngestBaileysUpsert,
+  toBaileysAudioEvent,
   toBaileysTextEvent,
 } from './baileys-message.js';
 
@@ -57,6 +58,40 @@ test('ignora protocolo, mídia e LID sem identidade telefônica resolvida', () =
     ...base,
     message: { audioMessage: { url: 'https://invalid.example.test/audio' } },
   } as WAMessage), null);
+});
+
+test('adapta áudio novo sem expor a referência do SDK ao domínio', () => {
+  const mediaReference = {
+    directPath: '/synthetic/audio',
+    mediaKey: Buffer.alloc(32, 3),
+  };
+  const event = toBaileysAudioEvent({
+    key: {
+      id: 'synthetic-audio',
+      remoteJid: '5571000000101@s.whatsapp.net',
+      fromMe: false,
+    },
+    messageTimestamp: 1_785_235_200,
+    message: {
+      audioMessage: {
+        directPath: '/synthetic/audio',
+        mediaKey: Buffer.alloc(32, 3),
+        mimetype: 'audio/ogg; codecs=opus',
+        seconds: 7,
+      },
+    },
+  } as WAMessage, () => mediaReference);
+
+  assert.deepEqual(event, {
+    externalMessageId: 'synthetic-audio',
+    remoteJid: '5571000000101@s.whatsapp.net',
+    fromMe: false,
+    phoneNumber: '5571000000101',
+    occurredAt: new Date('2026-07-28T10:40:00.000Z'),
+    mimeType: 'audio/ogg; codecs=opus',
+    durationSeconds: 7,
+    mediaReference,
+  });
 });
 
 test('aceita append somente para mensagem própria posterior à conexão atual', () => {

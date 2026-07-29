@@ -329,6 +329,10 @@ model MediaAsset {
   messageId               String          @unique @map("message_id") @db.Uuid
   storageKey              String?         @map("storage_key") @db.VarChar(500)
   externalMediaId         String?         @map("external_media_id") @db.VarChar(255)
+  encryptedProviderReference Bytes?       @map("encrypted_provider_reference")
+  providerReferenceIv        Bytes?       @map("provider_reference_iv")
+  providerReferenceAuthTag   Bytes?       @map("provider_reference_auth_tag")
+  providerReferenceKeyVersion Int?        @map("provider_reference_key_version") @db.SmallInt
   fileSizeBytes           BigInt?         @map("file_size_bytes")
   durationSeconds         Int?            @map("duration_seconds")
   mimeType                String?         @map("mime_type") @db.VarChar(100)

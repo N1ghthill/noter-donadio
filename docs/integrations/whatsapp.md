@@ -38,8 +38,7 @@ O processo dedicado do Baileys será vinculado a uma conta interna e:
 4. normalizará eventos `messages.upsert`, incluindo `fromMe`;
 5. descartará grupos, status, newsletters e protocolo antes da ingestão;
 6. persistirá texto recebido ou enviado antes de qualquer processamento;
-7. tratará áudio por referência durável e download pós-commit em uma entrega
-   posterior;
+7. trata áudio por referência mínima cifrada e download pós-commit;
 8. reconectará com backoff, sem recriar sessão após logout explícito.
 
 A fronteira pura para texto diferencia `inbound` e `outbound`, preserva o ID
@@ -71,10 +70,11 @@ para o experimento removido com outro provedor permanecem sem uso porque
 migrations compartilhadas não são reescritas; removê-las exigirá migration
 destrutiva autorizada separadamente.
 
-## Portões antes de conectar
+## Estado e próximos portões
 
 - concluir a auditoria da versão 7 fixada e acompanhar a saída do estado RC;
-- fechar o contrato durável de mídia do Baileys;
 - validar termos de uso e aceitar formalmente o risco de bloqueio;
-- definir número controlado para homologação;
+- manter número controlado para homologação;
+- aprovar adapters reais de transcrição e análise antes de compartilhar
+  conteúdo com outro provedor;
 - obter autorização explícita antes de desconectar a sessão real.

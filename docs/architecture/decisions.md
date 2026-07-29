@@ -489,3 +489,29 @@ Identidades `@lid` sem `remoteJidAlt` são resolvidas pelo contato da própria
 sessão no autochat ou pelo `LIDMappingStore` do Signal. Se não houver um JID
 telefônico verificável, a mensagem continua descartada; o identificador opaco
 jamais é gravado como telefone.
+
+## ADR-056 — Áudio Baileys usa referência mínima cifrada e download pós-commit
+
+Uma mensagem de áudio é normalizada pelo processo Baileys com a mesma regra de
+identidade, direção e corte temporal do texto. Na transação de ingestão, o
+sistema persiste mensagem, `MediaAsset` pendente, referência mínima cifrada e
+outbox. A referência contém somente `url`, `directPath` e `mediaKey` necessários
+ao download; usa AES-256-GCM com a chave externa da sessão, formato próprio e
+AAD vinculada a workspace, conta e ID externo da mensagem.
+
+O job BullMQ continua carregando somente IDs internos. Um worker separado
+reabre a referência no PostgreSQL, limita download a 30 segundos e
+`MEDIA_MAX_BYTES`, grava uma tentativa no volume privado e só então confirma o
+ativo e libera a transcrição. Leases, chave física por tentativa e reconciliação
+de órfãos mantêm retry e idempotência.
+
+Adapters `fake` de análise e transcrição são exclusivos do profile `demo`.
+Quando o profile `baileys` está ativo, somente o downloader Baileys é iniciado;
+análise e transcrição reais permanecem desligadas até a aprovação de adapters
+específicos. Jobs pendentes preservam a mensagem original e não produzem
+sugestões ou transcrições inventadas.
+
+Na fase atual, banco, Redis e mídia privada compartilham a VPS e os snapshots
+permanecem no próprio host por risco aceito pelo proprietário. Essa topologia
+não oferece recuperação contra perda integral da VPS e deverá ser revista antes
+de uma operação que exija disponibilidade ou recuperação de desastre.

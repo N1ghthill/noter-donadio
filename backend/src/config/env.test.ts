@@ -51,8 +51,8 @@ test('habilita somente adapters implementados', () => {
     ...required,
     WHATSAPP_ADAPTER: 'baileys',
   }).WHATSAPP_ADAPTER, 'baileys');
-  assert.throws(() => readEnvironment({
+  assert.equal(readEnvironment({
     ...required,
     MEDIA_DOWNLOAD_ADAPTER: 'baileys',
-  }));
+  }).MEDIA_DOWNLOAD_ADAPTER, 'baileys');
 });

@@ -43,6 +43,13 @@ test('áudio externo persiste referência e solicitação de download atomicamen
     pendingMedia: {
       externalMediaId: 'media-external-synthetic',
       mimeType: 'audio/ogg',
+      durationSeconds: 8,
+      encryptedProviderReference: {
+        encryptedData: Buffer.from('ciphertext-synthetic'),
+        iv: Buffer.alloc(12, 1),
+        authTag: Buffer.alloc(16, 2),
+        encryptionKeyVersion: 1,
+      },
     },
   });
 
@@ -53,6 +60,14 @@ test('áudio externo persiste referência e solicitação de download atomicamen
   assert.equal(asset.downloadState, 'pending');
   assert.equal(asset.storageKey, null);
   assert.equal(asset.transcriptionState, 'pending');
+  assert.equal(asset.durationSeconds, 8);
+  assert.deepEqual(
+    Buffer.from(asset.encryptedProviderReference ?? []),
+    Buffer.from('ciphertext-synthetic'),
+  );
+  assert.deepEqual(Buffer.from(asset.providerReferenceIv ?? []), Buffer.alloc(12, 1));
+  assert.deepEqual(Buffer.from(asset.providerReferenceAuthTag ?? []), Buffer.alloc(16, 2));
+  assert.equal(asset.providerReferenceKeyVersion, 1);
 
   const events = await prisma.outboxEvent.findMany({
     where: { aggregateId: result.messageId },

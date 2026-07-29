@@ -2,6 +2,7 @@ import { Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 
 import { createPrismaClient } from './config/database.js';
+import { readBaileysEnvironment } from './config/baileys-env.js';
 import { readEnvironment } from './config/env.js';
 import { createAppLogger, safeErrorContext } from './config/logger.js';
 import {
@@ -9,20 +10,37 @@ import {
   type MediaDownloader,
 } from './modules/media/domain/media-download.js';
 import { FakeMediaDownloader } from './modules/media/infrastructure/fake-media-downloader.js';
+import { BaileysMediaDownloader } from './modules/media/infrastructure/baileys-media-downloader.js';
 import { LocalMediaStorage } from './modules/media/infrastructure/local-media-storage.js';
 import { parseMediaDownloadJob } from './modules/media/infrastructure/media-download-job.js';
 import { PrismaMediaDownloadRepository } from './modules/media/infrastructure/prisma-media-download.repository.js';
+import { AuthStateCipher } from './modules/whatsapp/infrastructure/auth-state-cipher.js';
+import { BaileysMediaReferenceCipher } from './modules/whatsapp/infrastructure/baileys-media-reference.js';
 
 const environment = readEnvironment();
 const logger = createAppLogger('media-download-worker');
+const prisma = createPrismaClient(environment.DATABASE_URL);
 let downloader: MediaDownloader;
 if (environment.MEDIA_DOWNLOAD_ADAPTER === 'fake') {
   downloader = new FakeMediaDownloader();
+} else if (environment.MEDIA_DOWNLOAD_ADAPTER === 'baileys') {
+  const baileysEnvironment = readBaileysEnvironment();
+  const cipher = new AuthStateCipher(
+    new Map([[
+      baileysEnvironment.BAILEYS_ENCRYPTION_KEY_VERSION,
+      baileysEnvironment.BAILEYS_ENCRYPTION_KEY,
+    ]]),
+    baileysEnvironment.BAILEYS_ENCRYPTION_KEY_VERSION,
+  );
+  downloader = new BaileysMediaDownloader(
+    prisma,
+    new BaileysMediaReferenceCipher(cipher),
+    environment.MEDIA_MAX_BYTES,
+  );
 } else {
   throw new Error('MEDIA_DOWNLOAD_ADAPTER precisa estar habilitado explicitamente');
 }
 
-const prisma = createPrismaClient(environment.DATABASE_URL);
 const connection = new Redis(environment.REDIS_URL, { maxRetriesPerRequest: null });
 connection.on('error', (error) => {
   logger.error(safeErrorContext(error), 'Falha na conexão Redis do worker de download de mídia');
