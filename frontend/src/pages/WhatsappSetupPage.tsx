@@ -19,6 +19,7 @@ export function WhatsappSetupPage() {
   const [connection, setConnection] = useState<WhatsappConnection>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
+  const [notice, setNotice] = useState<string>();
 
   const load = useCallback(async () => {
     setError(undefined);
@@ -31,6 +32,7 @@ export function WhatsappSetupPage() {
   async function startSetup() {
     setBusy(true);
     setError(undefined);
+    setNotice(undefined);
     try { setConnection(await api.startWhatsappSetup()); }
     catch (caught: unknown) {
       if (caught instanceof ApiError && caught.code === 'already_connected') {
@@ -41,6 +43,30 @@ export function WhatsappSetupPage() {
       }
     }
     finally { setBusy(false); }
+  }
+
+  async function prepareReplacement() {
+    if (!connection?.accountId) return;
+    const confirmed = window.confirm(
+      'Preparar a conexão para um novo número? As credenciais do WhatsApp anterior serão removidas. Contatos, negociações, mensagens e áudios permanecerão no CRM.',
+    );
+    if (!confirmed) return;
+    setBusy(true);
+    setError(undefined);
+    setNotice(undefined);
+    try {
+      setConnection(await api.resetWhatsappAuthentication(connection.accountId));
+      setNotice('Autenticação anterior removida. Gere o QR somente quando o novo número estiver disponível.');
+    } catch (caught: unknown) {
+      if (caught instanceof ApiError && caught.code === 'still_connected') {
+        setError('A sessão ainda está conectada. Desvincule o aparelho no WhatsApp antes de substituí-la.');
+        await load();
+      } else {
+        setError('Não foi possível preparar a troca de número.');
+      }
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function simulateScan() {
@@ -66,6 +92,7 @@ export function WhatsappSetupPage() {
         <p>Prepare a conexão e acompanhe o estado da sessão sem expor credenciais no navegador.</p>
       </header>
       {error ? <ErrorState message={error} /> : null}
+      {notice ? <p className="muted" role="status">{notice}</p> : null}
 
       <section className="connection-grid">
         <article className="panel connection-status-card">
@@ -76,7 +103,15 @@ export function WhatsappSetupPage() {
             <div><dt>Número</dt><dd>{connection.phoneNumber ?? 'Ainda não vinculado'}</dd></div>
             <div><dt>Atualizado</dt><dd>{connection.updatedAt ? new Date(connection.updatedAt).toLocaleString('pt-BR') : 'Sem atividade'}</dd></div>
           </dl>
-          {connection.status !== 'connected' ? (
+          {connection.adapter === 'baileys' && connection.status !== 'connected'
+            && connection.accountId && connection.phoneNumber ? (
+            <>
+              <button className="button secondary" type="button" disabled={busy} onClick={() => void prepareReplacement()}>
+                {busy ? 'Preparando…' : 'Preparar troca de número'}
+              </button>
+              <small>Remova a autenticação anterior antes de gerar um QR para outro número.</small>
+            </>
+          ) : connection.status !== 'connected' ? (
             <button className="button primary" type="button" disabled={busy} onClick={() => void startSetup()}>
               {busy ? 'Processando…' : connection.qrCode ? 'Gerar outro QR' : 'Iniciar configuração'}
             </button>

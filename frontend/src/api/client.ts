@@ -235,6 +235,13 @@ export const api = {
     return request<WhatsappConnection>('/api/whatsapp/setup', { method: 'POST' });
   },
 
+  async resetWhatsappAuthentication(accountId: string) {
+    return request<WhatsappConnection>('/api/whatsapp/session', {
+      method: 'DELETE',
+      body: JSON.stringify({ confirmation: accountId }),
+    });
+  },
+
   async simulateWhatsappConnection() {
     return request<WhatsappConnection>('/api/whatsapp/demo/connect', { method: 'POST' });
   },

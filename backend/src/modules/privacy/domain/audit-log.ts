@@ -9,6 +9,7 @@ export const AUDIT_ACTIONS = [
   'analysis_accepted',
   'analysis_ignored',
   'workspace_exported',
+  'whatsapp_auth_reset',
 ] as const;
 
 export type AuditAction = typeof AUDIT_ACTIONS[number];

@@ -98,6 +98,7 @@ enum AuditAction {
   analysis_accepted
   analysis_ignored
   workspace_exported
+  whatsapp_auth_reset
 }
 
 model Workspace {

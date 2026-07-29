@@ -47,6 +47,13 @@ Uma versão desatualizada na edição comercial, mudança de etapa, conclusão d
 está ativa. A interface remove a ação nesse estado para não substituir uma
 sessão saudável por uma tentativa desnecessária de QR.
 
+`DELETE /api/whatsapp/session` prepara a conta para outro número. A operação
+aceita somente `{ "confirmation": "<accountId>" }`, deriva workspace e usuário
+da sessão, recusa uma conexão ainda ativa e remove atomicamente apenas as
+credenciais Baileys cifradas e o telefone associado. Contatos, negociações,
+mensagens, mídias e auditoria são preservados. A ação fica registrada como
+`whatsapp_auth_reset`; gerar QR continua sendo uma ação separada e explícita.
+
 A decisão de análise usa `decisionId` UUID criado pelo cliente. `accepted` exige pelo menos um campo aplicável, incluindo `nextAction` e `nextActionDueDate`; `ignored` não aceita campos aplicáveis. Uma análise possui uma única decisão imutável e guarda os valores efetivamente aplicados. Repetir o mesmo UUID e payload é idempotente; outra decisão para a mesma análise retorna `409 decision_conflict`. Aceites atualizam CRM, marcas de confirmação manual, auditoria e outbox na mesma transação serializável.
 
 O detalhe, a criação e a edição nunca recebem `workspaceId` do navegador: o isolamento e o usuário autor são derivados exclusivamente da sessão. Valores monetários trafegam como decimal em string e aceitam no máximo duas casas. A edição aceita `null` para limpar conscientemente um campo e ainda registra sua confirmação manual, impedindo reposição silenciosa pela IA. O detalhe expõe os instantes de confirmação de valor, produto, previsão, próxima ação e seu prazo. Datas sem horário trafegam em `YYYY-MM-DD`. Eventos de atualização contêm somente IDs e nomes dos campos alterados.

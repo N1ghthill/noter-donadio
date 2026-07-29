@@ -31,6 +31,7 @@ class FakeSessionAuthenticator implements SessionAuthenticator {
 
 class FakeConnectionRepository implements WhatsappConnectionRepository {
   public workspaceId?: string;
+  public actorUserId?: string;
   private stored: StoredWhatsappConnection | null = null;
 
   public async find(workspaceId: string) {
@@ -50,6 +51,18 @@ class FakeConnectionRepository implements WhatsappConnectionRepository {
     return this.stored;
   }
 
+  public async resetAuthentication(
+    workspaceId: string,
+    accountId: string,
+    actorUserId: string,
+  ) {
+    this.workspaceId = workspaceId;
+    this.actorUserId = actorUserId;
+    assert.equal(accountId, ACCOUNT_ID);
+    this.stored = connection('disconnected', null);
+    return this.stored;
+  }
+
   public async markStatus(
     workspaceId: string,
     _accountId: string,
@@ -58,6 +71,10 @@ class FakeConnectionRepository implements WhatsappConnectionRepository {
     this.workspaceId = workspaceId;
     this.stored = connection(status, this.stored?.phoneNumber ?? null);
     return this.stored;
+  }
+
+  public seed(status: StoredWhatsappConnection['status'], phoneNumber: string | null) {
+    this.stored = connection(status, phoneNumber);
   }
 }
 
@@ -151,6 +168,82 @@ test('contrato Baileys não expõe ação de simulação', async (context) => {
     headers: { cookie: SESSION_COOKIE },
   });
   assert.equal(simulation.statusCode, 404);
+});
+
+test('substituição de número exige confirmação e limpa apenas uma sessão desconectada', async (context) => {
+  const repository = new FakeConnectionRepository();
+  repository.seed('disconnected', '5571000000001');
+  const gateway: WhatsappGateway = {
+    adapter: 'baileys',
+    canSimulate: false,
+    async createQrCode() {
+      return { payload: 'qr-real-sintético', expiresAt: '2026-07-29T18:05:00.000Z' };
+    },
+    async currentQrCode() {
+      return null;
+    },
+  };
+  const app = buildApp({
+    sessionAuthenticator: new FakeSessionAuthenticator(),
+    whatsappService: new WhatsappConnectionService(repository, gateway),
+  });
+  context.after(async () => app.close());
+
+  assert.equal((await app.inject({
+    method: 'DELETE', url: '/api/whatsapp/session',
+  })).statusCode, 401);
+  assert.equal((await app.inject({
+    method: 'DELETE', url: '/api/whatsapp/session',
+    headers: { cookie: SESSION_COOKIE }, payload: {},
+  })).statusCode, 400);
+  assert.equal((await app.inject({
+    method: 'DELETE', url: '/api/whatsapp/session',
+    headers: { cookie: SESSION_COOKIE },
+    payload: { confirmation: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' },
+  })).statusCode, 404);
+
+  const reset = await app.inject({
+    method: 'DELETE', url: '/api/whatsapp/session',
+    headers: { cookie: SESSION_COOKIE }, payload: { confirmation: ACCOUNT_ID },
+  });
+  assert.equal(reset.statusCode, 200);
+  assert.equal(reset.json().status, 'disconnected');
+  assert.equal(reset.json().phoneNumber, null);
+  assert.equal(repository.actorUserId, 'd86e2931-7552-41f6-831f-85dd34c8bf29');
+
+  const setup = await app.inject({
+    method: 'POST', url: '/api/whatsapp/setup', headers: { cookie: SESSION_COOKIE },
+  });
+  assert.equal(setup.statusCode, 200);
+  assert.equal(setup.json().status, 'qr_generated');
+});
+
+test('substituição não apaga credenciais enquanto a sessão está conectada', async (context) => {
+  const repository = new FakeConnectionRepository();
+  repository.seed('connected', '5571000000001');
+  const gateway: WhatsappGateway = {
+    adapter: 'baileys',
+    canSimulate: false,
+    async createQrCode() {
+      throw new Error('não deveria gerar QR');
+    },
+    async currentQrCode() {
+      return null;
+    },
+  };
+  const app = buildApp({
+    sessionAuthenticator: new FakeSessionAuthenticator(),
+    whatsappService: new WhatsappConnectionService(repository, gateway),
+  });
+  context.after(async () => app.close());
+
+  const response = await app.inject({
+    method: 'DELETE', url: '/api/whatsapp/session',
+    headers: { cookie: SESSION_COOKIE }, payload: { confirmation: ACCOUNT_ID },
+  });
+  assert.equal(response.statusCode, 409);
+  assert.equal(response.json().error, 'still_connected');
+  assert.equal(repository.actorUserId, undefined);
 });
 
 function connection(

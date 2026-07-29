@@ -13,8 +13,8 @@ corte temporal e nova homologação.
 
 Atualização de 29/07/2026: os adapters OpenAI de transcrição e análise
 estruturada foram implementados com corte obrigatório de autorização, chave
-restrita aos workers e bloqueio do backlog. A validação local aprovou 180 testes
-(1 contratos, 146 backend e 33 frontend), lint, typecheck, build, auditoria de
+restrita aos workers e bloqueio do backlog. A validação local aprovou 185 testes
+(1 contratos, 149 backend e 35 frontend), lint, typecheck, build, auditoria de
 produção e os perfis Compose `baileys+assistive`. A aceitação real depende da
 injeção interativa da chave e de uma chamada homologada no áudio autorizado.
 
@@ -27,6 +27,11 @@ Após o deploy, a aplicação permaneceu saudável, porém o WhatsApp encerrou a
 sessão Baileys com código terminal `401`. O processo se comportou de forma
 segura: marcou a conta como desconectada e não entrou em loop. A conexão real
 volta a fazer parte da aceitação somente depois de novo pareamento autorizado.
+
+O pareamento foi adiado até a aquisição de outro número. O fluxo de substituição
+foi implementado e validado sem ser executado na VPS: exige confirmação,
+recusa sessão conectada e preserva todo o histórico ao remover apenas as
+credenciais antigas.
 
 ## Resultado
 

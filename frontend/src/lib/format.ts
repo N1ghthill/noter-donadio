@@ -35,6 +35,7 @@ export const AUDIT_ACTION_LABELS = {
   analysis_accepted: 'Sugestão da IA aplicada',
   analysis_ignored: 'Sugestão da IA ignorada',
   workspace_exported: 'Workspace exportado',
+  whatsapp_auth_reset: 'Autenticação do WhatsApp preparada para substituição',
 } as const;
 
 export const AUDIT_FIELD_LABELS: Record<string, string> = {
@@ -51,6 +52,7 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   nextAction: 'próxima ação',
   nextActionDueDate: 'prazo da próxima ação',
   closeReason: 'motivo do fechamento',
+  whatsappAuthentication: 'autenticação do WhatsApp',
 };
 
 export function formatDateOnly(value: string | null): string {

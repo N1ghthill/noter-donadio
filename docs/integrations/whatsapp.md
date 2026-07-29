@@ -46,6 +46,12 @@ Quando a conta já está `connected`, a API recusa um novo setup com
 transitórias usam o auth state existente; recriar setup não é uma ação de
 recuperação.
 
+Se o número anterior foi desvinculado fora do noter.donadio, a interface exige
+uma confirmação específica antes de preparar a substituição. Essa ação apaga
+somente o auth state Baileys cifrado, limpa o telefone da conta e registra
+auditoria; histórico comercial e mídias permanecem intactos. Ela não inicia
+socket, não gera QR e não conecta o novo número automaticamente.
+
 A fronteira pura para texto diferencia `inbound` e `outbound`, preserva o ID
 externo e não aceita workspace ou conta vindos do evento. Somente eventos
 `notify` são ingeridos, evitando importar histórico completo.

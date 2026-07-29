@@ -241,6 +241,22 @@ describe('cliente HTTP', () => {
     expect(fetchMock.mock.calls[1]?.[1]?.headers).not.toHaveProperty('content-type');
   });
 
+  it('confirma a substituição do WhatsApp somente com o identificador da conta', async () => {
+    const accountId = '2f31a180-6127-48cd-82da-7b324e49a31d';
+    const fetchMock = vi.fn().mockResolvedValue(new Response(
+      JSON.stringify({ accountId, status: 'disconnected' }),
+      { status: 200 },
+    ));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await api.resetWhatsappAuthentication(accountId);
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/whatsapp/session', expect.objectContaining({
+      method: 'DELETE',
+      body: JSON.stringify({ confirmation: accountId }),
+    }));
+  });
+
   it('consulta conversas e simula entrada com chave idempotente', async () => {
     const fetchMock = vi.fn().mockImplementation(async () => new Response(
       JSON.stringify({ data: [] }),

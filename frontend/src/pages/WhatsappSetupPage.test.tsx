@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { RealtimeProvider } from '../realtime/RealtimeContext.js';
@@ -50,6 +50,43 @@ describe('configuração simulada do WhatsApp', () => {
     expect(await screen.findByRole('heading', { name: 'WhatsApp conectado' })).toBeInTheDocument();
     expect(screen.getByText(/mensagens de texto e áudio/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /configuração|QR/i })).not.toBeInTheDocument();
+  });
+
+  it('prepara troca de número sem apagar dados do CRM e somente após confirmação', async () => {
+    const oldConnection = {
+      accountId: '2f31a180-6127-48cd-82da-7b324e49a31d',
+      phoneNumber: '5571000000001',
+      updatedAt: '2026-07-29T00:00:00.000Z',
+      adapter: 'baileys',
+      canSimulate: false,
+      status: 'disconnected',
+      qrCode: null,
+    };
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(response(oldConnection))
+      .mockResolvedValueOnce(response({ ...oldConnection, phoneNumber: null }));
+    const confirmMock = vi.fn().mockReturnValueOnce(false).mockReturnValueOnce(true);
+    vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal('confirm', confirmMock);
+
+    render(<RealtimeProvider><WhatsappSetupPage /></RealtimeProvider>);
+    const replace = await screen.findByRole('button', { name: 'Preparar troca de número' });
+    expect(screen.queryByRole('button', { name: 'Iniciar configuração' })).not.toBeInTheDocument();
+
+    fireEvent.click(replace);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    fireEvent.click(replace);
+
+    expect(await screen.findByRole('status')).toHaveTextContent(/Gere o QR somente quando/);
+    expect(screen.getByRole('button', { name: 'Iniciar configuração' })).toBeInTheDocument();
+    await waitFor(() => expect(fetchMock).toHaveBeenLastCalledWith(
+      '/api/whatsapp/session',
+      expect.objectContaining({
+        method: 'DELETE',
+        body: JSON.stringify({ confirmation: oldConnection.accountId }),
+      }),
+    ));
+    expect(confirmMock).toHaveBeenLastCalledWith(expect.stringContaining('mensagens e áudios permanecerão'));
   });
 });
 

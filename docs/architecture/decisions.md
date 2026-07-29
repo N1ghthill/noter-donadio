@@ -570,3 +570,17 @@ state existente. Um novo QR não é tratado como retry e somente poderá ser
 solicitado depois que a sessão estiver efetivamente desconectada. Isso evita o
 fluxo observado em que uma conta saudável era colocada em setup, aguardava o
 timeout do QR e mostrava erro ao usuário.
+
+## ADR-060 — Substituição de número separa reset de autenticação e novo QR
+
+Uma sessão encerrada de forma terminal pode manter auth state cifrado no banco.
+Reutilizá-lo em um novo setup repetiria o erro terminal e impediria o
+pareamento de outro número. A preparação da troca é, portanto, uma mutação
+explícita e separada de `setup`.
+
+O endpoint exige sessão administrativa e confirmação do `accountId`, recusa
+conta ainda conectada e, em transação serializável, remove somente
+`WhatsappAuthKey`, limpa o telefone, mantém a conta desconectada, registra
+`whatsapp_auth_reset` e cria o evento de reconciliação. Contatos, negociações,
+mensagens e mídias não são alterados. A ação não publica comando ao processo
+Baileys e o QR só será gerado posteriormente por outra ação do usuário.

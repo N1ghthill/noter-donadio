@@ -26,6 +26,11 @@ export interface WhatsappConnectionRepository {
   find(workspaceId: string): Promise<StoredWhatsappConnection | null>;
   markSetupStarted(workspaceId: string): Promise<StoredWhatsappConnection>;
   markConnected(workspaceId: string, phoneNumber: string): Promise<StoredWhatsappConnection>;
+  resetAuthentication(
+    workspaceId: string,
+    accountId: string,
+    actorUserId: string,
+  ): Promise<StoredWhatsappConnection>;
   markStatus(
     workspaceId: string,
     accountId: string,
@@ -44,6 +49,8 @@ export interface WhatsappGateway {
 export class QrCodeUnavailableError extends Error {}
 export class WhatsappSimulationUnavailableError extends Error {}
 export class WhatsappAlreadyConnectedError extends Error {}
+export class WhatsappAuthenticationResetUnavailableError extends Error {}
+export class WhatsappAccountNotFoundError extends Error {}
 
 export class WhatsappConnectionService {
   public constructor(
@@ -69,6 +76,21 @@ export class WhatsappConnectionService {
     if (!this.gateway.simulateScan) throw new WhatsappSimulationUnavailableError();
     const result = await this.gateway.simulateScan(workspaceId);
     const stored = await this.repository.markConnected(workspaceId, result.phoneNumber);
+    return { ...toStoredView(stored), qrCode: null, ...this.gatewayCapabilities() };
+  }
+
+  public async resetAuthentication(
+    workspaceId: string,
+    accountId: string,
+    actorUserId: string,
+  ): Promise<WhatsappConnectionView> {
+    if (this.gateway.adapter !== 'baileys') {
+      throw new WhatsappAuthenticationResetUnavailableError();
+    }
+    const current = await this.repository.find(workspaceId);
+    if (!current || current.accountId !== accountId) throw new WhatsappAccountNotFoundError();
+    if (current.status === 'connected') throw new WhatsappAlreadyConnectedError();
+    const stored = await this.repository.resetAuthentication(workspaceId, accountId, actorUserId);
     return { ...toStoredView(stored), qrCode: null, ...this.gatewayCapabilities() };
   }
 

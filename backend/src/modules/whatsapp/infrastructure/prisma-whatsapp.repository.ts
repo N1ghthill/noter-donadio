@@ -4,6 +4,7 @@ import type {
   WhatsappConnectionRepository,
 } from '../domain/whatsapp-connection.js';
 import type { WhatsappConnectionStatus } from '@noter/contracts';
+import { WhatsappAlreadyConnectedError } from '../domain/whatsapp-connection.js';
 
 const PRIMARY_ACCOUNT_IDENTIFIER = 'primary';
 
@@ -25,6 +26,36 @@ export class PrismaWhatsappConnectionRepository implements WhatsappConnectionRep
 
   public async markConnected(workspaceId: string, phoneNumber: string): Promise<StoredWhatsappConnection> {
     return this.updateState(workspaceId, 'connected', phoneNumber);
+  }
+
+  public async resetAuthentication(
+    workspaceId: string,
+    accountId: string,
+    actorUserId: string,
+  ): Promise<StoredWhatsappConnection> {
+    return this.prisma.$transaction(async (transaction) => {
+      const current = await transaction.whatsappAccount.findUnique({
+        where: { workspaceId_id: { workspaceId, id: accountId } },
+      });
+      if (!current) throw new WhatsappAccountBindingNotFoundError();
+      if (current.connectionStatus === 'connected') throw new WhatsappAlreadyConnectedError();
+
+      await transaction.whatsappAuthKey.deleteMany({ where: { workspaceId, accountId } });
+      const account = await transaction.whatsappAccount.update({
+        where: { workspaceId_id: { workspaceId, id: accountId } },
+        data: { connectionStatus: 'disconnected', phoneNumber: null },
+      });
+      await transaction.auditEvent.create({
+        data: {
+          workspaceId,
+          userId: actorUserId,
+          action: 'whatsapp_auth_reset',
+          changedFields: ['whatsappAuthentication', 'phoneNumber'],
+        },
+      });
+      await createConnectionEvent(transaction, workspaceId, account.id, 'disconnected');
+      return toStoredConnection(account);
+    }, { isolationLevel: 'Serializable' });
   }
 
   public async markStatus(
