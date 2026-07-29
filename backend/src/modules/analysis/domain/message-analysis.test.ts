@@ -69,6 +69,30 @@ test('reentrega concluída não chama o adapter', async () => {
   assert.equal(called, false);
 });
 
+test('mensagem anterior ao corte não chama o adapter externo', async () => {
+  let called = false;
+  const repository: MessageAnalysisRepository = {
+    async claim(input) {
+      assert.equal(input.notBefore?.toISOString(), '2026-07-29T00:00:00.000Z');
+      return { status: 'ineligible' };
+    },
+    async complete() { return false; },
+    async fail() {},
+  };
+  const analyzer: MessageAnalyzer = {
+    async analyze() { called = true; return VALID_RESULT; },
+  };
+
+  const result = await new MessageAnalysisService(
+    repository,
+    analyzer,
+    new Date('2026-07-29T00:00:00.000Z'),
+  ).execute(TARGET.workspaceId, TARGET.messageId);
+
+  assert.deepEqual(result, { status: 'skipped' });
+  assert.equal(called, false);
+});
+
 test('saída com campo extra é recusada e falha com código sanitizado', async () => {
   let failureCode: string | undefined;
   const repository: MessageAnalysisRepository = {

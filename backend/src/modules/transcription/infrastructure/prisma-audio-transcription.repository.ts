@@ -13,8 +13,27 @@ export class PrismaAudioTranscriptionRepository implements AudioTranscriptionRep
     attemptId: string;
     now: Date;
     staleBefore: Date;
+    notBefore: Date | null;
   }): Promise<TranscriptionClaim> {
     return this.prisma.$transaction(async (transaction) => {
+      if (input.notBefore !== null) {
+        const eligibleMessage = await transaction.message.findFirst({
+          where: {
+            id: input.messageId,
+            workspaceId: input.workspaceId,
+            createdAt: { gte: input.notBefore },
+          },
+          select: { id: true },
+        });
+        if (!eligibleMessage) {
+          const existingMessage = await transaction.message.findFirst({
+            where: { id: input.messageId, workspaceId: input.workspaceId },
+            select: { id: true },
+          });
+          return { status: existingMessage ? 'ineligible' : 'missing' };
+        }
+      }
+
       const claimed = await transaction.mediaAsset.updateMany({
         where: {
           workspaceId: input.workspaceId,
@@ -52,14 +71,16 @@ export class PrismaAudioTranscriptionRepository implements AudioTranscriptionRep
           messageId: input.messageId,
           transcriptionAttemptId: input.attemptId,
         },
-        select: { durationSeconds: true, mimeType: true },
+        select: { storageKey: true, durationSeconds: true, mimeType: true },
       });
+      if (!asset.storageKey) throw new Error('Ativo de mídia sem chave de armazenamento');
       return {
         status: 'claimed',
         target: {
           workspaceId: input.workspaceId,
           messageId: input.messageId,
           attemptId: input.attemptId,
+          storageKey: asset.storageKey,
           durationSeconds: asset.durationSeconds,
           mimeType: asset.mimeType,
         },

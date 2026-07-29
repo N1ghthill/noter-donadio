@@ -98,5 +98,7 @@ A direção aprovada é Baileys 7 com processo dedicado. A dependência fixada e
 auth state criptografado no PostgreSQL sustentam o conector real na VPS. QR,
 reconexão e mensagens novas recebidas ou enviadas pelo usuário estão
 integrados. Áudio é persistido com referência mínima cifrada e baixado
-pós-commit para o volume privado. Análise e transcrição reais ainda dependem de
-adapters aprovados; os fakes ficam restritos à demonstração sintética.
+pós-commit para o volume privado. Os adapters OpenAI de análise estruturada e
+transcrição estão implementados com corte obrigatório de autorização; os fakes
+ficam restritos à demonstração sintética. A ativação operacional exige segredo
+injetado de modo interativo e homologação no workspace controlado.

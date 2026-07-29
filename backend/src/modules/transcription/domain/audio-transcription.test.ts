@@ -13,6 +13,7 @@ const TARGET: AudioTranscriptionTarget = {
   workspaceId: '0e723f84-ec81-441e-b816-f3f179f25fe2',
   messageId: 'fbdff1c4-5a25-4e24-b694-d5dc6c21f227',
   attemptId: 'bcf87290-5230-4db5-84bb-3facdca61368',
+  storageKey: '0e723f84-ec81-441e-b816-f3f179f25fe2/fbdff1c4-5a25-4e24-b694-d5dc6c21f227.media',
   durationSeconds: 18,
   mimeType: 'audio/ogg',
 };
@@ -52,6 +53,30 @@ test('reentrega não chama o adapter quando a transcrição já terminou', async
     .execute(TARGET.workspaceId, TARGET.messageId);
 
   assert.deepEqual(result, { status: 'already_completed' });
+  assert.equal(called, false);
+});
+
+test('mensagem anterior ao corte não chama o adapter externo', async () => {
+  let called = false;
+  const repository: AudioTranscriptionRepository = {
+    async claim(input) {
+      assert.equal(input.notBefore?.toISOString(), '2026-07-29T00:00:00.000Z');
+      return { status: 'ineligible' };
+    },
+    async complete() { return false; },
+    async fail() {},
+  };
+  const transcriber: AudioTranscriber = {
+    async transcribe() { called = true; throw new Error('não deveria executar'); },
+  };
+
+  const result = await new AudioTranscriptionService(
+    repository,
+    transcriber,
+    new Date('2026-07-29T00:00:00.000Z'),
+  ).execute(TARGET.workspaceId, TARGET.messageId);
+
+  assert.deepEqual(result, { status: 'skipped' });
   assert.equal(called, false);
 });
 

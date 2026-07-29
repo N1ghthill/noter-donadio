@@ -7,6 +7,7 @@ export interface AudioTranscriptionTarget {
   readonly workspaceId: string;
   readonly messageId: string;
   readonly attemptId: string;
+  readonly storageKey: string;
   readonly durationSeconds: number | null;
   readonly mimeType: string | null;
 }
@@ -20,7 +21,7 @@ export interface AudioTranscriptionResult {
 
 export type TranscriptionClaim =
   | { readonly status: 'claimed'; readonly target: AudioTranscriptionTarget }
-  | { readonly status: 'completed' | 'busy' | 'missing' };
+  | { readonly status: 'completed' | 'busy' | 'missing' | 'ineligible' };
 
 export interface AudioTranscriptionRepository {
   claim(input: {
@@ -29,6 +30,7 @@ export interface AudioTranscriptionRepository {
     attemptId: string;
     now: Date;
     staleBefore: Date;
+    notBefore: Date | null;
   }): Promise<TranscriptionClaim>;
   complete(input: AudioTranscriptionTarget & AudioTranscriptionResult & { completedAt: Date }): Promise<boolean>;
   fail(input: AudioTranscriptionTarget & { failureCode: string }): Promise<void>;
@@ -39,13 +41,14 @@ export interface AudioTranscriber {
 }
 
 export interface AudioTranscriptionExecution {
-  readonly status: 'completed' | 'already_completed' | 'busy' | 'missing';
+  readonly status: 'completed' | 'already_completed' | 'busy' | 'missing' | 'skipped';
 }
 
 export class AudioTranscriptionService {
   public constructor(
     private readonly repository: AudioTranscriptionRepository,
     private readonly transcriber: AudioTranscriber,
+    private readonly processingNotBefore: Date | null = null,
   ) {}
 
   public async execute(
@@ -59,10 +62,13 @@ export class AudioTranscriptionService {
       attemptId: randomUUID(),
       now,
       staleBefore: new Date(now.getTime() - LEASE_DURATION_MS),
+      notBefore: this.processingNotBefore,
     });
 
     if (claim.status !== 'claimed') {
-      return { status: claim.status === 'completed' ? 'already_completed' : claim.status };
+      if (claim.status === 'completed') return { status: 'already_completed' };
+      if (claim.status === 'ineligible') return { status: 'skipped' };
+      return { status: claim.status };
     }
 
     try {

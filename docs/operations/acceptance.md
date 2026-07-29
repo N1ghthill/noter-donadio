@@ -11,6 +11,13 @@ workers falsos foram removidos do profile real. Transcrição e análise reais
 continuam fora desta aceitação até escolha de provedor, decisão sobre backlog e
 nova homologação.
 
+Atualização de 29/07/2026: os adapters OpenAI de transcrição e análise
+estruturada foram implementados com corte obrigatório de autorização, chave
+restrita aos workers e bloqueio do backlog. A validação local aprovou 179 testes
+(1 contratos, 146 backend e 32 frontend), lint, typecheck, build, auditoria de
+produção e os perfis Compose `baileys+assistive`. A aceitação real depende da
+injeção interativa da chave e de uma chamada homologada no áudio autorizado.
+
 ## Resultado
 
 Os fluxos comerciais e administrativos implementados estão aceitos para demonstração com dados fictícios. Isso não constitui liberação para dados reais ou provedores externos.

@@ -61,6 +61,24 @@ set_env_value() {
   mv "${temporary}" .env
 }
 
+add_compose_profile() {
+  local profile="$1"
+  local current="${COMPOSE_PROFILES:-}"
+  local configured
+  IFS=',' read -r -a configured <<< "${current}"
+  for item in "${configured[@]}"; do
+    if test "${item}" = "${profile}"; then
+      printf '%s' "${current}"
+      return
+    fi
+  done
+  if test -n "${current}"; then
+    printf '%s,%s' "${current}" "${profile}"
+  else
+    printf '%s' "${profile}"
+  fi
+}
+
 if test "${enable_baileys}" = "1"; then
   binding="$(
     docker compose "${compose_arguments[@]}" exec -T postgres \
@@ -76,7 +94,7 @@ if test "${enable_baileys}" = "1"; then
   baileys_account_id="${binding##*|}"
   baileys_encryption_key="${BAILEYS_ENCRYPTION_KEY:-$(openssl rand -base64 32)}"
   set_env_value WHATSAPP_ADAPTER baileys
-  set_env_value COMPOSE_PROFILES baileys
+  set_env_value COMPOSE_PROFILES "$(add_compose_profile baileys)"
   set_env_value MEDIA_DOWNLOAD_ADAPTER baileys
   set_env_value BAILEYS_WORKSPACE_ID "${baileys_workspace_id}"
   set_env_value BAILEYS_ACCOUNT_ID "${baileys_account_id}"
@@ -94,6 +112,11 @@ if test -n "$(git status --porcelain)"; then
   exit 1
 fi
 
+if test "$(id -u)" = "0" && id noterops >/dev/null 2>&1; then
+  /usr/sbin/visudo -cf deploy/sudoers/noterops >/dev/null
+  install -m 440 deploy/sudoers/noterops /etc/sudoers.d/noterops
+fi
+
 docker compose "${compose_arguments[@]}" config --quiet
 
 if test "${SKIP_BACKUP:-0}" != "1"; then
@@ -103,16 +126,27 @@ fi
 docker compose "${compose_arguments[@]}" build backend frontend
 docker compose "${compose_arguments[@]}" up -d --remove-orphans
 
-demo_profile_enabled=0
+assistive_workers_enabled=0
 IFS=',' read -r -a configured_profiles <<< "${COMPOSE_PROFILES:-}"
 for configured_profile in "${configured_profiles[@]}"; do
-  if test "${configured_profile}" = "demo"; then
-    demo_profile_enabled=1
+  if test "${configured_profile}" = "demo" || test "${configured_profile}" = "assistive"; then
+    assistive_workers_enabled=1
   fi
 done
-if test "${demo_profile_enabled}" = "0"; then
-  docker compose "${compose_arguments[@]}" --profile demo stop analysis transcription
-  docker compose "${compose_arguments[@]}" --profile demo rm -f analysis transcription
+if test "${assistive_workers_enabled}" = "0"; then
+  docker compose "${compose_arguments[@]}" --profile demo --profile assistive stop analysis transcription
+  docker compose "${compose_arguments[@]}" --profile demo --profile assistive rm -f analysis transcription
+else
+  for worker_service in analysis transcription; do
+    worker_container="$(
+      docker compose "${compose_arguments[@]}" ps --status running --quiet "${worker_service}"
+    )"
+    if test -z "${worker_container}"; then
+      printf 'O worker %s não permaneceu em execução; deploy cancelado.\n' "${worker_service}" >&2
+      docker compose "${compose_arguments[@]}" logs --tail 50 --no-color "${worker_service}" >&2
+      exit 1
+    fi
+  done
 fi
 
 for _attempt in $(seq 1 60); do

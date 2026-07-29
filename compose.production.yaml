@@ -111,6 +111,34 @@ services:
     <<: *backend
     command: ["node", "dist/realtime.main.js"]
 
+  transcription:
+    <<: *backend
+    profiles: ["assistive"]
+    command: ["node", "dist/transcription.main.js"]
+    environment:
+      <<: *backend-environment
+      TRANSCRIPTION_ADAPTER: ${TRANSCRIPTION_ADAPTER:-disabled}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_TRANSCRIPTION_MODEL: ${OPENAI_TRANSCRIPTION_MODEL:-gpt-4o-mini-transcribe}
+      OPENAI_TIMEOUT_MS: ${OPENAI_TIMEOUT_MS:-30000}
+      OPENAI_MAX_RETRIES: ${OPENAI_MAX_RETRIES:-2}
+      OPENAI_TRANSCRIPTION_MAX_DURATION_SECONDS: ${OPENAI_TRANSCRIPTION_MAX_DURATION_SECONDS:-300}
+      ASSISTIVE_PROCESSING_NOT_BEFORE: ${ASSISTIVE_PROCESSING_NOT_BEFORE:-}
+
+  analysis:
+    <<: *backend
+    profiles: ["assistive"]
+    command: ["node", "dist/analysis.main.js"]
+    environment:
+      <<: *backend-environment
+      AI_ADAPTER: ${AI_ADAPTER:-disabled}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_ANALYSIS_MODEL: ${OPENAI_ANALYSIS_MODEL:-gpt-5.6-sol}
+      OPENAI_TIMEOUT_MS: ${OPENAI_TIMEOUT_MS:-30000}
+      OPENAI_MAX_RETRIES: ${OPENAI_MAX_RETRIES:-2}
+      OPENAI_ANALYSIS_MAX_OUTPUT_TOKENS: ${OPENAI_ANALYSIS_MAX_OUTPUT_TOKENS:-1000}
+      ASSISTIVE_PROCESSING_NOT_BEFORE: ${ASSISTIVE_PROCESSING_NOT_BEFORE:-}
+
   media-download:
     <<: *backend
     profiles: ["media-download", "baileys"]

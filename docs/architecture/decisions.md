@@ -534,3 +534,26 @@ Antes dessa ativação, o proprietário deve decidir separadamente se jobs
 acumulados serão descartados do processamento assistivo ou processados pelo
 novo provedor. A decisão deve considerar finalidade, custo e transmissão de
 dados antigos; não haverá consumo retroativo silencioso.
+
+## ADR-058 — OpenAI processa somente a janela explicitamente autorizada
+
+Em 29/07/2026, o proprietário aprovou OpenAI para transcrever o áudio real mais
+recente usado na homologação e analisar apenas mensagens a partir desse
+instante. O backlog anterior não está autorizado.
+
+Transcrição usa por padrão `gpt-4o-mini-transcribe` no endpoint de upload de
+arquivo. Análise usa por padrão `gpt-5.6-sol` na Responses API, Structured
+Outputs, `store: false` e o prompt versionado `message-extraction-v1`. Modelos,
+timeout, retries e limites são configuráveis, mas não há fallback automático
+para outro provedor ou modelo.
+
+Quando qualquer adapter OpenAI inicia, `ASSISTIVE_PROCESSING_NOT_BEFORE` é
+obrigatório. O repositório verifica `Message.createdAt` antes de adquirir o
+lease ou chamar o adapter. Reentrega BullMQ, reinício ou job acumulado anterior
+ao corte termina como ignorado sem transmissão externa. A ativação interativa
+seleciona como corte a mídia Baileys real mais recente, marca mídias antigas
+pendentes com código sanitizado e preserva mensagem e áudio originais.
+
+A chave é lida sem eco pelo TTY, permanece no `.env` da VPS com modo `600` e é
+injetada somente nos dois workers. Jobs e eventos continuam contendo apenas
+IDs; logs não recebem conteúdo, arquivo, transcrição ou segredo.

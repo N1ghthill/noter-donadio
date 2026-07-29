@@ -57,13 +57,13 @@ O fluxo de exclusão, cascatas, auditoria minimizada e limpeza de mídia está e
 O fluxo da interface e sua execução local estão em [`docs/frontend/mvp-ui.md`](docs/frontend/mvp-ui.md).
 O fluxo Socket.IO, isolamento por workspace e contratos de eventos estão em [`docs/realtime/events.md`](docs/realtime/events.md).
 O setup local e o conector Baileys estão em [`docs/integrations/whatsapp.md`](docs/integrations/whatsapp.md).
-O worker idempotente e o adapter falso de áudio estão em [`docs/integrations/transcription.md`](docs/integrations/transcription.md).
+O worker idempotente e os adapters de áudio estão em [`docs/integrations/transcription.md`](docs/integrations/transcription.md).
 O armazenamento privado local, acesso assinado, player e retenção estão em [`docs/integrations/media.md`](docs/integrations/media.md).
 O worker de análise assistiva, seu contrato estrito e seus limites estão em [`docs/integrations/analysis.md`](docs/integrations/analysis.md).
 O empacotamento em containers, secrets, migrations, backup e limites de produção estão em [`docs/operations/production.md`](docs/operations/production.md).
 O perfil local de Prometheus, Alertmanager e Grafana, seus alertas e runbooks estão em [`docs/operations/observability.md`](docs/operations/observability.md).
 O perfil transitório para aplicação, PostgreSQL, Redis e workers em uma única VPS está em [`docs/operations/vps.md`](docs/operations/vps.md).
 
-A aceitação do marco de demonstração `v0.2.0-mvp` está registrada em [`docs/operations/acceptance.md`](docs/operations/acceptance.md). Os portões remanescentes para transcrição e análise reais estão em [`docs/operations/provider-readiness.md`](docs/operations/provider-readiness.md).
+A aceitação do marco de demonstração `v0.2.0-mvp` está registrada em [`docs/operations/acceptance.md`](docs/operations/acceptance.md). A ativação controlada e os portões remanescentes dos provedores estão em [`docs/operations/provider-readiness.md`](docs/operations/provider-readiness.md).
 
 Com o ambiente local iniciado, `/pipeline` permite filtrar e acompanhar negociações, concluir próximas ações e registrar fechamentos; `/` exibe indicadores agregados e `/administracao` permite revogar sessões, consultar a auditoria global e exportar os dados do workspace. `/conversas` apresenta a caixa de entrada persistida e permite simular uma mensagem recebida sem conectar ou enviar dados a um WhatsApp real.

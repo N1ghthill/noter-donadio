@@ -17,6 +17,7 @@ export class PrismaMessageAnalysisRepository implements MessageAnalysisRepositor
     attemptId: string;
     now: Date;
     staleBefore: Date;
+    notBefore: Date | null;
   }): Promise<MessageAnalysisClaim> {
     return this.prisma.$transaction(async (transaction) => {
       const message = await transaction.message.findFirst({
@@ -27,12 +28,16 @@ export class PrismaMessageAnalysisRepository implements MessageAnalysisRepositor
           direction: true,
           messageType: true,
           content: true,
+          createdAt: true,
           mediaAsset: {
             select: { transcriptionState: true, transcriptionText: true },
           },
         },
       });
       if (!message?.negotiationId) return { status: 'missing' };
+      if (input.notBefore !== null && message.createdAt < input.notBefore) {
+        return { status: 'ineligible' };
+      }
       const text = message.messageType === 'audio'
         ? message.mediaAsset?.transcriptionText
         : message.content;

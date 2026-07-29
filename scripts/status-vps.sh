@@ -3,6 +3,7 @@ set -euo pipefail
 
 diagnose_baileys=0
 diagnose_media=0
+diagnose_assistive=0
 for argument in "$@"; do
   case "${argument}" in
     --diagnose-baileys)
@@ -10,6 +11,9 @@ for argument in "$@"; do
       ;;
     --diagnose-media)
       diagnose_media=1
+      ;;
+    --diagnose-assistive)
+      diagnose_assistive=1
       ;;
     *)
       printf 'Argumento desconhecido: %s\n' "${argument}" >&2
@@ -89,4 +93,25 @@ if test "${diagnose_media}" = "1"; then
         LEFT JOIN media_assets ON media_assets.message_id = messages.id;
       "
   docker compose "${compose_arguments[@]}" logs --tail 100 --no-color media-download
+fi
+
+if test "${diagnose_assistive}" = "1"; then
+  docker compose -f "${compose_file}" exec -T postgres \
+    psql --username="${DB_USER}" --dbname="${DB_NAME:-noter_donadio}" \
+      --no-align --tuples-only --field-separator='|' \
+      --command="
+        SELECT
+          COUNT(*) FILTER (WHERE transcription_state = 'pending') AS transcription_pending,
+          COUNT(*) FILTER (WHERE transcription_state = 'processing') AS transcription_processing,
+          COUNT(*) FILTER (WHERE transcription_state = 'completed') AS transcription_completed,
+          COUNT(*) FILTER (WHERE transcription_state = 'failed') AS transcription_failed
+        FROM media_assets;
+        SELECT
+          COUNT(*) FILTER (WHERE state = 'pending') AS analysis_pending,
+          COUNT(*) FILTER (WHERE state = 'processing') AS analysis_processing,
+          COUNT(*) FILTER (WHERE state = 'completed') AS analysis_completed,
+          COUNT(*) FILTER (WHERE state = 'failed') AS analysis_failed
+        FROM ai_analyses;
+      "
+  docker compose "${compose_arguments[@]}" logs --tail 100 --no-color transcription analysis
 fi

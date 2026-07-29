@@ -2,11 +2,11 @@
 
 ## Estado implementado
 
-O MVP possui um worker BullMQ separado para transcrição. O único adapter
-disponível ainda é `fake`: ele não lê os bytes armazenados nem chama serviços
-externos e existe somente no profile local `demo`. O profile real `baileys` não
-inicia esse worker, evitando que conversas reais recebam transcrições
-inventadas.
+O MVP possui um worker BullMQ separado para transcrição. O adapter `fake`
+continua exclusivo do profile local `demo`. O adapter `openai`, quando
+explicitamente habilitado pelo profile `assistive`, lê o arquivo do volume
+privado e usa a API de transcrição por arquivo. A configuração padrão usa
+`gpt-4o-mini-transcribe`, idioma `pt` e persiste a localidade `pt-BR`.
 
 ```text
 mensagem de áudio + referência de mídia pending + outbox
@@ -48,6 +48,14 @@ Falhas persistem somente o código sanitizado `TRANSCRIPTION_PROCESSING_FAILED` 
 - o áudio de demonstração é um WAV local fictício; o armazenamento privado, a URL curta assinada, o player e a retenção estão descritos em [`media.md`](media.md);
 - o downloader Baileys recupera mídia pós-commit sem transportar conteúdo ou
   auth state no job;
-- transcrição real continua pendente de escolha e autorização de adapter;
+- o adapter OpenAI aceita apenas formatos suportados, respeita
+  `MEDIA_MAX_BYTES`, limita a duração a cinco minutos por padrão e usa timeout
+  e retries limitados;
+- quando `TRANSCRIPTION_ADAPTER=openai`,
+  `ASSISTIVE_PROCESSING_NOT_BEFORE` é obrigatório e mensagens anteriores ao
+  corte nunca chamam o provedor;
 - não existe diretório `auth_info_baileys` nem objeto integral da mensagem em
   Redis.
+
+A chave é injetada somente no container do worker. Não a inclua em comandos,
+logs ou Git.

@@ -40,7 +40,7 @@ export interface MessageAnalysisResult {
 
 export type MessageAnalysisClaim =
   | { readonly status: 'claimed'; readonly target: MessageAnalysisTarget }
-  | { readonly status: 'completed' | 'busy' | 'missing' };
+  | { readonly status: 'completed' | 'busy' | 'missing' | 'ineligible' };
 
 export interface MessageAnalysisRepository {
   claim(input: {
@@ -51,6 +51,7 @@ export interface MessageAnalysisRepository {
     attemptId: string;
     now: Date;
     staleBefore: Date;
+    notBefore: Date | null;
   }): Promise<MessageAnalysisClaim>;
   complete(input: MessageAnalysisTarget & MessageAnalysisResult & {
     processingTimeMs: number;
@@ -70,6 +71,7 @@ export class MessageAnalysisService {
   public constructor(
     private readonly repository: MessageAnalysisRepository,
     private readonly analyzer: MessageAnalyzer,
+    private readonly processingNotBefore: Date | null = null,
   ) {}
 
   public async execute(workspaceId: string, messageId: string, now = new Date()) {
@@ -81,9 +83,12 @@ export class MessageAnalysisService {
       attemptId: randomUUID(),
       now,
       staleBefore: new Date(now.getTime() - LEASE_DURATION_MS),
+      notBefore: this.processingNotBefore,
     });
     if (claim.status !== 'claimed') {
-      return { status: claim.status === 'completed' ? 'already_completed' : claim.status } as const;
+      if (claim.status === 'completed') return { status: 'already_completed' } as const;
+      if (claim.status === 'ineligible') return { status: 'skipped' } as const;
+      return { status: claim.status } as const;
     }
 
     const startedAt = Date.now();

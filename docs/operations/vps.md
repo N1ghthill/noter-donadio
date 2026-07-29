@@ -11,8 +11,8 @@ aceito.
 
 O perfil `compose.vps-demo.yaml` publica `leadcontrol.online` em HTTPS, usa
 cookies `Secure` e executa o conector Baileys e o download privado de áudio.
-Adapters falsos de IA e transcrição ficam restritos ao profile `demo` e nunca
-são iniciados junto do profile `baileys`. O ambiente pode receber os dados
+Adapters falsos de IA e transcrição ficam restritos ao profile `demo`. Os
+adapters OpenAI só iniciam no profile separado `assistive`. O ambiente pode receber os dados
 controlados usados na homologação atual, mas ainda não deve ser tratado como
 produção com garantia de disponibilidade ou recuperação de desastre.
 
@@ -91,7 +91,25 @@ O script exige exatamente uma conta interna `primary`, resolve os UUIDs no
 PostgreSQL e grava no `.env` da VPS uma chave AES-256 aleatória sem imprimi-la.
 Execuções posteriores preservam a chave existente, mantêm o profile `baileys`
 e habilitam `MEDIA_DOWNLOAD_ADAPTER=baileys`. O comando não lê o QR nem envia
-mensagens. Transcrição e análise reais continuam desligadas.
+mensagens.
+
+Para ativar OpenAI após autorização explícita, execute em um terminal SSH
+interativo:
+
+```bash
+sudo /opt/noter-donadio/scripts/configure-openai-vps.sh
+sudo /opt/noter-donadio/scripts/deploy-vps.sh --enable-baileys
+sudo /opt/noter-donadio/scripts/status-vps.sh --diagnose-assistive
+```
+
+O primeiro comando lê a chave sem eco pelo TTY e não a recebe como argumento.
+O corte é o horário da mídia Baileys real mais recente, incluindo o áudio
+enviado para homologação e excluindo o backlog anterior. O script marca áudios
+antigos ainda pendentes como fora da janela autorizada, habilita o profile
+`assistive` e preserva o profile `baileys`. A chave permanece no `.env` com
+permissão `600` e é injetada somente nos workers de análise e transcrição.
+O diagnóstico assistivo imprime somente contagens por estado e logs
+sanitizados, nunca mensagem, transcrição, áudio ou chave.
 
 Quando o sistema operacional indicar que um novo kernel exige reinicialização,
 execute o deploy com reinicialização condicionada ao health check:
@@ -160,7 +178,7 @@ docker compose \
 
 Os receivers atuais não notificam pessoas. Um destino externo exige aprovação separada e deve receber apenas métricas agregadas.
 
-Na VPS atual, autenticação SSH por senha, interação de teclado e login remoto de `root` estão desabilitados. O usuário `noterops` aceita somente a chave operacional e não pertence aos grupos `sudo` ou `docker`. O arquivo versionado `deploy/sudoers/noterops` permite apenas atualizar este checkout e executar deploy, status e backup.
+Na VPS atual, autenticação SSH por senha, interação de teclado e login remoto de `root` estão desabilitados. O usuário `noterops` aceita somente a chave operacional e não pertence aos grupos `sudo` ou `docker`. O arquivo versionado `deploy/sudoers/noterops` permite apenas atualizar este checkout e executar deploy, status, backup e a configuração interativa da OpenAI.
 
 O `nftables` aplica `deploy/nftables/noter-host.nft` na inicialização. A política de entrada permite conexões estabelecidas, loopback, ICMP, SSH e web nas portas TCP 22/80/443 e HTTP/3 em UDP 443. Não use `flush ruleset`, pois isso também removeria regras administradas pelo Docker.
 

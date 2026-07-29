@@ -4,8 +4,10 @@
 
 O Baileys foi autorizado, conectado e está em homologação controlada na VPS. O
 runtime e toda configuração da API oficial da Meta foram removidos por decisão
-do produto. Transcrição e análise falsas ficaram restritas ao profile `demo`;
-nenhum worker assistivo processa conversas reais atualmente.
+do produto. Transcrição e análise falsas ficaram restritas ao profile `demo`.
+Os adapters OpenAI e o bloqueio temporal de backlog estão implementados; a
+ativação na VPS depende somente da injeção interativa da chave e da homologação
+autorizada.
 
 ## WhatsApp via Baileys
 
@@ -41,9 +43,8 @@ backup desprotegido ou ferramenta de IA.
 
 ## Transcrição
 
-O adapter futuro pode usar um provedor aprovado somente depois de revisão do
-tratamento de áudio. O contrato atual permite troca sem mudar mensagem, lease
-ou job.
+O adapter aprovado usa `gpt-4o-mini-transcribe` por padrão, com arquivo vindo
+do volume privado somente após download concluído.
 
 Requisitos mínimos:
 
@@ -56,9 +57,9 @@ Requisitos mínimos:
 
 ## Análise estruturada
 
-O adapter futuro deve usar saída estruturada com schema estrito e tratar toda
-resposta como não confiável. A validação Zod existente permanece a última
-fronteira antes do PostgreSQL.
+O adapter aprovado usa a Responses API com Structured Outputs, `store: false`
+e `gpt-5.6-sol` por padrão. A validação Zod do adapter e a validação de domínio
+independente tratam toda resposta como não confiável.
 
 Toda execução deve registrar modelo, versão do prompt, tokens, duração e
 confiança quando disponíveis. Nenhuma sugestão é aplicada sem ação humana.
@@ -75,10 +76,11 @@ Cada integração real exige:
 6. teste em workspace e conta controlados;
 7. autorização explícita para conectar a sessão ou transmitir dados.
 
-Antes de iniciar transcrição ou análise reais, levantar a quantidade de jobs
-pendentes e registrar uma decisão: processar somente mensagens novas ou também
-o backlog. Ativar um worker sem essa decisão é proibido porque pode transmitir
-dados antigos e gerar custo retroativo.
+Em 29/07/2026, o proprietário autorizou OpenAI somente para o áudio de
+homologação mais recente e mensagens posteriores. O adapter exige
+`ASSISTIVE_PROCESSING_NOT_BEFORE`; jobs anteriores ao corte não chamam o
+provedor. Áudios anteriores ainda pendentes recebem o código sanitizado
+`OUTSIDE_AUTHORIZED_PROCESSING_WINDOW`.
 
 Credenciais ausentes ou inválidas devem impedir a inicialização. Nenhum
 fallback pode transmitir dados para outro provedor silenciosamente.

@@ -57,6 +57,11 @@ test('habilita somente adapters implementados', () => {
     ...required,
     MEDIA_DOWNLOAD_ADAPTER: 'baileys',
   }).MEDIA_DOWNLOAD_ADAPTER, 'baileys');
+  assert.equal(readEnvironment({
+    ...required,
+    TRANSCRIPTION_ADAPTER: 'openai',
+    AI_ADAPTER: 'openai',
+  }).AI_ADAPTER, 'openai');
 });
 
 test('capacidades assistivas exigem ativação explícita', () => {
@@ -70,5 +75,19 @@ test('capacidades assistivas exigem ativação explícita', () => {
   assert.throws(() => readEnvironment({
     ...required,
     AI_ANALYSIS_FEATURE_ENABLED: 'yes',
+  }));
+});
+
+test('valida limites e instante de corte do processamento externo', () => {
+  const environment = readEnvironment({
+    ...required,
+    ASSISTIVE_PROCESSING_NOT_BEFORE: '2026-07-29T00:00:00Z',
+    OPENAI_TIMEOUT_MS: '45000',
+  });
+  assert.equal(environment.ASSISTIVE_PROCESSING_NOT_BEFORE, '2026-07-29T00:00:00Z');
+  assert.equal(environment.OPENAI_TIMEOUT_MS, 45_000);
+  assert.throws(() => readEnvironment({
+    ...required,
+    ASSISTIVE_PROCESSING_NOT_BEFORE: 'ontem',
   }));
 });
