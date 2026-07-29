@@ -50,7 +50,8 @@ O comando falha se o administrador já existir e nunca sobrescreve uma senha sil
 
 Na VPS, uma redefinição autorizada usa
 `scripts/deploy-vps.sh --reset-admin-password`. O procedimento resolve somente
-o administrador configurado por `ADMIN_WORKSPACE_SLUG` e `ADMIN_EMAIL`, cria
+o administrador configurado por `ADMIN_WORKSPACE_SLUG` e `ADMIN_EMAIL` (ou,
+no ambiente de demonstração, `demo-cliente` e `demo@example.com`), cria
 uma senha aleatória de 192 bits, grava apenas o hash `scrypt` e revoga todas as
 sessões anteriores na mesma transação. A senha é exibida uma única vez ao
 operador e não é gravada no `.env`.

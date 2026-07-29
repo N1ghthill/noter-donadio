@@ -117,8 +117,8 @@ chmod 600 .deployed-commit
 printf '%s\n' "Deploy concluído no commit $(git rev-parse --short=12 HEAD)."
 
 if test "${reset_admin_password}" = "1"; then
-  RESET_ADMIN_WORKSPACE="${ADMIN_WORKSPACE_SLUG:?defina ADMIN_WORKSPACE_SLUG}"
-  RESET_ADMIN_EMAIL="${ADMIN_EMAIL:?defina ADMIN_EMAIL}"
+  RESET_ADMIN_WORKSPACE="${ADMIN_WORKSPACE_SLUG:-demo-cliente}"
+  RESET_ADMIN_EMAIL="${ADMIN_EMAIL:-demo@example.com}"
   RESET_ADMIN_PASSWORD="$(openssl rand -base64 24)"
   export RESET_ADMIN_WORKSPACE RESET_ADMIN_EMAIL RESET_ADMIN_PASSWORD
   docker compose "${compose_arguments[@]}" run --rm --no-deps \
