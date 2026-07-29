@@ -36,6 +36,7 @@ export class BaileysSession {
     private readonly ingestionService: MessageIngestionService,
     private readonly control: RedisBaileysControl,
     private readonly logger: Logger,
+    private readonly protocolVersion: [number, number, number],
   ) {}
 
   public async run(): Promise<void> {
@@ -71,6 +72,7 @@ export class BaileysSession {
     const auth = await this.authRepository.load(this.binding);
     const socket = makeWASocket({
       auth: auth.state,
+      version: this.protocolVersion,
       logger: pino({ level: 'silent' }),
       markOnlineOnConnect: false,
       syncFullHistory: false,

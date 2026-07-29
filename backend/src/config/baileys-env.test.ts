@@ -17,6 +17,7 @@ test('carrega identidade vinculada e chave exclusiva do processo Baileys', () =>
   assert.equal(environment.BAILEYS_ACCOUNT_ID, required.BAILEYS_ACCOUNT_ID);
   assert.deepEqual(environment.BAILEYS_ENCRYPTION_KEY, Buffer.alloc(32, 3));
   assert.equal(environment.BAILEYS_ENCRYPTION_KEY_VERSION, 1);
+  assert.deepEqual(environment.BAILEYS_PROTOCOL_VERSION, [2, 3000, 1_043_857_760]);
 });
 
 test('falha fechada sem binding ou com chave inválida', () => {
@@ -27,5 +28,9 @@ test('falha fechada sem binding ou com chave inválida', () => {
   assert.throws(() => readBaileysEnvironment({
     ...required,
     BAILEYS_ENCRYPTION_KEY: 'não-é-chave',
+  }));
+  assert.throws(() => readBaileysEnvironment({
+    ...required,
+    BAILEYS_PROTOCOL_VERSION: 'latest',
   }));
 });

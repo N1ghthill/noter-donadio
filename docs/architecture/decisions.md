@@ -460,3 +460,15 @@ conexão e proibição são terminais. O QR é retornado somente por rota
 autenticada com `cache-control: no-store`. Áudio real permanece como próximo
 bloco porque seus dados de download precisam ser criptografados e persistidos
 antes da publicação do job.
+
+## ADR-054 — Versão do protocolo WhatsApp Web é explícita
+
+O socket retornou `405` antes de emitir QR porque a versão de protocolo
+embutida em `baileys@7.0.0-rc13` estava defasada. A versão corrente verificada
+pelo mecanismo do próprio Baileys foi fixada em `2.3000.1043857760` e pode ser
+alterada por `BAILEYS_PROTOCOL_VERSION` sem trocar a release da biblioteca.
+
+A configuração aceita somente três inteiros separados por ponto e é passada
+explicitamente ao socket. O processo não consulta `master` do GitHub a cada
+inicialização; mudanças futuras exigem validação e atualização operacional
+consciente.

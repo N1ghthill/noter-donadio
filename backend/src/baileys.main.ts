@@ -27,6 +27,7 @@ const session = new BaileysSession(
   new MessageIngestionService(new PrismaMessageIngestionRepository(prisma)),
   control,
   logger,
+  environment.BAILEYS_PROTOCOL_VERSION,
 );
 
 let shuttingDown = false;

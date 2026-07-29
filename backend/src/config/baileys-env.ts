@@ -19,6 +19,10 @@ const baileysEnvironmentSchema = z.object({
     }
   }),
   BAILEYS_ENCRYPTION_KEY_VERSION: z.coerce.number().int().min(1).max(32_767).default(1),
+  BAILEYS_PROTOCOL_VERSION: z.string()
+    .regex(/^\d+\.\d+\.\d+$/)
+    .default('2.3000.1043857760')
+    .transform((value) => value.split('.').map(Number) as [number, number, number]),
 });
 
 export type BaileysEnvironment = z.infer<typeof baileysEnvironmentSchema>;
