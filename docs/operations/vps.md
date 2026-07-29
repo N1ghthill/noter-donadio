@@ -10,7 +10,8 @@ a indisponibilidade ou perda integral de um único host é um risco explicitamen
 aceito.
 
 O perfil `compose.vps-demo.yaml` publica `leadcontrol.online` em HTTPS, usa
-cookies `Secure` e executa o conector Baileys e o download privado de áudio.
+cookies `Secure` e executa o conector Baileys e o download privado de áudio,
+imagem e documento.
 Adapters falsos de IA e transcrição ficam restritos ao profile `demo`. Os
 adapters OpenAI só iniciam no profile separado `assistive`. O ambiente pode receber os dados
 controlados usados na homologação atual, mas ainda não deve ser tratado como

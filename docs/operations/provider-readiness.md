@@ -2,8 +2,10 @@
 
 ## Estado
 
-O Baileys foi autorizado, conectado e está em homologação controlada na VPS. O
-runtime e toda configuração da API oficial da Meta foram removidos por decisão
+O Baileys foi autorizado e chegou a ser conectado na VPS, mas a sessão anterior
+foi encerrada com código terminal `401`. O novo pareamento foi adiado até a
+aquisição de outro número controlado. O runtime e toda configuração da API
+oficial da Meta foram removidos por decisão
 do produto. Transcrição e análise falsas ficaram restritas ao profile `demo`.
 Os adapters OpenAI e o bloqueio temporal de backlog estão implementados; a
 ativação na VPS depende somente da injeção interativa da chave e da homologação
@@ -26,13 +28,16 @@ Estado implementado:
 - processo dedicado, reconexão, QR efêmero autenticado e logger silencioso;
 - adaptação somente de `messages.upsert` novos, sem sincronização de histórico;
 - pipeline genérico de mídia, filas e retenção;
-- referência mínima de áudio cifrada, download pós-commit e reprodução privada;
+- referência mínima de áudio, imagem e documento cifrada, download pós-commit
+  e acesso privado;
 - filtros de grupos, status, newsletters e protocolo no domínio.
 
 Antes de promover para uso amplo:
 
 1. concluir a auditoria da release 7 fixada e acompanhar sua estabilização;
-2. concluir a homologação de texto e áudio com o número controlado;
+2. concluir a homologação de texto, áudio, imagem e documento com o novo número
+   controlado conforme
+   [`whatsapp-homologation.md`](whatsapp-homologation.md);
 3. documentar aceite do risco de bloqueio e dos termos de uso;
 4. implementar recuperação por reupload para referências antigas de mídia.
 

@@ -18,9 +18,9 @@ está pronto, mas a integração externa permanece deliberadamente desligada.
 | Próxima ação e histórico de conclusão | Pronto | Edição, filtros de prazo, conclusão auditável e histórico imutável |
 | Dashboard comercial | Pronto | Agregações PostgreSQL, acompanhamentos e conversão em 30/90/365 dias |
 | Home e central de controle | Pronto | Prioridades diárias, atalhos e painel agregado em rotas separadas |
-| Conversas, filtros, classificação e histórico | Pronto | Tabela clicável, início real, contagem, última análise concluída e detalhe cronológico |
-| Agenda de próximas ações | Pronto | Filtros de prazo, resumo, classificação e conclusão auditável |
-| Arquivos por contato | Pronto | Áudio, imagem e documento; filtros combináveis, prévia/download por URL curta e assinada |
+| Conversas, filtros, classificação e histórico | Pronto | Tabela clicável, detalhe cronológico, follow-up rápido e navegação contextual |
+| Agenda de próximas ações | Pronto | Filtros, resumo, classificação, edição rápida e conclusão auditável |
+| Arquivos por contato | Pronto | Mídias privadas, filtros persistidos e acesso direto à conversa e negociação |
 | Atualização em tempo real | Pronto | Eventos sanitizados por workspace e reconciliação REST |
 | Sugestões sem ação autônoma | Pronto no modo sintético | Saída estrita, edição, aceite/recusa explícitos e auditoria |
 | Transcrição OpenAI | Preparado | Adapter, limites, timeout, retries e corte obrigatório; chave não configurada |

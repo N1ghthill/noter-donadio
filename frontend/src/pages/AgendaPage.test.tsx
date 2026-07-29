@@ -33,6 +33,21 @@ describe('agenda de follow-ups', () => {
     expect(await screen.findByText('Enviar proposta')).toBeInTheDocument();
     expect(screen.getByText('Qualificado')).toBeInTheDocument();
     expect(screen.getByText('Contato pediu uma proposta comercial.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Conversa' })).toHaveAttribute(
+      'href',
+      `/conversas?period=all&selected=${task.id}`,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Reagendar' }));
+    fireEvent.change(screen.getByLabelText('Próxima ação'), { target: { value: 'Confirmar recebimento' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar acompanhamento' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      `/api/negotiations/${task.id}`,
+      expect.objectContaining({
+        method: 'PATCH',
+        body: expect.stringContaining('"nextAction":"Confirmar recebimento"'),
+      }),
+    ));
+
     fireEvent.click(screen.getByRole('button', { name: 'Concluir' }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
       `/api/negotiations/${task.id}/next-action/complete`,

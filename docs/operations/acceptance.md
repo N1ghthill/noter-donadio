@@ -13,8 +13,8 @@ corte temporal e nova homologação.
 
 Atualização de 29/07/2026: os adapters OpenAI de transcrição e análise
 estruturada foram implementados com corte obrigatório de autorização, chave
-restrita aos workers e bloqueio do backlog. A validação local aprovou 200 testes
-(1 contratos, 157 backend e 42 frontend), lint, typecheck, build, auditoria de
+restrita aos workers e bloqueio do backlog. A validação local aprovou 202 testes
+(1 contratos, 157 backend e 44 frontend), lint, typecheck, build, auditoria de
 produção e os perfis Compose `baileys+assistive`. A aceitação real depende da
 injeção interativa da chave e de uma chamada homologada no áudio autorizado.
 

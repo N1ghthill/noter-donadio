@@ -5,7 +5,8 @@ import type { NegotiationStage } from '@noter/contracts';
 import { ApiError, api } from '../api/client.js';
 import { ErrorState, LoadingState } from '../components/Feedback.js';
 import { MediaPreview } from '../components/MediaPreview.js';
-import { formatDate, PROCESSING_LABELS, STAGE_LABELS } from '../lib/format.js';
+import { QuickFollowUpEditor } from '../components/QuickFollowUpEditor.js';
+import { formatDate, formatDateOnly, PROCESSING_LABELS, STAGE_LABELS } from '../lib/format.js';
 import { useRealtime } from '../realtime/RealtimeContext.js';
 import type {
   ConversationSummary,
@@ -22,11 +23,13 @@ export function ConversationsPage() {
   const [period, setPeriod] = useState<ConversationPeriod>(
     isConversationPeriod(requestedPeriod) ? requestedPeriod : 'today',
   );
-  const [stage, setStage] = useState<NegotiationStage | ''>('');
-  const [aiStage, setAiStage] = useState<NegotiationStage | ''>('');
-  const [search, setSearch] = useState('');
+  const [stage, setStage] = useState<NegotiationStage | ''>(stageFrom(searchParams.get('stage')));
+  const [aiStage, setAiStage] = useState<NegotiationStage | ''>(stageFrom(searchParams.get('aiStage')));
+  const [searchDraft, setSearchDraft] = useState(searchParams.get('search') ?? '');
+  const [search, setSearch] = useState((searchParams.get('search') ?? '').trim());
   const [detail, setDetail] = useState<NegotiationDetail>();
   const [capabilities, setCapabilities] = useState<ProductCapabilities>();
+  const [editingFollowUp, setEditingFollowUp] = useState(false);
   const [content, setContent] = useState('Olá! Esta é uma nova mensagem simulada para validar a caixa de entrada.');
   const [busy, setBusy] = useState<'text' | 'audio'>();
   const [error, setError] = useState<string>();
@@ -51,6 +54,19 @@ export function ConversationsPage() {
   }, [aiStage, period, search, stage]);
 
   useEffect(() => { void loadConversations(); }, [loadConversations, revision]);
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setSearch(searchDraft.trim()), 300);
+    return () => window.clearTimeout(timeout);
+  }, [searchDraft]);
+  useEffect(() => {
+    const params = new URLSearchParams();
+    params.set('period', period);
+    if (stage) params.set('stage', stage);
+    if (aiStage) params.set('aiStage', aiStage);
+    if (search) params.set('search', search);
+    if (selectedId) params.set('selected', selectedId);
+    setSearchParams(params, { replace: true });
+  }, [aiStage, period, search, selectedId, setSearchParams, stage]);
   useEffect(() => {
     void api.capabilities()
       .then(setCapabilities)
@@ -83,10 +99,15 @@ export function ConversationsPage() {
 
   function selectConversation(negotiationId: string) {
     setSelectedId(negotiationId);
-    const params = new URLSearchParams(searchParams);
-    params.set('selected', negotiationId);
-    params.set('period', period);
-    setSearchParams(params, { replace: true });
+    setEditingFollowUp(false);
+  }
+
+  function clearFilters() {
+    setPeriod('today');
+    setStage('');
+    setAiStage('');
+    setSearchDraft('');
+    setSearch('');
   }
 
   async function simulateMessage(messageType: 'text' | 'audio', message?: string) {
@@ -163,8 +184,9 @@ export function ConversationsPage() {
           </select>
         </label>
         <label>Buscar
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Contato ou negociação" />
+          <input value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)} placeholder="Contato ou negociação" />
         </label>
+        <button className="button-link filter-clear" type="button" onClick={clearFilters}>Limpar filtros</button>
       </section>
 
       <section className="panel notion-panel">
@@ -201,8 +223,38 @@ export function ConversationsPage() {
             <>
               <div className="panel-heading conversation-heading">
                 <div><p className="eyebrow">{STAGE_LABELS[detail.stage]}</p><h2>{detail.contactName}</h2></div>
-                <Link className="card-link" to={`/pipeline/${detail.id}`}>Abrir negociação</Link>
+                <div className="conversation-actions">
+                  <Link to={`/arquivos?contactId=${detail.contactId}`}>Arquivos</Link>
+                  <Link to={`/agenda?search=${encodeURIComponent(detail.contactName)}`}>Agenda</Link>
+                  <Link to={`/pipeline/${detail.id}`}>Negociação</Link>
+                </div>
               </div>
+              <section className="conversation-follow-up" aria-label="Acompanhamento da conversa">
+                <div>
+                  <small>Próximo acompanhamento</small>
+                  <strong>{detail.nextAction ?? 'Nenhuma ação definida'}</strong>
+                  <span>{detail.nextActionDueDate
+                    ? `Prazo: ${formatDateOnly(detail.nextActionDueDate)}`
+                    : 'Sem prazo definido'}</span>
+                </div>
+                <button className="button secondary" type="button" onClick={() => setEditingFollowUp((value) => !value)}>
+                  {editingFollowUp ? 'Fechar edição' : detail.nextAction ? 'Reagendar' : 'Criar follow-up'}
+                </button>
+                {editingFollowUp ? (
+                  <QuickFollowUpEditor
+                    key={`${detail.id}-${detail.version}`}
+                    negotiationId={detail.id}
+                    expectedVersion={detail.version}
+                    initialAction={detail.nextAction}
+                    initialDueDate={detail.nextActionDueDate}
+                    onCancel={() => setEditingFollowUp(false)}
+                    onSaved={async () => {
+                      setEditingFollowUp(false);
+                      setDetail(await api.negotiation(detail.id));
+                    }}
+                  />
+                ) : null}
+              </section>
               <div className="timeline conversation-timeline">
                 {detail.messages.map((message) => (
                   <article className={`message ${message.direction}`} key={message.id}>
@@ -247,6 +299,21 @@ type ConversationPeriod = 'today' | '7d' | '30d' | 'all';
 
 function isConversationPeriod(value: string | null): value is ConversationPeriod {
   return value === 'today' || value === '7d' || value === '30d' || value === 'all';
+}
+
+function stageFrom(value: string | null): NegotiationStage | '' {
+  switch (value) {
+    case 'lead':
+    case 'qualified':
+    case 'proposal_sent':
+    case 'in_negotiation':
+    case 'closed_won':
+    case 'closed_lost':
+    case 'on_hold':
+      return value;
+    default:
+      return '';
+  }
 }
 
 function conversationRange(period: ConversationPeriod): {

@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 
 import { ApiError, api } from '../api/client.js';
 import { ErrorState, LoadingState } from '../components/Feedback.js';
+import { QuickFollowUpEditor } from '../components/QuickFollowUpEditor.js';
 import { formatDateOnly, STAGE_LABELS } from '../lib/format.js';
 import { useRealtime } from '../realtime/RealtimeContext.js';
 import type { Negotiation } from '../types/api.js';
@@ -14,10 +15,12 @@ export function AgendaPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const requested = searchParams.get('followUp');
   const [followUp, setFollowUp] = useState<FollowUpFilter>(isFollowUpFilter(requested) ? requested : 'all');
-  const [search, setSearch] = useState(searchParams.get('search') ?? '');
+  const [searchDraft, setSearchDraft] = useState(searchParams.get('search') ?? '');
+  const [search, setSearch] = useState((searchParams.get('search') ?? '').trim());
   const [tasks, setTasks] = useState<Negotiation[]>();
   const [error, setError] = useState<string>();
   const [busyId, setBusyId] = useState<string>();
+  const [editingId, setEditingId] = useState<string>();
 
   const load = useCallback(async () => {
     setError(undefined);
@@ -34,6 +37,16 @@ export function AgendaPage() {
   }, [followUp, search]);
 
   useEffect(() => { void load(); }, [load, revision]);
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setSearch(searchDraft.trim()), 300);
+    return () => window.clearTimeout(timeout);
+  }, [searchDraft]);
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (followUp !== 'all') params.set('followUp', followUp);
+    if (search) params.set('search', search);
+    setSearchParams(params, { replace: true });
+  }, [followUp, search, setSearchParams]);
 
   async function complete(task: Negotiation) {
     if (!task.nextAction || !window.confirm(`Concluir a tarefa "${task.nextAction}"?`)) return;
@@ -52,13 +65,14 @@ export function AgendaPage() {
     }
   }
 
-  function applyFilters(nextFollowUp: FollowUpFilter, nextSearch = search) {
+  function applyFollowUp(nextFollowUp: FollowUpFilter) {
     setFollowUp(nextFollowUp);
-    setSearch(nextSearch);
-    const params = new URLSearchParams();
-    if (nextFollowUp !== 'all') params.set('followUp', nextFollowUp);
-    if (nextSearch.trim()) params.set('search', nextSearch.trim());
-    setSearchParams(params, { replace: true });
+  }
+
+  function clearFilters() {
+    setFollowUp('all');
+    setSearchDraft('');
+    setSearch('');
   }
 
   if (!tasks && error) return <ErrorState message={error} retry={() => void load()} />;
@@ -74,7 +88,7 @@ export function AgendaPage() {
 
       <section className="panel filter-panel">
         <label>Prazo
-          <select value={followUp} onChange={(event) => applyFilters(event.target.value as FollowUpFilter)}>
+          <select value={followUp} onChange={(event) => applyFollowUp(event.target.value as FollowUpFilter)}>
             <option value="all">Todas as negociações ativas</option>
             <option value="overdue">Vencidas</option>
             <option value="today">Para hoje</option>
@@ -83,8 +97,9 @@ export function AgendaPage() {
           </select>
         </label>
         <label>Buscar
-          <input value={search} onChange={(event) => applyFilters(followUp, event.target.value)} placeholder="Contato, tarefa ou negociação" />
+          <input value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)} placeholder="Contato, tarefa ou negociação" />
         </label>
+        <button className="button-link filter-clear" type="button" onClick={clearFilters}>Limpar filtros</button>
       </section>
 
       <section className="panel notion-panel">
@@ -101,9 +116,27 @@ export function AgendaPage() {
                 <span>{task.aiSuggestedStage ? STAGE_LABELS[task.aiSuggestedStage] : 'Não classificada'}</span>
                 <span className="summary-cell">{task.aiSummary ?? 'Sem resumo produzido pela IA.'}</span>
                 <span className="row-actions">
-                  <Link to={`/pipeline/${task.id}`}>Abrir</Link>
+                  <Link to={`/conversas?period=all&selected=${task.id}`}>Conversa</Link>
+                  <Link to={`/pipeline/${task.id}`}>Negociação</Link>
+                  <button type="button" onClick={() => setEditingId((current) => current === task.id ? undefined : task.id)}>
+                    {editingId === task.id ? 'Fechar' : task.nextAction ? 'Reagendar' : 'Definir'}
+                  </button>
                   {task.nextAction ? <button type="button" disabled={busyId === task.id} onClick={() => void complete(task)}>{busyId === task.id ? 'Concluindo…' : 'Concluir'}</button> : null}
                 </span>
+                {editingId === task.id ? (
+                  <QuickFollowUpEditor
+                    key={`${task.id}-${task.version}`}
+                    negotiationId={task.id}
+                    expectedVersion={task.version}
+                    initialAction={task.nextAction}
+                    initialDueDate={task.nextActionDueDate}
+                    onCancel={() => setEditingId(undefined)}
+                    onSaved={async () => {
+                      setEditingId(undefined);
+                      await load();
+                    }}
+                  />
+                ) : null}
               </article>
             ))}
           </div>

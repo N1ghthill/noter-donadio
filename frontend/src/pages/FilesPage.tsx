@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 import { api } from '../api/client.js';
 import { ErrorState, LoadingState } from '../components/Feedback.js';
@@ -16,20 +16,31 @@ const TYPE_LABELS = { audio: 'Áudio', image: 'Imagem', document: 'Documento' } 
 
 export function FilesPage() {
   const { revision } = useRealtime();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [contacts, setContacts] = useState<Contact[]>();
   const [files, setFiles] = useState<ContactFile[]>();
-  const [contactId, setContactId] = useState('');
-  const [fileType, setFileType] = useState<FileType>('all');
-  const [direction, setDirection] = useState<Direction>('all');
-  const [period, setPeriod] = useState<Period>('all');
-  const [searchDraft, setSearchDraft] = useState('');
-  const [search, setSearch] = useState('');
+  const [contactId, setContactId] = useState(searchParams.get('contactId') ?? '');
+  const [fileType, setFileType] = useState<FileType>(fileTypeFrom(searchParams.get('fileType')));
+  const [direction, setDirection] = useState<Direction>(directionFrom(searchParams.get('direction')));
+  const [period, setPeriod] = useState<Period>(periodFrom(searchParams.get('period')));
+  const [searchDraft, setSearchDraft] = useState(searchParams.get('search') ?? '');
+  const [search, setSearch] = useState((searchParams.get('search') ?? '').trim());
   const [error, setError] = useState(false);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setSearch(searchDraft.trim()), 300);
     return () => window.clearTimeout(timeout);
   }, [searchDraft]);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (contactId) params.set('contactId', contactId);
+    if (fileType !== 'all') params.set('fileType', fileType);
+    if (direction !== 'all') params.set('direction', direction);
+    if (period !== 'all') params.set('period', period);
+    if (search) params.set('search', search);
+    setSearchParams(params, { replace: true });
+  }, [contactId, direction, fileType, period, search, setSearchParams]);
 
   const load = useCallback(async () => {
     setError(false);
@@ -158,7 +169,10 @@ export function FilesPage() {
                       : null}
                   </dl>
                   {file.negotiationId
-                    ? <Link to={`/pipeline/${file.negotiationId}`}>Abrir conversa e negociação</Link>
+                    ? <div className="file-card-links">
+                        <Link to={`/conversas?period=all&selected=${file.negotiationId}`}>Abrir conversa</Link>
+                        <Link to={`/pipeline/${file.negotiationId}`}>Abrir negociação</Link>
+                      </div>
                     : <span className="muted">Sem negociação relacionada</span>}
                 </div>
               </article>
@@ -183,6 +197,18 @@ function periodRange(period: Period): { occurredFrom?: string; occurredTo?: stri
   const from = new Date(to);
   from.setDate(from.getDate() - (period === '7d' ? 7 : 30));
   return { occurredFrom: from.toISOString(), occurredTo: to.toISOString() };
+}
+
+function fileTypeFrom(value: string | null): FileType {
+  return value === 'audio' || value === 'image' || value === 'document' ? value : 'all';
+}
+
+function directionFrom(value: string | null): Direction {
+  return value === 'inbound' || value === 'outbound' ? value : 'all';
+}
+
+function periodFrom(value: string | null): Period {
+  return value === 'today' || value === '7d' || value === '30d' ? value : 'all';
 }
 
 function formatBytes(value: string | null): string {

@@ -86,7 +86,8 @@ destrutiva autorizada separadamente.
 
 - concluir a auditoria da versão 7 fixada e acompanhar a saída do estado RC;
 - validar termos de uso e aceitar formalmente o risco de bloqueio;
-- manter número controlado para homologação;
+- manter número controlado e executar a
+  [homologação de texto e mídia](../operations/whatsapp-homologation.md);
 - aprovar adapters reais de transcrição e análise antes de compartilhar
   conteúdo com outro provedor;
 - obter autorização explícita antes de desconectar a sessão real.

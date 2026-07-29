@@ -26,7 +26,11 @@ describe('arquivos por contato', () => {
     expect(screen.getByText('1.0 KB')).toBeInTheDocument();
     expect(screen.getByText('Imagem')).toBeInTheDocument();
     expect(screen.getByText('Recebido')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Abrir conversa e negociação' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Abrir conversa' })).toHaveAttribute(
+      'href',
+      `/conversas?period=all&selected=${file.negotiationId}`,
+    );
+    expect(screen.getByRole('link', { name: 'Abrir negociação' })).toHaveAttribute(
       'href',
       `/pipeline/${file.negotiationId}`,
     );

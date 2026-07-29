@@ -39,6 +39,20 @@ describe('caixa de conversas', () => {
     expect(screen.getByText('Contato solicitou uma proposta.')).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
     expect(await screen.findByText('Histórico preservado.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Arquivos' })).toHaveAttribute(
+      'href',
+      `/arquivos?contactId=${detail.contactId}`,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Criar follow-up' }));
+    fireEvent.change(screen.getByLabelText('Próxima ação'), { target: { value: 'Retornar amanhã' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar acompanhamento' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      '/api/negotiations/deal-1',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: expect.stringContaining('"nextAction":"Retornar amanhã"'),
+      }),
+    ));
 
     fireEvent.change(screen.getByLabelText('Mensagem fictícia recebida'), {
       target: { value: 'Nova mensagem inteiramente fictícia.' },
@@ -135,6 +149,7 @@ const conversation = {
 const detail = {
   id: 'deal-1', contactId: 'contact-1', contactName: 'Contato fictício', title: null,
   stage: 'lead', value: null, currency: 'BRL', sentiment: null, version: 1,
+  nextAction: null, nextActionDueDate: null,
   updatedAt: '2026-07-21T12:00:00.000Z',
   contact: {
     id: 'contact-1', displayName: 'Contato fictício', phoneNumber: '5571000000002',

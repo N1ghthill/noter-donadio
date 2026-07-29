@@ -27,6 +27,10 @@ A aplicação React é uma interface autenticada para o CRM e contém:
   classificação da IA, resumo, filtros e histórico reconciliado via REST;
 - agenda de próximas ações com filtros de prazo, classificação, resumo e
   conclusão explícita;
+- criação e reagendamento rápido de follow-up a partir da conversa ou da
+  agenda, com controle de versão;
+- navegação contextual entre conversa, arquivos do contato, agenda e pipeline,
+  preservando filtros relevantes na URL;
 - biblioteca responsiva de áudios, imagens e documentos por contato, com busca,
   filtros combináveis, prévia ou download privado sob demanda;
 - formulário local para simular recebimento idempotente de texto ou áudio sem enviar mensagens;
@@ -37,7 +41,10 @@ A aplicação React é uma interface autenticada para o CRM e contém:
 - trilha global com as 50 ações auditáveis mais recentes do workspace;
 - atualização otimista com reversão em erro e reconciliação em conflito de versão.
 
-As telas tratam separadamente carregamento, falha e ausência de dados. A interface não guarda token no navegador e não executa ações autônomas de IA.
+As telas tratam separadamente carregamento, falha e ausência de dados. Buscas
+operacionais usam uma pequena espera após a digitação para reduzir recargas, e
+os principais filtros podem ser preservados na URL. A interface não guarda
+token no navegador e não executa ações autônomas de IA.
 
 ## Arquitetura do frontend
 

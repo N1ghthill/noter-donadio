@@ -28,11 +28,19 @@ A rota `/conversas` oferece uma tabela operacional clicável, com filtros de:
 “Iniciada” significa a primeira mensagem persistida da negociação. O intervalo
 de hoje respeita o dia local do navegador e é enviado à API como limites UTC.
 Ao selecionar uma linha, o histórico completo é reconciliado pela API REST.
+Os filtros e a conversa selecionada permanecem na URL, permitindo voltar ao
+mesmo contexto. A busca aguarda uma breve pausa na digitação para evitar
+requisições a cada tecla.
 
 A coluna “Classificação IA” mostra a etapa sugerida pela análise concluída mais
 recente. Ela não representa uma mudança automática do Kanban. Sem análise
 concluída, a tela mostra “Não classificada”. O resumo segue a mesma origem e
 nunca é inventado.
+
+No detalhe, o operador pode criar ou reagendar a próxima ação sem abandonar a
+conversa. A gravação usa a versão atual da negociação e recusa sobrescrita
+quando outra sessão alterou os dados. Atalhos levam ao catálogo de arquivos do
+contato, à agenda filtrada e ao detalhe completo no pipeline.
 
 ## Agenda
 
@@ -45,6 +53,10 @@ A tabela mostra tarefa, contato, prazo, etapa atual, classificação sugerida
 pela IA e o último resumo disponível. Concluir arquiva a ação no histórico da
 negociação; não apaga o acompanhamento já realizado.
 
+Cada linha também permite definir ou reagendar o follow-up no próprio contexto,
+com links separados para conversa e negociação. Filtros e busca são
+compartilháveis pela URL e a busca não dispara uma consulta a cada tecla.
+
 ## Arquivos por contato
 
 A rota `/arquivos` organiza áudios, imagens e documentos enviados ou recebidos.
@@ -55,8 +67,10 @@ solicitam acesso curto e assinado somente quando necessário. Chaves físicas de
 armazenamento não chegam ao navegador.
 
 O catálogo usa cartões responsivos, estados vazios orientativos, ação para
-limpar filtros e acesso direto à conversa e negociação. Upload manual, pastas e
-compartilhamento externo não fazem parte desta fatia.
+limpar filtros, URL compartilhável e acessos separados à conversa e à
+negociação. Um atalho vindo da conversa abre a biblioteca já filtrada pelo
+contato. Upload manual, pastas e compartilhamento externo não fazem parte
+desta fatia.
 
 ## Estados sem integrações externas
 
