@@ -1,12 +1,17 @@
 import {
   extractMessageContent,
+  jidNormalizedUser,
+  type Contact,
   type MessageUpsertType,
   type WAMessage,
 } from 'baileys';
 
 import type { BaileysTextEvent } from '../domain/baileys-text-event.js';
 
-export function toBaileysTextEvent(message: WAMessage): BaileysTextEvent | null {
+export function toBaileysTextEvent(
+  message: WAMessage,
+  resolvedPhoneJid?: string,
+): BaileysTextEvent | null {
   const externalMessageId = message.key.id;
   const remoteJid = message.key.remoteJid;
   const content = extractMessageContent(message.message);
@@ -15,7 +20,9 @@ export function toBaileysTextEvent(message: WAMessage): BaileysTextEvent | null 
     ? remoteJid
     : message.key.remoteJidAlt?.endsWith('@s.whatsapp.net')
       ? message.key.remoteJidAlt
-      : undefined;
+      : resolvedPhoneJid?.endsWith('@s.whatsapp.net')
+        ? resolvedPhoneJid
+        : undefined;
   const occurredAt = toDate(message.messageTimestamp);
 
   if (
@@ -36,6 +43,22 @@ export function toBaileysTextEvent(message: WAMessage): BaileysTextEvent | null 
     text,
     occurredAt,
   };
+}
+
+export async function resolveBaileysPhoneJid(
+  message: WAMessage,
+  user: Contact | undefined,
+  getPhoneForLid: (lid: string) => Promise<string | null>,
+): Promise<string | undefined> {
+  const remoteJid = message.key.remoteJid;
+  if (!remoteJid?.endsWith('@lid')) return undefined;
+  if (remoteJid === user?.lid) {
+    if (user.phoneNumber?.endsWith('@s.whatsapp.net')) return user.phoneNumber;
+    const normalizedUserJid = jidNormalizedUser(user.id);
+    if (normalizedUserJid.endsWith('@s.whatsapp.net')) return normalizedUserJid;
+  }
+  const mapped = await getPhoneForLid(remoteJid);
+  return mapped?.endsWith('@s.whatsapp.net') ? mapped : undefined;
 }
 
 export function shouldIngestBaileysUpsert(

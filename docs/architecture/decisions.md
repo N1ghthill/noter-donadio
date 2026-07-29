@@ -484,3 +484,8 @@ O conector aceita todo `notify`, mas aceita `append` somente quando
 é igual ou posterior à abertura. Entregas antigas, mensagens recebidas em
 `append` e eventos anteriores ao estado conectado continuam descartados. A
 chave externa da mensagem mantém a ingestão idempotente.
+
+Identidades `@lid` sem `remoteJidAlt` são resolvidas pelo contato da própria
+sessão no autochat ou pelo `LIDMappingStore` do Signal. Se não houver um JID
+telefônico verificável, a mensagem continua descartada; o identificador opaco
+jamais é gravado como telefone.

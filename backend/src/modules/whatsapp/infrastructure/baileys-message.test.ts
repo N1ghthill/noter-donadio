@@ -4,6 +4,7 @@ import test from 'node:test';
 import type { WAMessage } from 'baileys';
 
 import {
+  resolveBaileysPhoneJid,
   shouldIngestBaileysUpsert,
   toBaileysTextEvent,
 } from './baileys-message.js';
@@ -75,4 +76,36 @@ test('aceita append somente para mensagem própria posterior à conexão atual',
   } as WAMessage, connectedAt), false);
   assert.equal(shouldIngestBaileysUpsert('append', recentOwnMessage, undefined), false);
   assert.equal(shouldIngestBaileysUpsert('notify', recentOwnMessage, undefined), true);
+});
+
+test('resolve autochat LID pela identidade telefônica da sessão', async () => {
+  const message = {
+    key: { remoteJid: '123456789012345@lid', fromMe: true },
+  } as WAMessage;
+  const resolved = await resolveBaileysPhoneJid(
+    message,
+    {
+      id: '5571000000101:1@s.whatsapp.net',
+      lid: '123456789012345@lid',
+      phoneNumber: '5571000000101@s.whatsapp.net',
+    },
+    async () => null,
+  );
+  assert.equal(resolved, '5571000000101@s.whatsapp.net');
+});
+
+test('resolve contato LID pelo mapping store sem aceitar formato opaco', async () => {
+  const message = {
+    key: { remoteJid: '987654321012345@lid' },
+  } as WAMessage;
+  assert.equal(await resolveBaileysPhoneJid(
+    message,
+    undefined,
+    async () => '5571000000102@s.whatsapp.net',
+  ), '5571000000102@s.whatsapp.net');
+  assert.equal(await resolveBaileysPhoneJid(
+    message,
+    undefined,
+    async () => '987654321012345@lid',
+  ), undefined);
 });

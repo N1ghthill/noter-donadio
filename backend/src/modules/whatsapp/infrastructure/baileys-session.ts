@@ -15,6 +15,7 @@ import type { PrismaBaileysAuthStateRepository } from './prisma-baileys-auth-sta
 import type { PrismaWhatsappConnectionRepository } from './prisma-whatsapp.repository.js';
 import type { RedisBaileysControl } from './redis-baileys.gateway.js';
 import {
+  resolveBaileysPhoneJid,
   shouldIngestBaileysUpsert,
   toBaileysTextEvent,
 } from './baileys-message.js';
@@ -94,7 +95,9 @@ export class BaileysSession {
     socket.ev.on('messages.upsert', ({ messages, type }) => {
       if (generation !== this.generation) return;
       for (const message of messages) {
-        if (shouldIngestBaileysUpsert(type, message, this.connectedAt)) void this.ingest(message);
+        if (shouldIngestBaileysUpsert(type, message, this.connectedAt)) {
+          void this.ingest(socket, message);
+        }
       }
     });
     socket.ev.on('connection.update', (update) => {
@@ -105,8 +108,16 @@ export class BaileysSession {
     });
   }
 
-  private async ingest(message: Parameters<typeof toBaileysTextEvent>[0]): Promise<void> {
-    const event = toBaileysTextEvent(message);
+  private async ingest(
+    socket: WASocket,
+    message: Parameters<typeof toBaileysTextEvent>[0],
+  ): Promise<void> {
+    const resolvedPhoneJid = await resolveBaileysPhoneJid(
+      message,
+      socket.user,
+      (lid) => socket.signalRepository.lidMapping.getPNForLID(lid),
+    );
+    const event = toBaileysTextEvent(message, resolvedPhoneJid);
     if (!event) return;
     const binding: DomainBinding = {
       workspaceId: this.binding.workspaceId,
