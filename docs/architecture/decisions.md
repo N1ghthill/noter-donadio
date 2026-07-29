@@ -584,3 +584,26 @@ conta ainda conectada e, em transação serializável, remove somente
 `whatsapp_auth_reset` e cria o evento de reconciliação. Contatos, negociações,
 mensagens e mídias não são alterados. A ação não publica comando ao processo
 Baileys e o QR só será gerado posteriormente por outra ação do usuário.
+
+## ADR-061 — Visões operacionais derivam dos agregados existentes
+
+Home, controle, agenda, conversas e arquivos são projeções dos mesmos contatos,
+negociações, mensagens, análises e mídias do CRM. Não existe uma tabela
+paralela de tarefas no MVP: a tarefa ativa é `nextAction` e seu prazo pertence
+à negociação; a conclusão continua produzindo o histórico imutável já
+existente.
+
+Uma conversa é considerada iniciada no instante da primeira mensagem
+persistida da negociação. O navegador converte os limites do dia local para
+UTC, e o PostgreSQL aplica o intervalo semiaberto `[início, fim)`. A
+classificação exibida é a sugestão de etapa da análise concluída mais recente.
+Ela permanece identificada como sugestão e nunca altera `stage` sem aceite
+explícito. O resumo também vem dessa análise; na ausência dela, a interface
+informa que nenhum resumo foi produzido, sem criar fallback artificial.
+
+O catálogo de arquivos lista somente mídias privadas acessíveis, não removidas
+e ainda dentro da retenção. Ele expõe metadados e IDs internos, nunca
+`storageKey`; a reprodução continua usando URL curta, assinada, autenticada e
+vinculada ao workspace. Upload de documentos e uma agenda independente ficam
+fora desta decisão até existirem requisitos de domínio que justifiquem novos
+agregados.

@@ -79,6 +79,46 @@ a { color: inherit; }
 .stage-badge.stage-closed_lost { color: #754f4b; background: #f5e5e2; }
 .muted { color: #7c8580; }
 
+.home-priorities { display: grid; grid-template-columns: repeat(4, 1fr); gap: .9rem; }
+.home-priorities a { display: grid; gap: .4rem; min-height: 9rem; padding: 1.1rem; border: 1px solid #dfe3df; border-radius: .9rem; color: #34483d; background: #fff; text-decoration: none; }
+.home-priorities a:hover { border-color: #9bb08f; transform: translateY(-1px); }
+.home-priorities a.warning { border-color: #e6b79c; background: #fff8f3; }
+.home-priorities span, .home-priorities small { color: #738078; }
+.home-priorities strong { margin-block: .35rem; color: #20372b; font-family: Georgia, serif; font-size: 2.5rem; font-weight: 500; }
+.function-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; }
+.function-grid a { display: grid; gap: .35rem; padding: 1rem; border: 1px solid #e4e8e4; border-radius: .7rem; color: #31473a; background: #fafcf9; text-decoration: none; }
+.function-grid a:hover { border-color: #a8b9ac; background: #f4f8f2; }
+.function-grid span { color: #748078; font-size: .78rem; line-height: 1.45; }
+.compact-table { display: grid; }
+.compact-table a { display: grid; grid-template-columns: 1fr minmax(10rem, .5fr) minmax(10rem, .5fr); gap: 1rem; padding: .85rem .2rem; border-top: 1px solid #eceeea; color: #3c4e44; text-decoration: none; }
+.compact-table a:first-child { border-top: 0; }
+.compact-table small { color: #7d8781; text-align: right; }
+
+.filter-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: .8rem; align-items: end; }
+.notion-panel { overflow: hidden; }
+.notion-panel > .panel-heading > span { color: #75817a; font-size: .78rem; }
+.notion-table { overflow-x: auto; border: 1px solid #e5e8e4; border-radius: .65rem; }
+.notion-row { display: grid; min-width: 70rem; border: 0; border-top: 1px solid #e8ebe7; color: #3e4d45; background: #fff; text-align: left; }
+.notion-row:first-child { border-top: 0; }
+.notion-row > * { min-width: 0; padding: .75rem; border-left: 1px solid #edf0ec; overflow-wrap: anywhere; }
+.notion-row > *:first-child { border-left: 0; }
+.notion-row strong, .notion-row small { display: block; }
+.notion-row small { margin-top: .25rem; color: #7d8781; }
+.notion-row.notion-header { color: #68766e; background: #f7f9f6; font-size: .7rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+button.notion-row { width: 100%; font: inherit; cursor: pointer; }
+button.notion-row:hover, button.notion-row.active { background: #f2f6ef; }
+.summary-cell { color: #68746d; font-size: .78rem; line-height: 1.45; }
+.conversations-table .notion-row { grid-template-columns: 1.15fr .75fr .75fr .45fr .75fr .8fr 1.5fr; }
+.agenda-table .notion-row { grid-template-columns: 1.2fr .8fr .7fr .75fr .85fr 1.4fr .8fr; }
+.files-table .notion-row { grid-template-columns: 1.15fr .85fr .85fr .6fr .7fr 1.2fr .8fr; }
+.row-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem; }
+.row-actions a, .row-actions button, .files-table a { border: 0; color: #476754; background: none; font-size: .75rem; font-weight: 750; text-decoration: none; cursor: pointer; }
+.row-actions button:disabled { opacity: .55; cursor: wait; }
+.notion-row .stage-badge { align-self: center; margin: .55rem; padding: .3rem .55rem; }
+.files-table .audio-player { margin: 0; padding-block: .45rem; }
+.files-table .audio-player audio { width: 12rem; }
+.conversation-detail { min-height: 18rem; }
+
 .search-bar { display: flex; gap: .65rem; margin-bottom: 1.25rem; }
 .search-bar input { flex: 1; }
 input, select, textarea { width: 100%; border: 1px solid #d6dbd7; border-radius: .55rem; padding: .72rem .8rem; color: #25322b; background: #fbfcfa; outline: none; }
@@ -254,6 +294,9 @@ label { display: grid; gap: .4rem; color: #4c5b53; font-size: .8rem; font-weight
   .nav-link { white-space: nowrap; }
   .sidebar-user { display: none; }
   .metric-grid { grid-template-columns: 1fr; }
+  .home-priorities, .function-grid { grid-template-columns: 1fr; }
+  .compact-table a { grid-template-columns: 1fr; }
+  .compact-table small { text-align: left; }
   .detail-grid { grid-template-columns: 1fr; }
   .connection-grid { grid-template-columns: 1fr; }
   .conversation-layout { grid-template-columns: 1fr; }

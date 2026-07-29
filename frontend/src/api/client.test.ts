@@ -120,10 +120,15 @@ describe('cliente HTTP', () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: [] }), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
 
-    await api.negotiations({ stage: 'qualified', followUp: 'overdue', search: 'Ana & Cia' });
+    await api.negotiations({
+      stage: 'qualified',
+      followUp: 'overdue',
+      activeOnly: true,
+      search: 'Ana & Cia',
+    });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/negotiations?stage=qualified&followUp=overdue&search=Ana+%26+Cia',
+      '/api/negotiations?stage=qualified&followUp=overdue&activeOnly=true&search=Ana+%26+Cia',
       expect.objectContaining({ credentials: 'include' }),
     );
   });
@@ -276,5 +281,37 @@ describe('cliente HTTP', () => {
       method: 'POST',
       body: JSON.stringify(input),
     }));
+  });
+
+  it('codifica período e classificações ao consultar conversas', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await api.conversations({
+      startedFrom: '2026-07-29T00:00:00.000Z',
+      startedTo: '2026-07-30T00:00:00.000Z',
+      stage: 'lead',
+      aiStage: 'qualified',
+      search: 'Ana & Cia',
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/conversations?startedFrom=2026-07-29T00%3A00%3A00.000Z'
+        + '&startedTo=2026-07-30T00%3A00%3A00.000Z&stage=lead&aiStage=qualified'
+        + '&search=Ana+%26+Cia',
+      expect.objectContaining({ credentials: 'include' }),
+    );
+  });
+
+  it('consulta arquivos por contato sem receber uma chave física', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await api.files({ contactId: 'contact-1', search: 'áudio inicial' });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/files?contactId=contact-1&search=%C3%A1udio+inicial',
+      expect.objectContaining({ credentials: 'include' }),
+    );
   });
 });

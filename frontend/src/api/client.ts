@@ -3,6 +3,7 @@ import type { NegotiationStage } from '@noter/contracts';
 import type {
   AnalysisDecision,
   Contact,
+  ContactFile,
   ConversationSummary,
   Dashboard,
   Negotiation,
@@ -134,11 +135,13 @@ export const api = {
   async negotiations(filters?: {
     stage?: NegotiationStage;
     followUp?: 'overdue' | 'today' | 'upcoming' | 'missing';
+    activeOnly?: boolean;
     search?: string;
   }) {
     const params = new URLSearchParams();
     if (filters?.stage) params.set('stage', filters.stage);
     if (filters?.followUp) params.set('followUp', filters.followUp);
+    if (filters?.activeOnly) params.set('activeOnly', 'true');
     if (filters?.search) params.set('search', filters.search);
     const query = params.size ? `?${params.toString()}` : '';
     return request<{ data: Negotiation[] }>(`/api/negotiations${query}`);
@@ -246,8 +249,29 @@ export const api = {
     return request<WhatsappConnection>('/api/whatsapp/demo/connect', { method: 'POST' });
   },
 
-  async conversations() {
-    return request<{ data: ConversationSummary[] }>('/api/conversations');
+  async conversations(filters?: {
+    startedFrom?: string;
+    startedTo?: string;
+    stage?: NegotiationStage;
+    aiStage?: NegotiationStage;
+    search?: string;
+  }) {
+    const params = new URLSearchParams();
+    if (filters?.startedFrom) params.set('startedFrom', filters.startedFrom);
+    if (filters?.startedTo) params.set('startedTo', filters.startedTo);
+    if (filters?.stage) params.set('stage', filters.stage);
+    if (filters?.aiStage) params.set('aiStage', filters.aiStage);
+    if (filters?.search) params.set('search', filters.search);
+    const query = params.size ? `?${params.toString()}` : '';
+    return request<{ data: ConversationSummary[] }>(`/api/conversations${query}`);
+  },
+
+  async files(filters?: { contactId?: string; search?: string }) {
+    const params = new URLSearchParams();
+    if (filters?.contactId) params.set('contactId', filters.contactId);
+    if (filters?.search) params.set('search', filters.search);
+    const query = params.size ? `?${params.toString()}` : '';
+    return request<{ data: ContactFile[] }>(`/api/files${query}`);
   },
 
   async simulateInboundMessage(input: {

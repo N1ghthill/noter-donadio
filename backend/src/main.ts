@@ -19,6 +19,7 @@ import { LocalMediaStorage } from './modules/media/infrastructure/local-media-st
 import { FakeDemoAudioProvisioner } from './modules/media/infrastructure/fake-demo-audio.provisioner.js';
 import { MediaAccessService } from './modules/media/domain/media-access.js';
 import { PrismaMediaAccessRepository } from './modules/media/infrastructure/prisma-media-access.repository.js';
+import { PrismaContactFileRepository } from './modules/media/infrastructure/prisma-contact-file.repository.js';
 import { ContactDeletionService } from './modules/privacy/domain/contact-deletion.js';
 import { PrismaContactDeletionRepository } from './modules/privacy/infrastructure/prisma-contact-deletion.repository.js';
 import { PrismaWorkspaceExportRepository } from './modules/privacy/infrastructure/prisma-workspace-export.repository.js';
@@ -70,6 +71,7 @@ const app = buildApp({
     mediaStorage,
     environment.MEDIA_SIGNING_SECRET,
   ),
+  contactFileRepository: new PrismaContactFileRepository(prisma),
   contactDeletionService,
   workspaceExportRepository: new PrismaWorkspaceExportRepository(prisma),
   auditLogRepository: new PrismaAuditLogRepository(prisma),

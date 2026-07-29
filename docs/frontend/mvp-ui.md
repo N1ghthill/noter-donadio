@@ -5,6 +5,7 @@
 A aplicação React é uma interface autenticada para o CRM e contém:
 
 - login por workspace, e-mail e senha usando cookie de sessão `HttpOnly`;
+- Home operacional com prioridades do dia e atalhos para as funções do CRM;
 - visão geral agregada no servidor com contatos, negociações abertas, valor, conversão e pendências de acompanhamento;
 - listagem e busca de contatos;
 - cadastro manual de contato, com telefone, tags e observações;
@@ -22,7 +23,11 @@ A aplicação React é uma interface autenticada para o CRM e contém:
 - conclusão e histórico de próximas ações;
 - motivo obrigatório ao fechar uma negociação como ganha ou perdida;
 - histórico de auditoria com ator, instante, campos afetados, versões e transições de etapa;
-- caixa de conversas ordenada pela mensagem mais recente, com histórico reconciliado via REST;
+- caixa de conversas em tabela clicável, com início, contagem, etapa,
+  classificação da IA, resumo, filtros e histórico reconciliado via REST;
+- agenda de próximas ações com filtros de prazo, classificação, resumo e
+  conclusão explícita;
+- catálogo de áudios por contato com reprodução privada sob demanda;
 - formulário local para simular recebimento idempotente de texto ou áudio sem enviar mensagens;
 - exclusão irreversível de contato com confirmação explícita e remoção dos dados associados;
 - indicador de conexão em tempo real e reconciliação REST automática;
@@ -41,7 +46,7 @@ src/
 ├── auth/         estado e bootstrap da sessão
 ├── components/   shell e estados reutilizáveis
 ├── lib/          rótulos e formatação local
-├── pages/        dashboard, administração, contatos, conversas, login, pipeline e WhatsApp
+├── pages/        Home, controle, agenda, arquivos, CRM, administração e WhatsApp
 └── types/        representações das respostas REST
 ```
 
@@ -102,7 +107,11 @@ Os testes do frontend cobrem cookie de sessão, busca, erros HTTP, controle otim
   ainda não estão ativados;
 - etapa, tags, valor, produto, previsões e próxima ação só são aplicados após confirmação explícita e auditada;
 - objeções e as demais próximas ações sugeridas continuam informativas e não executam ações autônomas;
-- a conexão atual é simulada; nenhum adapter real de WhatsApp está habilitado;
+- o ambiente publicado usa exclusivamente o adapter Baileys; a simulação fica
+  restrita ao profile local `demo`, e o novo pareamento depende de ação
+  explícita quando o número estiver disponível;
+- o catálogo de arquivos cobre as mídias de áudio do fluxo existente; upload
+  manual de documentos ainda não pertence ao MVP;
 - áudio Baileys pode ser carregado sob demanda por URL curta, assinada e
   autenticada após o download privado na VPS;
 - a exportação JSON é gerada de forma síncrona e deverá virar uma tarefa assíncrona antes de workspaces grandes;

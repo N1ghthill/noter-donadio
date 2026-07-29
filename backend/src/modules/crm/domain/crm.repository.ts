@@ -20,6 +20,9 @@ export interface NegotiationView {
   readonly value: string | null;
   readonly currency: string;
   readonly sentiment: string | null;
+  readonly aiSummary: string | null;
+  readonly aiSuggestedStage: NegotiationStage | null;
+  readonly aiSuggestedTags: readonly string[];
   readonly nextAction: string | null;
   readonly nextActionDueDate: string | null;
   readonly version: number;
@@ -118,6 +121,7 @@ export class CrmNoNextActionError extends Error {}
 export interface NegotiationListFilters {
   readonly stage?: NegotiationStage | undefined;
   readonly followUp?: 'overdue' | 'today' | 'upcoming' | 'missing' | undefined;
+  readonly activeOnly?: boolean | undefined;
   readonly search?: string | undefined;
   readonly limit: number;
 }

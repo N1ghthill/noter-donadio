@@ -37,6 +37,9 @@ export interface Negotiation {
   value: string | null;
   currency: string;
   sentiment: string | null;
+  aiSummary: string | null;
+  aiSuggestedStage: NegotiationStage | null;
+  aiSuggestedTags: string[];
   nextAction: string | null;
   nextActionDueDate: string | null;
   version: number;
@@ -170,6 +173,17 @@ export interface ConversationSummary {
   contactId: string;
   contactName: string;
   stage: NegotiationStage;
+  title: string | null;
+  firstMessageAt: string;
+  messageCount: number;
+  latestAnalysis: {
+    state: ProcessingState;
+    summary: string | null;
+    sentiment: 'positive' | 'neutral' | 'negative' | 'urgent' | null;
+    suggestedStage: NegotiationStage | null;
+    suggestedTags: string[];
+    createdAt: string;
+  } | null;
   lastMessage: {
     id: string;
     direction: 'inbound' | 'outbound';
@@ -177,4 +191,17 @@ export interface ConversationSummary {
     content: string | null;
     occurredAt: string;
   };
+}
+
+export interface ContactFile {
+  messageId: string;
+  contactId: string;
+  contactName: string;
+  negotiationId: string | null;
+  fileName: string;
+  mimeType: string;
+  fileSizeBytes: string | null;
+  durationSeconds: number | null;
+  transcriptionState: ProcessingState;
+  occurredAt: string;
 }

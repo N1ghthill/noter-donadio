@@ -15,6 +15,7 @@ import { registerOriginProtection } from './modules/auth/http/origin-protection.
 import type { WhatsappConnectionService } from './modules/whatsapp/domain/whatsapp-connection.js';
 import { registerWhatsappRoutes } from './modules/whatsapp/http/whatsapp.routes.js';
 import type { MediaAccessService } from './modules/media/domain/media-access.js';
+import type { ContactFileRepository } from './modules/media/domain/contact-file.repository.js';
 import { registerMediaRoutes } from './modules/media/http/media.routes.js';
 import type { ContactDeletionService } from './modules/privacy/domain/contact-deletion.js';
 import { registerContactDeletionRoute } from './modules/privacy/http/contact-deletion.route.js';
@@ -42,6 +43,7 @@ interface AppOptions {
   readonly conversationRepository?: ConversationRepository;
   readonly demoMessageService?: DemoMessageService;
   readonly mediaAccessService?: MediaAccessService;
+  readonly contactFileRepository?: ContactFileRepository;
   readonly allowedOrigins?: readonly string[];
   readonly contactDeletionService?: ContactDeletionService;
   readonly workspaceExportRepository?: WorkspaceExportRepository;
@@ -182,6 +184,7 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
     registerMediaRoutes(app, {
       service: options.mediaAccessService,
       sessionAuthenticator,
+      contactFileRepository: options.contactFileRepository,
     });
   }
 

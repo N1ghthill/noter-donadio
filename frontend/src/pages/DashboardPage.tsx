@@ -23,13 +23,13 @@ export function DashboardPage() {
 
   useEffect(() => { void load(); }, [load, revision]);
 
-  if (error) return <ErrorState message="Não foi possível carregar a visão geral." retry={() => void load()} />;
-  if (!data) return <LoadingState label="Carregando visão geral…" />;
+  if (error) return <ErrorState message="Não foi possível carregar a tela de controle." retry={() => void load()} />;
+  if (!data) return <LoadingState label="Carregando controle…" />;
 
   return (
     <div className="page-stack">
       <header className="page-header">
-        <div><p className="eyebrow">Visão geral</p><h1>Seu comercial, em foco.</h1></div>
+        <div><p className="eyebrow">Controle</p><h1>Central de controle</h1></div>
         <label className="period-filter">Período de conversão
           <select value={periodDays} onChange={(event) => setPeriodDays(Number(event.target.value) as 30 | 90 | 365)}>
             <option value={30}>30 dias</option><option value={90}>90 dias</option><option value={365}>12 meses</option>

@@ -4,10 +4,13 @@ import { useAuth } from '../auth/AuthContext.js';
 import { useRealtime } from '../realtime/RealtimeContext.js';
 
 const navigation: Array<{ to: string; label: string; end: boolean }> = [
-  { to: '/', label: 'Visão geral', end: true },
+  { to: '/', label: 'Home', end: true },
+  { to: '/controle', label: 'Controle', end: false },
   { to: '/contatos', label: 'Contatos', end: false },
   { to: '/pipeline', label: 'Pipeline', end: false },
   { to: '/conversas', label: 'Conversas', end: false },
+  { to: '/agenda', label: 'Tarefas', end: false },
+  { to: '/arquivos', label: 'Arquivos', end: false },
   { to: '/whatsapp', label: 'WhatsApp', end: false },
   { to: '/administracao', label: 'Administração', end: false },
 ];

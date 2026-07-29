@@ -8,11 +8,40 @@ import {
   MediaNotFoundError,
   type MediaAccessService,
 } from '../domain/media-access.js';
+import type { ContactFileRepository } from '../domain/contact-file.repository.js';
 
 export function registerMediaRoutes(
   app: FastifyInstance,
-  options: { service: MediaAccessService; sessionAuthenticator: SessionAuthenticator },
+  options: {
+    service: MediaAccessService;
+    sessionAuthenticator: SessionAuthenticator;
+    contactFileRepository?: ContactFileRepository | undefined;
+  },
 ): void {
+  const contactFileRepository = options.contactFileRepository;
+  if (contactFileRepository) {
+    app.get('/api/files', async (request, reply) => {
+      const workspaceId = await authenticatedWorkspace(request, options.sessionAuthenticator);
+      if (!workspaceId) return reply.code(401).send({ error: 'unauthorized' });
+      const query = z.object({
+        contactId: z.uuid().optional(),
+        search: z.string().trim().min(1).max(255).optional(),
+        limit: z.coerce.number().int().min(1).max(200).default(100),
+      }).strict().safeParse(request.query);
+      if (!query.success) return reply.code(400).send({ error: 'invalid_request' });
+      reply.header('cache-control', 'no-store');
+      return {
+        data: await contactFileRepository.list({
+          workspaceId,
+          limit: query.data.limit,
+          now: new Date(),
+          ...(query.data.contactId ? { contactId: query.data.contactId } : {}),
+          ...(query.data.search ? { search: query.data.search } : {}),
+        }),
+      };
+    });
+  }
+
   app.get('/api/media/:messageId/access', async (request, reply) => {
     const workspaceId = await authenticatedWorkspace(request, options.sessionAuthenticator);
     if (!workspaceId) return reply.code(401).send({ error: 'unauthorized' });

@@ -15,6 +15,10 @@ interface ConversationRouteOptions {
   readonly demoMessageService?: DemoMessageService | undefined;
 }
 
+const stageSchema = z.enum([
+  'lead', 'qualified', 'proposal_sent', 'in_negotiation', 'on_hold', 'closed_won', 'closed_lost',
+]);
+
 export function registerConversationRoutes(
   app: FastifyInstance,
   options: ConversationRouteOptions,
@@ -24,9 +28,25 @@ export function registerConversationRoutes(
     if (!workspaceId) return reply.code(401).send({ error: 'unauthorized' });
     const query = z.object({
       limit: z.coerce.number().int().min(1).max(100).default(50),
-    }).safeParse(request.query);
+      startedFrom: z.iso.datetime({ offset: true }).optional(),
+      startedTo: z.iso.datetime({ offset: true }).optional(),
+      stage: stageSchema.optional(),
+      aiStage: stageSchema.optional(),
+      search: z.string().trim().min(1).max(255).optional(),
+    }).strict().refine((value) => (
+      !value.startedFrom || !value.startedTo || value.startedFrom < value.startedTo
+    )).safeParse(request.query);
     if (!query.success) return reply.code(400).send({ error: 'invalid_request' });
-    return { data: await options.repository.list(workspaceId, query.data.limit) };
+    return {
+      data: await options.repository.list(workspaceId, {
+        limit: query.data.limit,
+        ...(query.data.startedFrom ? { startedFrom: new Date(query.data.startedFrom) } : {}),
+        ...(query.data.startedTo ? { startedTo: new Date(query.data.startedTo) } : {}),
+        ...(query.data.stage ? { stage: query.data.stage } : {}),
+        ...(query.data.aiStage ? { aiStage: query.data.aiStage } : {}),
+        ...(query.data.search ? { search: query.data.search } : {}),
+      }),
+    };
   });
 
   const demoMessageService = options.demoMessageService;

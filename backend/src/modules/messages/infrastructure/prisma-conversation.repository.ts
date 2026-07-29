@@ -1,7 +1,8 @@
-import type { NegotiationStage } from '@noter/contracts';
+import type { NegotiationStage, ProcessingState } from '@noter/contracts';
 
-import type { PrismaClient } from '../../../generated/prisma/client.js';
+import { Prisma, type PrismaClient } from '../../../generated/prisma/client.js';
 import type {
+  ConversationListFilters,
   ConversationRepository,
   ConversationSummaryView,
 } from '../domain/conversation.repository.js';
@@ -9,28 +10,52 @@ import type {
 export class PrismaConversationRepository implements ConversationRepository {
   public constructor(private readonly prisma: PrismaClient) {}
 
-  public async list(workspaceId: string, limit: number): Promise<ConversationSummaryView[]> {
+  public async list(
+    workspaceId: string,
+    filters: ConversationListFilters,
+  ): Promise<ConversationSummaryView[]> {
+    const conditions: Prisma.Sql[] = [Prisma.sql`ranked.row_number = 1`];
+    if (filters.startedFrom) {
+      conditions.push(Prisma.sql`ranked.first_message_at >= ${filters.startedFrom}`);
+    }
+    if (filters.startedTo) {
+      conditions.push(Prisma.sql`ranked.first_message_at < ${filters.startedTo}`);
+    }
+    if (filters.stage) conditions.push(Prisma.sql`ranked.stage = ${filters.stage}::"NegotiationStage"`);
+    if (filters.aiStage) {
+      conditions.push(Prisma.sql`analysis.suggested_stage = ${filters.aiStage}::"NegotiationStage"`);
+    }
+    if (filters.search) {
+      const search = `%${filters.search}%`;
+      conditions.push(Prisma.sql`(
+        ranked.display_name ILIKE ${search}
+        OR COALESCE(ranked.title, '') ILIKE ${search}
+      )`);
+    }
+    const where = Prisma.join(conditions, ' AND ');
     const messages = await this.prisma.$queryRaw<ConversationRow[]>`
-      SELECT latest.negotiation_id AS "negotiationId",
-             latest.contact_id AS "contactId",
-             latest.display_name AS "contactName",
-             latest.stage::text AS stage,
-             latest.id AS "messageId",
-             latest.direction::text AS direction,
-             latest.message_type::text AS "messageType",
-             latest.content,
-             latest.occurred_at AS "occurredAt"
-      FROM (
-        SELECT DISTINCT ON (message.negotiation_id)
+      WITH ranked AS (
+        SELECT
                message.negotiation_id,
                message.contact_id,
                contact.display_name,
+               negotiation.title,
                negotiation.stage,
                message.id,
                message.direction,
                message.message_type,
                message.content,
-               message.occurred_at
+               message.occurred_at,
+               MIN(message.occurred_at) OVER (
+                 PARTITION BY message.negotiation_id
+               ) AS first_message_at,
+               COUNT(*) OVER (
+                 PARTITION BY message.negotiation_id
+               )::integer AS message_count,
+               ROW_NUMBER() OVER (
+                 PARTITION BY message.negotiation_id
+                 ORDER BY message.occurred_at DESC, message.id DESC
+               ) AS row_number
         FROM messages AS message
         INNER JOIN contacts AS contact
           ON contact.workspace_id = message.workspace_id AND contact.id = message.contact_id
@@ -38,10 +63,40 @@ export class PrismaConversationRepository implements ConversationRepository {
           ON negotiation.workspace_id = message.workspace_id AND negotiation.id = message.negotiation_id
         WHERE message.workspace_id = ${workspaceId}::uuid
           AND message.negotiation_id IS NOT NULL
-        ORDER BY message.negotiation_id, message.occurred_at DESC, message.id DESC
-      ) AS latest
-      ORDER BY latest.occurred_at DESC, latest.id DESC
-      LIMIT ${limit}
+      )
+      SELECT ranked.negotiation_id AS "negotiationId",
+             ranked.contact_id AS "contactId",
+             ranked.display_name AS "contactName",
+             ranked.title,
+             ranked.stage::text AS stage,
+             ranked.first_message_at AS "firstMessageAt",
+             ranked.message_count AS "messageCount",
+             ranked.id AS "messageId",
+             ranked.direction::text AS direction,
+             ranked.message_type::text AS "messageType",
+             ranked.content,
+             ranked.occurred_at AS "occurredAt",
+             analysis.id AS "analysisId",
+             analysis.state::text AS "analysisState",
+             analysis.summary AS "analysisSummary",
+             analysis.sentiment::text AS "analysisSentiment",
+             analysis.suggested_stage::text AS "analysisSuggestedStage",
+             analysis.suggested_tags AS "analysisSuggestedTags",
+             analysis.created_at AS "analysisCreatedAt"
+      FROM ranked
+      LEFT JOIN LATERAL (
+        SELECT ai.id, ai.state, ai.summary, ai.sentiment, ai.suggested_stage,
+               ai.suggested_tags, ai.created_at
+        FROM ai_analyses AS ai
+        WHERE ai.workspace_id = ${workspaceId}::uuid
+          AND ai.negotiation_id = ranked.negotiation_id
+          AND ai.state = 'completed'::"ProcessingState"
+        ORDER BY ai.created_at DESC, ai.id DESC
+        LIMIT 1
+      ) AS analysis ON true
+      WHERE ${where}
+      ORDER BY ranked.occurred_at DESC, ranked.id DESC
+      LIMIT ${filters.limit}
     `;
 
     return messages.map((message) => ({
@@ -49,6 +104,17 @@ export class PrismaConversationRepository implements ConversationRepository {
       contactId: message.contactId,
       contactName: message.contactName,
       stage: message.stage,
+      title: message.title,
+      firstMessageAt: message.firstMessageAt.toISOString(),
+      messageCount: message.messageCount,
+      latestAnalysis: message.analysisId && message.analysisState && message.analysisCreatedAt ? {
+        state: message.analysisState,
+        summary: message.analysisSummary,
+        sentiment: message.analysisSentiment,
+        suggestedStage: message.analysisSuggestedStage,
+        suggestedTags: message.analysisSuggestedTags ?? [],
+        createdAt: message.analysisCreatedAt.toISOString(),
+      } : null,
       lastMessage: {
         id: message.messageId,
         direction: message.direction,
@@ -64,10 +130,20 @@ interface ConversationRow {
   readonly negotiationId: string;
   readonly contactId: string;
   readonly contactName: string;
+  readonly title: string | null;
   readonly stage: NegotiationStage;
+  readonly firstMessageAt: Date;
+  readonly messageCount: number;
   readonly messageId: string;
   readonly direction: 'inbound' | 'outbound';
   readonly messageType: string;
   readonly content: string | null;
   readonly occurredAt: Date;
+  readonly analysisId: string | null;
+  readonly analysisState: ProcessingState | null;
+  readonly analysisSummary: string | null;
+  readonly analysisSentiment: 'positive' | 'neutral' | 'negative' | 'urgent' | null;
+  readonly analysisSuggestedStage: NegotiationStage | null;
+  readonly analysisSuggestedTags: string[] | null;
+  readonly analysisCreatedAt: Date | null;
 }

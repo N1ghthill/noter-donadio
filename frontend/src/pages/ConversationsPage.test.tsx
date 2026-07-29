@@ -20,7 +20,7 @@ describe('caixa de conversas', () => {
         audioTranscriptionEnabled: true,
         messageAnalysisEnabled: true,
       });
-      if (url === '/api/conversations') return response({ data: [conversation] });
+      if (url.startsWith('/api/conversations?')) return response({ data: [conversation] });
       if (url === '/api/negotiations/deal-1') return response(detail);
       if (url === '/api/whatsapp/demo/messages' && init?.method === 'POST') {
         return response({ messageId: 'message-2', contactId: 'contact-1', negotiationId: 'deal-1', duplicate: false }, 201);
@@ -36,6 +36,8 @@ describe('caixa de conversas', () => {
     );
 
     expect(await screen.findByText('Contato fictício')).toBeInTheDocument();
+    expect(screen.getByText('Contato solicitou uma proposta.')).toBeInTheDocument();
+    expect(screen.getByText('2')).toBeInTheDocument();
     expect(await screen.findByText('Histórico preservado.')).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('Mensagem fictícia recebida'), {
@@ -87,7 +89,7 @@ describe('caixa de conversas', () => {
         audioTranscriptionEnabled: false,
         messageAnalysisEnabled: false,
       });
-      if (url === '/api/conversations') return response({ data: [conversation] });
+      if (url.startsWith('/api/conversations?')) return response({ data: [conversation] });
       if (url === '/api/negotiations/deal-1') return response(audioDetail);
       return response({ error: 'not_found' }, 404);
     }));
@@ -110,6 +112,17 @@ const conversation = {
   contactId: 'contact-1',
   contactName: 'Contato fictício',
   stage: 'lead',
+  title: 'Negociação fictícia',
+  firstMessageAt: '2026-07-21T10:00:00.000Z',
+  messageCount: 2,
+  latestAnalysis: {
+    state: 'completed',
+    summary: 'Contato solicitou uma proposta.',
+    sentiment: 'positive',
+    suggestedStage: 'qualified',
+    suggestedTags: ['proposta'],
+    createdAt: '2026-07-21T12:01:00.000Z',
+  },
   lastMessage: {
     id: 'message-1',
     direction: 'inbound',

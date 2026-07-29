@@ -82,6 +82,7 @@ export function registerCrmRoutes(
     const query = z.object({
       stage: stageSchema.optional(),
       followUp: z.enum(['overdue', 'today', 'upcoming', 'missing']).optional(),
+      activeOnly: z.enum(['true']).transform(() => true).optional(),
       search: z.string().trim().min(1).max(255).optional(),
       limit: z.coerce.number().int().min(1).max(200).default(200),
     }).strict().safeParse(request.query);

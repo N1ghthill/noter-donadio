@@ -205,6 +205,9 @@ export class PrismaCrmRepository implements CrmRepository {
     const negotiations = await this.prisma.negotiation.findMany({
       where: {
         workspaceId,
+        ...(filters.activeOnly ? {
+          stage: { notIn: ['closed_won', 'closed_lost'] as NegotiationStage[] },
+        } : {}),
         ...(filters.stage ? { stage: filters.stage } : {}),
         ...(filters.search ? {
           OR: [
@@ -219,7 +222,15 @@ export class PrismaCrmRepository implements CrmRepository {
         ...(filters.followUp === 'upcoming' ? { nextAction: { not: null }, nextActionDueDate: { gt: today } } : {}),
         ...(filters.followUp === 'missing' ? { nextAction: null } : {}),
       },
-      include: { contact: { select: { displayName: true } } },
+      include: {
+        contact: { select: { displayName: true } },
+        aiAnalyses: {
+          where: { state: 'completed' },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { summary: true, suggestedStage: true, suggestedTags: true },
+        },
+      },
       orderBy: [{ stage: 'asc' }, { priority: 'desc' }, { updatedAt: 'desc' }],
       take: filters.limit,
     });
@@ -980,7 +991,13 @@ function toNegotiationView(negotiation: {
   value: { toString(): string } | null; currency: string; sentiment: string | null;
   nextAction: string | null; nextActionDueDate: Date | null;
   version: number; updatedAt: Date; contact: { displayName: string };
+  aiAnalyses?: readonly {
+    summary: string | null;
+    suggestedStage: NegotiationStage | null;
+    suggestedTags: string[];
+  }[];
 }): NegotiationView {
+  const latestAnalysis = negotiation.aiAnalyses?.[0];
   return {
     id: negotiation.id,
     contactId: negotiation.contactId,
@@ -990,6 +1007,9 @@ function toNegotiationView(negotiation: {
     value: negotiation.value?.toString() ?? null,
     currency: negotiation.currency,
     sentiment: negotiation.sentiment,
+    aiSummary: latestAnalysis?.summary ?? null,
+    aiSuggestedStage: latestAnalysis?.suggestedStage ?? null,
+    aiSuggestedTags: latestAnalysis?.suggestedTags ?? [],
     nextAction: negotiation.nextAction,
     nextActionDueDate: negotiation.nextActionDueDate?.toISOString().slice(0, 10) ?? null,
     version: negotiation.version,

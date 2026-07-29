@@ -27,11 +27,11 @@ class FakeSessionAuthenticator implements SessionAuthenticator {
 
 test('lista conversas somente do workspace autenticado', async (context) => {
   let requestedWorkspace: string | undefined;
-  let requestedLimit: number | undefined;
+  let requestedFilters: Parameters<ConversationRepository['list']>[1] | undefined;
   const repository: ConversationRepository = {
-    async list(workspaceId, limit) {
+    async list(workspaceId, filters) {
       requestedWorkspace = workspaceId;
-      requestedLimit = limit;
+      requestedFilters = filters;
       return [];
     },
   };
@@ -46,12 +46,29 @@ test('lista conversas somente do workspace autenticado', async (context) => {
 
   const response = await app.inject({
     method: 'GET',
-    url: '/api/conversations?limit=25&workspaceId=forjado',
+    url: '/api/conversations?limit=25&stage=qualified&aiStage=proposal_sent'
+      + '&startedFrom=2026-07-29T00%3A00%3A00.000Z&startedTo=2026-07-30T00%3A00%3A00.000Z'
+      + '&search=Contato',
     headers: { cookie: SESSION_COOKIE },
   });
   assert.equal(response.statusCode, 200);
   assert.equal(requestedWorkspace, WORKSPACE_ID);
-  assert.equal(requestedLimit, 25);
+  assert.deepEqual(requestedFilters, {
+    limit: 25,
+    stage: 'qualified',
+    aiStage: 'proposal_sent',
+    startedFrom: new Date('2026-07-29T00:00:00.000Z'),
+    startedTo: new Date('2026-07-30T00:00:00.000Z'),
+    search: 'Contato',
+  });
+
+  const invalid = await app.inject({
+    method: 'GET',
+    url: '/api/conversations?startedFrom=2026-07-30T00%3A00%3A00.000Z'
+      + '&startedTo=2026-07-29T00%3A00%3A00.000Z',
+    headers: { cookie: SESSION_COOKIE },
+  });
+  assert.equal(invalid.statusCode, 400);
 });
 
 test('simula mensagem idempotente sem aceitar conta ou workspace do navegador', async (context) => {

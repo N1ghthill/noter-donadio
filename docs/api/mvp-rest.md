@@ -26,14 +26,15 @@ Nenhum token, telefone ou conteúdo deve aparecer em logs ou exemplos versionado
 - `POST /api/contacts`: cria contato manual;
 - `PATCH /api/contacts/:id`: edita nome, telefone, tags e observações do contato;
 - `DELETE /api/contacts/:id`: exclui o contato e seus agregados após confirmação explícita do mesmo UUID;
-- `GET /api/negotiations`: lista o pipeline com filtros opcionais `stage`, `followUp`, `search` e `limit`;
+- `GET /api/negotiations`: lista o pipeline com filtros opcionais `stage`, `followUp`, `activeOnly`, `search` e `limit`; cada item inclui, quando existente, resumo e classificação da análise mais recente;
 - `POST /api/negotiations`: cria uma negociação manual para um contato do workspace;
 - `GET /api/negotiations/:id`: retorna contato, até 100 mensagens cronológicas, mídia/transcrição, até 20 análises, auditoria e até 50 acompanhamentos concluídos;
 - `PATCH /api/negotiations/:id`: edita título, valor, produto, previsão de fechamento, próxima ação e prazo com `expectedVersion`;
 - `PATCH /api/negotiations/:id/stage`: mudança manual com `expectedVersion`; etapas finais exigem `closeReason`;
 - `POST /api/negotiations/:id/next-action/complete`: arquiva a próxima ação e limpa o acompanhamento atual com controle de versão;
 - `POST /api/negotiations/:id/analyses/:analysisId/decision`: aceita uma seleção editável de etapa, tags, valor, produto, previsões e próxima ação ou ignora a sugestão, com UUID idempotente e `expectedVersion`;
-- `GET /api/conversations`: lista até 50 conversas, usando a mensagem mais recente de cada negociação;
+- `GET /api/conversations`: lista até 50 conversas, usando a mensagem mais recente de cada negociação; aceita `startedFrom`, `startedTo`, `stage`, `aiStage`, `search` e `limit`;
+- `GET /api/files`: lista mídias privadas acessíveis por contato; aceita `contactId`, `search` e `limit`, sem expor a chave física de armazenamento;
 - `GET /api/whatsapp/connection`: consulta o estado da conta principal;
 - `POST /api/whatsapp/setup`: inicia setup e retorna QR efêmero no adapter falso;
 - `POST /api/whatsapp/demo/connect`: simula a leitura do QR, disponível somente quando o adapter falso está habilitado;
@@ -65,6 +66,16 @@ desligados quando essa consulta falha.
 Criação e edição manual de contato, criação, edição e mudança de etapa da negociação e decisão sobre análise gravam `audit_events` na mesma transação da ação. A resposta expõe nome do usuário, instante, campos alterados, versões e transição de etapa quando aplicável. Telefone, observações, mensagens, transcrições, valores comerciais e valores completos de tags não são copiados para a auditoria ou para notificações.
 
 O dashboard agrega contagens e somas diretamente no PostgreSQL, sempre pelo `workspaceId` da sessão. Valores monetários retornam como decimal em string. A taxa de ganho considera somente negociações fechadas dentro do período escolhido; sem fechamentos, retorna `null`.
+
+Os filtros `startedFrom` e `startedTo` usam ISO 8601 UTC e formam um intervalo
+semiaberto. O início da conversa é a primeira mensagem persistida da
+negociação. `aiStage` e os campos assistivos retornados usam somente a análise
+concluída mais recente e não aplicam a sugestão ao estágio confirmado.
+
+O catálogo de arquivos retorna metadados de mídias não removidas e ainda dentro
+da retenção. O conteúdo continua disponível somente pelo fluxo assinado de
+`/api/media`; o catálogo não cria uma URL pública nem altera a política de
+retenção.
 
 Todas as mutações de navegador sob `/api/` exigem um cabeçalho `Origin` presente em `APP_ORIGINS`. A ingestão em `/api/internal/` continua protegida pelo token interno e não depende de origem de navegador. A exclusão de contato retorna `204` também em reentregas ou IDs não pertencentes ao workspace, evitando enumeração.
 

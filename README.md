@@ -53,6 +53,8 @@ O MVP usa Node.js 24 LTS, TypeScript 6, Fastify 5, React 19 e Vite 8. API, persi
 
 A API disponível nesta fase está documentada em [`docs/api/mvp-rest.md`](docs/api/mvp-rest.md).
 O modelo de login, cookies, sessões e bootstrap está em [`docs/security/authentication.md`](docs/security/authentication.md).
+As definições da Home, controle, conversas, agenda e arquivos estão em
+[`docs/product/operational-views.md`](docs/product/operational-views.md).
 
 O preparo da homologação publicada e o roteiro de apresentação estão em
 [`docs/operations/client-demo.md`](docs/operations/client-demo.md).
