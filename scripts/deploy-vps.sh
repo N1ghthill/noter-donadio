@@ -103,6 +103,18 @@ fi
 docker compose "${compose_arguments[@]}" build backend frontend
 docker compose "${compose_arguments[@]}" up -d --remove-orphans
 
+demo_profile_enabled=0
+IFS=',' read -r -a configured_profiles <<< "${COMPOSE_PROFILES:-}"
+for configured_profile in "${configured_profiles[@]}"; do
+  if test "${configured_profile}" = "demo"; then
+    demo_profile_enabled=1
+  fi
+done
+if test "${demo_profile_enabled}" = "0"; then
+  docker compose "${compose_arguments[@]}" --profile demo stop analysis transcription
+  docker compose "${compose_arguments[@]}" --profile demo rm -f analysis transcription
+fi
+
 for _attempt in $(seq 1 60); do
   if curl --fail --silent --show-error "${health_url}" >/dev/null; then
     break
