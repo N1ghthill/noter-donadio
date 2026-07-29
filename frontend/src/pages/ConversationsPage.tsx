@@ -6,13 +6,18 @@ import { ErrorState, LoadingState } from '../components/Feedback.js';
 import { AudioPlayer } from '../components/AudioPlayer.js';
 import { formatDate, PROCESSING_LABELS, STAGE_LABELS } from '../lib/format.js';
 import { useRealtime } from '../realtime/RealtimeContext.js';
-import type { ConversationSummary, NegotiationDetail } from '../types/api.js';
+import type {
+  ConversationSummary,
+  NegotiationDetail,
+  ProductCapabilities,
+} from '../types/api.js';
 
 export function ConversationsPage() {
   const { revision } = useRealtime();
   const [conversations, setConversations] = useState<ConversationSummary[]>();
   const [selectedId, setSelectedId] = useState<string>();
   const [detail, setDetail] = useState<NegotiationDetail>();
+  const [capabilities, setCapabilities] = useState<ProductCapabilities>();
   const [content, setContent] = useState('Olá! Esta é uma nova mensagem simulada para validar a caixa de entrada.');
   const [busy, setBusy] = useState<'text' | 'audio'>();
   const [error, setError] = useState<string>();
@@ -31,6 +36,15 @@ export function ConversationsPage() {
   }, []);
 
   useEffect(() => { void loadConversations(); }, [loadConversations, revision]);
+  useEffect(() => {
+    void api.capabilities()
+      .then(setCapabilities)
+      .catch(() => setCapabilities({
+        demoSimulationEnabled: false,
+        audioTranscriptionEnabled: false,
+        messageAnalysisEnabled: false,
+      }));
+  }, []);
 
   useEffect(() => {
     if (!selectedId) {
@@ -85,7 +99,7 @@ export function ConversationsPage() {
       </header>
       {error ? <ErrorState message={error} /> : null}
 
-      <aside className="demo-notice">
+      {capabilities?.demoSimulationEnabled ? <aside className="demo-notice">
         <strong>Entrada simulada</strong>
         <form className="demo-message-form" onSubmit={(event) => void simulateInbound(event)}>
           <label>
@@ -102,7 +116,7 @@ export function ConversationsPage() {
           </div>
         </form>
         <small>Nada é enviado ao WhatsApp. A ação exercita apenas o fluxo local de ingestão.</small>
-      </aside>
+      </aside> : null}
 
       <section className="conversation-layout">
         <div className="panel conversation-list" aria-label="Lista de conversas">
@@ -146,7 +160,9 @@ export function ConversationsPage() {
                           <strong>Transcrição · {PROCESSING_LABELS[message.media.transcriptionState]}</strong>
                           <p>{message.media.transcriptionText ?? (message.media.transcriptionState === 'failed'
                             ? 'Não foi possível transcrever este áudio.'
-                            : 'Aguardando transcrição.')}</p>
+                            : capabilities?.audioTranscriptionEnabled
+                              ? 'Aguardando transcrição.'
+                              : 'Transcrição ainda não ativada. O áudio original continua disponível.')}</p>
                         </div>
                       </>
                     ) : null}

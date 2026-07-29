@@ -15,6 +15,11 @@ describe('caixa de conversas', () => {
   it('abre o histórico e simula uma mensagem recebida', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
+      if (url === '/api/capabilities') return response({
+        demoSimulationEnabled: true,
+        audioTranscriptionEnabled: true,
+        messageAnalysisEnabled: true,
+      });
       if (url === '/api/conversations') return response({ data: [conversation] });
       if (url === '/api/negotiations/deal-1') return response(detail);
       if (url === '/api/whatsapp/demo/messages' && init?.method === 'POST') {
@@ -55,6 +60,48 @@ describe('caixa de conversas', () => {
         body: expect.stringContaining('"messageType":"audio"'),
       }),
     ));
+  });
+
+  it('oculta simulação e informa transcrição desativada no ambiente real', async () => {
+    const audioDetail = {
+      ...detail,
+      messages: [{
+        id: 'audio-1',
+        direction: 'inbound',
+        messageType: 'audio',
+        content: null,
+        occurredAt: '2026-07-21T12:00:00.000Z',
+        media: {
+          transcriptionState: 'pending',
+          transcriptionText: null,
+          durationSeconds: 3,
+          mimeType: 'audio/ogg',
+          playbackAvailable: true,
+        },
+      }],
+    };
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/capabilities') return response({
+        demoSimulationEnabled: false,
+        audioTranscriptionEnabled: false,
+        messageAnalysisEnabled: false,
+      });
+      if (url === '/api/conversations') return response({ data: [conversation] });
+      if (url === '/api/negotiations/deal-1') return response(audioDetail);
+      return response({ error: 'not_found' }, 404);
+    }));
+
+    render(
+      <MemoryRouter>
+        <RealtimeProvider><ConversationsPage /></RealtimeProvider>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText(
+      'Transcrição ainda não ativada. O áudio original continua disponível.',
+    )).toBeInTheDocument();
+    expect(screen.queryByText('Entrada simulada')).not.toBeInTheDocument();
   });
 });
 

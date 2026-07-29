@@ -4,12 +4,11 @@
 
 O repositório possui imagens reproduzíveis para backend e frontend e uma composição que separa API, outbox, eventos em tempo real, retenção, PostgreSQL e Redis. Isso permite validar o formato operacional sem publicar, fazer deploy ou conectar provedores reais.
 
-O processo Baileys, o QR real, o auth state PostgreSQL criptografado e a
-ingestão de texto estão implementados. O serviço permanece em profile opt-in
-`baileys`; áudio real ainda não está integrado. Transcrição e IA ainda possuem
-somente adapters falsos.
-Armazenamento local de mídia também deve ser substituído por objeto privado
-criptografado antes de produção real.
+O processo Baileys, QR, auth state PostgreSQL criptografado e ingestão de texto
+e áudio novos estão implementados na VPS controlada. Transcrição e IA falsas
+são exclusivas do profile `demo` e ficam desligadas no runtime real.
+Armazenamento de objetos privado e backup externo continuam sendo a evolução
+necessária para disponibilidade e recuperação de desastre.
 
 O perfil público por IP definido em `compose.vps-demo.yaml` é um ambiente transitório de desenvolvimento e demonstração, não uma variação de produção. Sua operação e seus portões estão documentados em [`vps.md`](vps.md).
 

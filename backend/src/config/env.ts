@@ -11,6 +11,10 @@ const environmentSchema = z.object({
   MEDIA_DOWNLOAD_ADAPTER: z.enum(['disabled', 'fake', 'baileys']).default('disabled'),
   TRANSCRIPTION_ADAPTER: z.enum(['disabled', 'fake']).default('disabled'),
   AI_ADAPTER: z.enum(['disabled', 'fake']).default('disabled'),
+  TRANSCRIPTION_FEATURE_ENABLED: z.enum(['true', 'false']).default('false')
+    .transform((value) => value === 'true'),
+  AI_ANALYSIS_FEATURE_ENABLED: z.enum(['true', 'false']).default('false')
+    .transform((value) => value === 'true'),
   MEDIA_STORAGE_PATH: z.string().trim().min(1).default('storage/media'),
   MEDIA_SIGNING_SECRET: z.string().min(32),
   MEDIA_RETENTION_DAYS: z.coerce.number().int().min(1).max(365).default(30),

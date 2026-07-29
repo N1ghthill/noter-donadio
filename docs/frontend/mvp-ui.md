@@ -97,9 +97,13 @@ Os testes do frontend cobrem cookie de sessão, busca, erros HTTP, controle otim
 ## Limites conhecidos desta fatia
 
 - notificações em tempo real cobrem edição e exclusão de contato, criação e atualização de negociação, mudança de etapa, decisão assistiva, conexão, persistência de mensagem, transcrição e análise;
-- a análise usa apenas o adapter falso; etapa, tags, valor, produto, previsões e próxima ação só são aplicados após confirmação explícita e auditada;
+- adapters falsos de análise e transcrição ficam restritos ao profile `demo`;
+  no ambiente Baileys, a interface informa explicitamente quando esses recursos
+  ainda não estão ativados;
+- etapa, tags, valor, produto, previsões e próxima ação só são aplicados após confirmação explícita e auditada;
 - objeções e as demais próximas ações sugeridas continuam informativas e não executam ações autônomas;
 - a conexão atual é simulada; nenhum adapter real de WhatsApp está habilitado;
-- áudio fictício pode ser carregado sob demanda por URL curta, assinada e autenticada; download real do WhatsApp e armazenamento de produção ainda não estão conectados;
+- áudio Baileys pode ser carregado sob demanda por URL curta, assinada e
+  autenticada após o download privado na VPS;
 - a exportação JSON é gerada de forma síncrona e deverá virar uma tarefa assíncrona antes de workspaces grandes;
 - exclusão integral de workspace permanece bloqueada até a aprovação da política de retenção, backups e prazo de cancelamento; a auditoria global ainda não possui paginação além dos 50 eventos recentes.

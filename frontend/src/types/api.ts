@@ -159,6 +159,12 @@ export interface WhatsappConnection {
   canSimulate: boolean;
 }
 
+export interface ProductCapabilities {
+  demoSimulationEnabled: boolean;
+  audioTranscriptionEnabled: boolean;
+  messageAnalysisEnabled: boolean;
+}
+
 export interface ConversationSummary {
   negotiationId: string;
   contactId: string;

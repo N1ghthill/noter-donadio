@@ -2,9 +2,10 @@
 
 ## Estado
 
-O Baileys foi autorizado para a fase de implementação na VPS. O runtime e toda
-configuração da API oficial da Meta foram removidos por decisão do produto.
-Transcrição e análise continuam usando adapters falsos.
+O Baileys foi autorizado, conectado e está em homologação controlada na VPS. O
+runtime e toda configuração da API oficial da Meta foram removidos por decisão
+do produto. Transcrição e análise falsas ficaram restritas ao profile `demo`;
+nenhum worker assistivo processa conversas reais atualmente.
 
 ## WhatsApp via Baileys
 
@@ -23,14 +24,15 @@ Estado implementado:
 - processo dedicado, reconexão, QR efêmero autenticado e logger silencioso;
 - adaptação somente de `messages.upsert` novos, sem sincronização de histórico;
 - pipeline genérico de mídia, filas e retenção;
+- referência mínima de áudio cifrada, download pós-commit e reprodução privada;
 - filtros de grupos, status, newsletters e protocolo no domínio.
 
 Antes de promover para uso amplo:
 
 1. concluir a auditoria da release 7 fixada e acompanhar sua estabilização;
-2. implementar referência e download duráveis para áudio;
-3. testar apenas com número controlado e dados sintéticos;
-4. documentar aceite do risco de bloqueio e dos termos de uso.
+2. concluir a homologação de texto e áudio com o número controlado;
+3. documentar aceite do risco de bloqueio e dos termos de uso;
+4. implementar recuperação por reupload para referências antigas de mídia.
 
 `useMultiFileAuthState` não será usado na VPS. A própria documentação do
 Baileys recomenda auth state próprio para produção; o diretório de autenticação
@@ -72,6 +74,11 @@ Cada integração real exige:
 5. métricas e alertas sem dados de negócio;
 6. teste em workspace e conta controlados;
 7. autorização explícita para conectar a sessão ou transmitir dados.
+
+Antes de iniciar transcrição ou análise reais, levantar a quantidade de jobs
+pendentes e registrar uma decisão: processar somente mensagens novas ou também
+o backlog. Ativar um worker sem essa decisão é proibido porque pode transmitir
+dados antigos e gerar custo retroativo.
 
 Credenciais ausentes ou inválidas devem impedir a inicialização. Nenhum
 fallback pode transmitir dados para outro provedor silenciosamente.

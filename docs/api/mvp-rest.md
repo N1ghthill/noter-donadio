@@ -16,6 +16,8 @@ Nenhum token, telefone ou conteúdo deve aparecer em logs ou exemplos versionado
 - `GET /api/internal/metrics`: expõe métricas Prometheus agregadas e exige token interno;
 - `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout`: ciclo da sessão;
 - `GET /api/auth/sessions`: lista as sessões ativas do administrador autenticado;
+- `GET /api/capabilities`: informa, sem detalhes internos, se simulação local,
+  transcrição e análise estão habilitadas;
 - `DELETE /api/auth/sessions/:id`: revoga uma sessão após confirmar o mesmo UUID no corpo;
 - `GET /api/privacy/workspace-export`: baixa a exportação administrativa versionada do workspace;
 - `GET /api/audit-events`: lista até 100 eventos minimizados do workspace; aceita `limit` e `action`;
@@ -44,6 +46,10 @@ Uma versão desatualizada na edição comercial, mudança de etapa, conclusão d
 A decisão de análise usa `decisionId` UUID criado pelo cliente. `accepted` exige pelo menos um campo aplicável, incluindo `nextAction` e `nextActionDueDate`; `ignored` não aceita campos aplicáveis. Uma análise possui uma única decisão imutável e guarda os valores efetivamente aplicados. Repetir o mesmo UUID e payload é idempotente; outra decisão para a mesma análise retorna `409 decision_conflict`. Aceites atualizam CRM, marcas de confirmação manual, auditoria e outbox na mesma transação serializável.
 
 O detalhe, a criação e a edição nunca recebem `workspaceId` do navegador: o isolamento e o usuário autor são derivados exclusivamente da sessão. Valores monetários trafegam como decimal em string e aceitam no máximo duas casas. A edição aceita `null` para limpar conscientemente um campo e ainda registra sua confirmação manual, impedindo reposição silenciosa pela IA. O detalhe expõe os instantes de confirmação de valor, produto, previsão, próxima ação e seu prazo. Datas sem horário trafegam em `YYYY-MM-DD`. Eventos de atualização contêm somente IDs e nomes dos campos alterados.
+
+As capacidades operacionais exigem sessão, usam `Cache-Control: no-store` e
+retornam apenas booleanos. A interface assume todos os recursos externos
+desligados quando essa consulta falha.
 
 Criação e edição manual de contato, criação, edição e mudança de etapa da negociação e decisão sobre análise gravam `audit_events` na mesma transação da ação. A resposta expõe nome do usuário, instante, campos alterados, versões e transição de etapa quando aplicável. Telefone, observações, mensagens, transcrições, valores comerciais e valores completos de tags não são copiados para a auditoria ou para notificações.
 

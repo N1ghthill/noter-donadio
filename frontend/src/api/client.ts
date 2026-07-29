@@ -7,6 +7,7 @@ import type {
   Dashboard,
   Negotiation,
   NegotiationDetail,
+  ProductCapabilities,
   SessionUser,
   SessionInfo,
   WorkspaceAuditEvent,
@@ -53,6 +54,10 @@ async function requestDownload(path: string): Promise<{ blob: Blob; filename: st
 }
 
 export const api = {
+  async capabilities() {
+    return request<ProductCapabilities>('/api/capabilities');
+  },
+
   async login(input: { workspace: string; email: string; password: string }) {
     return request<{ user: SessionUser; expiresAt: string }>('/api/auth/login', {
       method: 'POST',

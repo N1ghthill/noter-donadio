@@ -15,13 +15,14 @@ import {
   SENTIMENT_LABELS,
   STAGE_LABELS,
 } from '../lib/format.js';
-import type { NegotiationDetail } from '../types/api.js';
+import type { NegotiationDetail, ProductCapabilities } from '../types/api.js';
 import { useRealtime } from '../realtime/RealtimeContext.js';
 
 export function NegotiationDetailPage() {
   const { revision } = useRealtime();
   const { id } = useParams();
   const [detail, setDetail] = useState<NegotiationDetail>();
+  const [capabilities, setCapabilities] = useState<ProductCapabilities>();
   const [error, setError] = useState<string>();
   const [decisionBusy, setDecisionBusy] = useState(false);
   const [decisionError, setDecisionError] = useState<string>();
@@ -42,7 +43,16 @@ export function NegotiationDetailPage() {
     if (!id) return;
     setError(undefined);
     try {
-      setDetail(await api.negotiation(id));
+      const [negotiation, currentCapabilities] = await Promise.all([
+        api.negotiation(id),
+        api.capabilities().catch(() => ({
+          demoSimulationEnabled: false,
+          audioTranscriptionEnabled: false,
+          messageAnalysisEnabled: false,
+        })),
+      ]);
+      setDetail(negotiation);
+      setCapabilities(currentCapabilities);
     } catch (caught: unknown) {
       setError(caught instanceof ApiError && caught.status === 404
         ? 'Esta negociação não existe ou não pertence ao seu workspace.'
@@ -229,8 +239,20 @@ export function NegotiationDetailPage() {
 
         <article className="panel analysis-panel">
           <div className="panel-heading"><div><p className="eyebrow">Assistivo</p><h2>Análise mais recente</h2></div></div>
-          {!latestAnalysis ? <EmptyState title="Ainda sem análise" description="As sugestões aparecerão após o processamento das mensagens." /> : (
+          {!latestAnalysis ? (
+            <EmptyState
+              title={capabilities?.messageAnalysisEnabled
+                ? 'Ainda sem análise'
+                : 'Análise assistiva ainda não ativada'}
+              description={capabilities?.messageAnalysisEnabled
+                ? 'As sugestões aparecerão após o processamento das mensagens.'
+                : 'As mensagens estão preservadas. Nenhum conteúdo está sendo enviado a um provedor de IA.'}
+            />
+          ) : (
             <div className="analysis-content">
+              {!capabilities?.messageAnalysisEnabled ? (
+                <p className="muted">O pipeline de novas análises está desativado neste ambiente.</p>
+              ) : null}
               <small>Análise {PROCESSING_LABELS[latestAnalysis.state]} · {latestAnalysis.modelUsed ?? latestAnalysis.promptVersion}</small>
               {latestAnalysis.state === 'failed' ? <p>Não foi possível analisar esta mensagem. O conteúdo original continua disponível.</p> : <>
                 <p>{latestAnalysis.summary ?? 'Resumo ainda não disponível.'}</p>
@@ -343,7 +365,9 @@ export function NegotiationDetailPage() {
                       <strong>Transcrição · {PROCESSING_LABELS[message.media.transcriptionState]}</strong>
                       <p>{message.media.transcriptionText ?? (message.media.transcriptionState === 'failed'
                         ? 'Não foi possível transcrever este áudio.'
-                        : 'Aguardando transcrição.')}</p>
+                        : capabilities?.audioTranscriptionEnabled
+                          ? 'Aguardando transcrição.'
+                          : 'Transcrição ainda não ativada. O áudio original continua disponível.')}</p>
                     </div>
                   </>
                 ) : null}

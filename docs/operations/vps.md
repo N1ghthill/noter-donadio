@@ -70,6 +70,17 @@ sudo /opt/noter-donadio/scripts/deploy-vps.sh
 sudo /opt/noter-donadio/scripts/status-vps.sh
 ```
 
+Para diagnosticar sem imprimir conteúdo, telefone, referência ou chave de
+mídia:
+
+```bash
+sudo /opt/noter-donadio/scripts/status-vps.sh --diagnose-baileys
+sudo /opt/noter-donadio/scripts/status-vps.sh --diagnose-media
+```
+
+O diagnóstico de mídia retorna somente contagens agregadas de áudio por estado
+de download e logs sanitizados do worker.
+
 Na primeira ativação autorizada do conector Baileys, use:
 
 ```bash

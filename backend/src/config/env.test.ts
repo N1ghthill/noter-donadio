@@ -32,6 +32,8 @@ test('adapters externos permanecem desligados por padrão', () => {
   const environment = readEnvironment(required);
   assert.equal(environment.WHATSAPP_ADAPTER, 'disabled');
   assert.equal(environment.MEDIA_DOWNLOAD_ADAPTER, 'disabled');
+  assert.equal(environment.TRANSCRIPTION_FEATURE_ENABLED, false);
+  assert.equal(environment.AI_ANALYSIS_FEATURE_ENABLED, false);
   assert.equal(environment.MEDIA_ORPHAN_GRACE_HOURS, 24);
 });
 
@@ -55,4 +57,18 @@ test('habilita somente adapters implementados', () => {
     ...required,
     MEDIA_DOWNLOAD_ADAPTER: 'baileys',
   }).MEDIA_DOWNLOAD_ADAPTER, 'baileys');
+});
+
+test('capacidades assistivas exigem ativação explícita', () => {
+  const environment = readEnvironment({
+    ...required,
+    TRANSCRIPTION_FEATURE_ENABLED: 'true',
+    AI_ANALYSIS_FEATURE_ENABLED: 'true',
+  });
+  assert.equal(environment.TRANSCRIPTION_FEATURE_ENABLED, true);
+  assert.equal(environment.AI_ANALYSIS_FEATURE_ENABLED, true);
+  assert.throws(() => readEnvironment({
+    ...required,
+    AI_ANALYSIS_FEATURE_ENABLED: 'yes',
+  }));
 });

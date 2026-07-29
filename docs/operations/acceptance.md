@@ -5,6 +5,12 @@ original da tag, este marco aceita somente a demonstração com dados fictícios
 o MVP funcional depende da conexão Baileys e dos adapters reais descritos no
 escopo. As evidências abaixo acompanham o estado atual da `main`.
 
+Atualização de 29/07/2026: Baileys, QR, reconexão, texto, identidade LID,
+referência cifrada e download privado de áudio foram implantados na VPS. Os
+workers falsos foram removidos do profile real. Transcrição e análise reais
+continuam fora desta aceitação até escolha de provedor, decisão sobre backlog e
+nova homologação.
+
 ## Resultado
 
 Os fluxos comerciais e administrativos implementados estão aceitos para demonstração com dados fictícios. Isso não constitui liberação para dados reais ou provedores externos.
@@ -12,9 +18,9 @@ Os fluxos comerciais e administrativos implementados estão aceitos para demonst
 Evidências automatizadas repetidas sobre a candidata da fase VPS em 28/07/2026:
 
 - lint e TypeScript estrito sem erros;
-- 161 testes aprovados: 1 de contratos, 129 de backend e 31 de frontend;
+- 172 testes aprovados: 1 de contratos, 139 de backend e 32 de frontend;
 - build dos três workspaces aprovado;
-- 17 migrations aplicadas em PostgreSQL vazio;
+- 18 migrations aplicadas em PostgreSQL vazio;
 - fluxo integrado validado com PostgreSQL, Redis, BullMQ e adapters falsos;
 - imagens de backend e frontend construídas, configuração do Compose e sintaxe do Nginx validadas;
 - backup sintético restaurado com sucesso em PostgreSQL 16 isolado;
@@ -25,8 +31,8 @@ Evidências automatizadas repetidas sobre a candidata da fase VPS em 28/07/2026:
   reprovando o CI. A exceção não libera a VPS para dados reais.
 - runtime, rotas e configuração da integração oficial removidos; o contrato
   Baileys de texto cobre entrada, saída e filtros sem importar SDK no domínio;
-- Baileys 7 fixado e auth state PostgreSQL validado com criptografia
-  autenticada, rotação e isolamento por workspace, ainda sem ativação de rede;
+- Baileys 7 fixado, conectado e com auth state PostgreSQL validado por
+  criptografia autenticada, rotação e isolamento por workspace;
 - build do backend limpa `dist` antes de compilar, impedindo execução de
   artefatos correspondentes a fontes removidas.
 

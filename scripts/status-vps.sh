@@ -2,10 +2,14 @@
 set -euo pipefail
 
 diagnose_baileys=0
+diagnose_media=0
 for argument in "$@"; do
   case "${argument}" in
     --diagnose-baileys)
       diagnose_baileys=1
+      ;;
+    --diagnose-media)
+      diagnose_media=1
       ;;
     *)
       printf 'Argumento desconhecido: %s\n' "${argument}" >&2
@@ -57,4 +61,32 @@ printf '%s\n' "Aplicação e dependências saudáveis; endpoint interno bloquead
 
 if test "${diagnose_baileys}" = "1"; then
   docker compose "${compose_arguments[@]}" logs --tail 100 --no-color baileys
+fi
+
+if test "${diagnose_media}" = "1"; then
+  docker compose -f "${compose_file}" exec -T postgres \
+    psql --username="${DB_USER}" --dbname="${DB_NAME:-noter_donadio}" \
+      --no-align --tuples-only --field-separator='|' \
+      --command="
+        SELECT
+          COUNT(*) FILTER (WHERE messages.message_type = 'audio') AS audio_messages,
+          COUNT(*) FILTER (
+            WHERE media_assets.encrypted_provider_reference IS NOT NULL
+          ) AS baileys_audio,
+          COUNT(*) FILTER (
+            WHERE messages.message_type = 'audio'
+              AND media_assets.download_state = 'completed'
+          ) AS downloaded,
+          COUNT(*) FILTER (
+            WHERE messages.message_type = 'audio'
+              AND media_assets.download_state = 'pending'
+          ) AS pending,
+          COUNT(*) FILTER (
+            WHERE messages.message_type = 'audio'
+              AND media_assets.download_state = 'failed'
+          ) AS failed
+        FROM messages
+        LEFT JOIN media_assets ON media_assets.message_id = messages.id;
+      "
+  docker compose "${compose_arguments[@]}" logs --tail 100 --no-color media-download
 fi

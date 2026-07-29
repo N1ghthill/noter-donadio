@@ -515,3 +515,22 @@ Na fase atual, banco, Redis e mídia privada compartilham a VPS e os snapshots
 permanecem no próprio host por risco aceito pelo proprietário. Essa topologia
 não oferece recuperação contra perda integral da VPS e deverá ser revista antes
 de uma operação que exija disponibilidade ou recuperação de desastre.
+
+## ADR-057 — Capacidades assistivas são explícitas e falham fechadas
+
+A API autenticada expõe somente três capacidades booleanas de produto:
+simulação local, transcrição de áudio e análise de mensagens. Elas não revelam
+adapter, modelo, segredo, fila ou configuração interna. A interface usa essas
+capacidades para não oferecer simulação no ambiente Baileys e para diferenciar
+um recurso desativado de um processamento realmente pendente.
+
+`TRANSCRIPTION_FEATURE_ENABLED` e `AI_ANALYSIS_FEATURE_ENABLED` começam em
+`false` e são independentes da seleção do adapter no processo worker. Falha ao
+consultar a capacidade é tratada como recurso desligado. Um deploy futuro só
+pode mudar a capacidade para `true` junto da inicialização saudável do worker
+correspondente.
+
+Antes dessa ativação, o proprietário deve decidir separadamente se jobs
+acumulados serão descartados do processamento assistivo ou processados pelo
+novo provedor. A decisão deve considerar finalidade, custo e transmissão de
+dados antigos; não haverá consumo retroativo silencioso.

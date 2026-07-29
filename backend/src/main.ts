@@ -76,6 +76,11 @@ const app = buildApp({
   allowedOrigins: environment.APP_ORIGINS,
   readinessProbe,
   metricsCollector,
+  productCapabilities: {
+    demoSimulationEnabled: demoMessageService !== undefined,
+    audioTranscriptionEnabled: environment.TRANSCRIPTION_FEATURE_ENABLED,
+    messageAnalysisEnabled: environment.AI_ANALYSIS_FEATURE_ENABLED,
+  },
   ...(demoMessageService ? { demoMessageService } : {}),
   ...(whatsappService ? { whatsappService } : {}),
 });

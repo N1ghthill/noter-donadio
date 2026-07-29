@@ -25,6 +25,10 @@ import { registerAuditLogRoute } from './modules/privacy/http/audit-log.route.js
 import type { ReadinessProbe } from './modules/health/domain/readiness.js';
 import type { OperationalMetricsCollector } from './modules/health/domain/operational-metrics.js';
 import { registerHealthRoutes } from './modules/health/http/health.routes.js';
+import {
+  registerCapabilitiesRoutes,
+  type ProductCapabilities,
+} from './modules/capabilities/http/capabilities.routes.js';
 
 interface AppOptions {
   readonly trustProxy?: boolean;
@@ -44,6 +48,7 @@ interface AppOptions {
   readonly auditLogRepository?: AuditLogRepository;
   readonly readinessProbe?: ReadinessProbe;
   readonly metricsCollector?: OperationalMetricsCollector;
+  readonly productCapabilities?: ProductCapabilities;
 }
 
 export function buildApp(options: AppOptions = {}): FastifyInstance {
@@ -124,6 +129,12 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
   }
 
   const sessionAuthenticator = options.sessionAuthenticator ?? options.authService;
+  if (options.productCapabilities && sessionAuthenticator) {
+    registerCapabilitiesRoutes(app, {
+      capabilities: options.productCapabilities,
+      sessionAuthenticator,
+    });
+  }
   if (options.crmRepository && sessionAuthenticator) {
     registerCrmRoutes(app, {
       repository: options.crmRepository,

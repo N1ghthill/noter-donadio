@@ -107,14 +107,14 @@ Peça ao cliente decisões sobre:
 
 ## Limitações que devem ser declaradas
 
-- WhatsApp, IA e transcrição ainda são simulados.
+- O roteiro histórico da tag `v0.2.0-mvp` usa WhatsApp, IA e transcrição
+  simulados. Na homologação atual, WhatsApp e download de áudio são reais; IA e
+  transcrição permanecem desativadas.
 - Não existe envio autônomo de mensagens.
 - Banco, Redis, aplicação e backups locais compartilham a mesma VPS.
 - Não há backup off-host nesta fase, por decisão aceita para dados fictícios.
-- Mídia real e credenciais reais ainda não são permitidas.
-- A integração planejada para dados reais é Baileys 7 e depende de auth state
-  criptografado, aceite do risco operacional e autorização antes de conectar
-  uma conta controlada.
+- Banco, mídia e credenciais Baileys reais estão restritos à VPS controlada;
+  não fazem parte do roteiro histórico de demonstração.
 
 ## Evidência esperada
 

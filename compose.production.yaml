@@ -29,6 +29,8 @@ x-backend: &backend
     MEDIA_DOWNLOAD_ADAPTER: disabled
     TRANSCRIPTION_ADAPTER: disabled
     AI_ADAPTER: disabled
+    TRANSCRIPTION_FEATURE_ENABLED: ${TRANSCRIPTION_FEATURE_ENABLED:-false}
+    AI_ANALYSIS_FEATURE_ENABLED: ${AI_ANALYSIS_FEATURE_ENABLED:-false}
   depends_on:
     migrate:
       condition: service_completed_successfully
