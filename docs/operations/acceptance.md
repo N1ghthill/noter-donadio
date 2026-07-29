@@ -23,6 +23,11 @@ por QR quando a sessão Baileys já está conectada. Essa proteção elimina o f
 inútil que aguardava um novo código e terminava em erro, sem desconectar ou
 alterar a sessão real existente.
 
+Após o deploy, a aplicação permaneceu saudável, porém o WhatsApp encerrou a
+sessão Baileys com código terminal `401`. O processo se comportou de forma
+segura: marcou a conta como desconectada e não entrou em loop. A conexão real
+volta a fazer parte da aceitação somente depois de novo pareamento autorizado.
+
 ## Resultado
 
 Os fluxos comerciais e administrativos implementados estão aceitos para demonstração com dados fictícios. Isso não constitui liberação para dados reais ou provedores externos.

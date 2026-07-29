@@ -9,7 +9,7 @@ está pronto, mas a integração externa permanece deliberadamente desligada.
 | Capacidade | Estado | Evidência principal |
 | --- | --- | --- |
 | Login administrativo e sessões revogáveis | Pronto | Rotas autenticadas, cookie opaco, tela de administração e testes |
-| QR, sessão e reconexão Baileys | Pronto | Auth state PostgreSQL cifrado, processo dedicado e reconexões observadas na VPS |
+| QR, sessão e reconexão Baileys | Pronto no código; novo pareamento pendente | Auth state PostgreSQL cifrado, processo dedicado, reconexão transitória observada e encerramento terminal tratado |
 | Ingestão direta de texto recebido e enviado | Pronto | Normalização `notify`/`fromMe`, deduplicação e persistência transacional |
 | Ingestão e download privado de áudio | Pronto | Referência mínima cifrada, worker pós-commit e `5/5` downloads concluídos na VPS |
 | Contatos manuais e automáticos | Pronto | Cadastro, edição, exclusão controlada e criação pela ingestão |
@@ -27,9 +27,13 @@ está pronto, mas a integração externa permanece deliberadamente desligada.
 ## Estado publicado
 
 `https://leadcontrol.online` opera com PostgreSQL, Redis, aplicação, Caddy,
-Baileys, download de mídia, outbox, tempo real, retenção e observabilidade na
-mesma VPS. O runtime foi verificado saudável; a sessão Baileys recuperou
-automaticamente desconexões transitórias de código `428`.
+processo Baileys, download de mídia, outbox, tempo real, retenção e
+observabilidade na mesma VPS. A aplicação e as dependências foram verificadas
+saudáveis. A sessão Baileys recuperou desconexões transitórias de código `428`,
+mas, após a publicação desta auditoria, o servidor do WhatsApp encerrou a
+sessão com código terminal `401`. O processo marcou a conta como desconectada e
+não tentou um loop de reconexão; é necessário novo pareamento por QR autorizado
+pelo responsável.
 
 O ambiente publicado não oferece simulação de mensagens. Ele preserva análises
 sintéticas históricas claramente identificadas, mas novas transcrições e
