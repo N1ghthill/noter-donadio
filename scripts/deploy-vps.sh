@@ -3,6 +3,7 @@ set -euo pipefail
 
 reboot_if_required=0
 enable_baileys=0
+reset_admin_password=0
 
 for argument in "$@"; do
   case "${argument}" in
@@ -11,6 +12,9 @@ for argument in "$@"; do
       ;;
     --enable-baileys)
       enable_baileys=1
+      ;;
+    --reset-admin-password)
+      reset_admin_password=1
       ;;
     *)
       printf 'Argumento desconhecido: %s\n' "${argument}" >&2
@@ -111,6 +115,21 @@ git rev-parse HEAD > .deployed-commit
 chmod 600 .deployed-commit
 
 printf '%s\n' "Deploy concluído no commit $(git rev-parse --short=12 HEAD)."
+
+if test "${reset_admin_password}" = "1"; then
+  RESET_ADMIN_WORKSPACE="${ADMIN_WORKSPACE_SLUG:?defina ADMIN_WORKSPACE_SLUG}"
+  RESET_ADMIN_EMAIL="${ADMIN_EMAIL:?defina ADMIN_EMAIL}"
+  RESET_ADMIN_PASSWORD="$(openssl rand -base64 24)"
+  export RESET_ADMIN_WORKSPACE RESET_ADMIN_EMAIL RESET_ADMIN_PASSWORD
+  docker compose "${compose_arguments[@]}" run --rm --no-deps \
+    -e RESET_ADMIN_WORKSPACE \
+    -e RESET_ADMIN_EMAIL \
+    -e RESET_ADMIN_PASSWORD \
+    backend node dist/reset-admin-password.js
+  printf 'Workspace: %s\nE-mail: %s\nSenha temporária: %s\n' \
+    "${RESET_ADMIN_WORKSPACE}" "${RESET_ADMIN_EMAIL}" "${RESET_ADMIN_PASSWORD}"
+  unset RESET_ADMIN_PASSWORD
+fi
 
 if test "${reboot_if_required}" = "1"; then
   if test -f /var/run/reboot-required; then
