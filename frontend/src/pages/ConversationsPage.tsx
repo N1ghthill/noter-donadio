@@ -84,7 +84,7 @@ export function ConversationsPage() {
     }
     let active = true;
     setDetail(undefined);
-    void api.negotiation(selectedId)
+    void api.negotiation(selectedId, 'contact')
       .then((response) => { if (active) setDetail(response); })
       .catch(() => { if (active) setError('Não foi possível abrir esta conversa.'); });
     return () => { active = false; };
@@ -122,7 +122,7 @@ export function ConversationsPage() {
       setSelectedId(result.negotiationId);
       if (messageType === 'text') setContent('');
       await loadConversations();
-      setDetail(await api.negotiation(result.negotiationId));
+      setDetail(await api.negotiation(result.negotiationId, 'contact'));
     } catch (caught: unknown) {
       setError(caught instanceof ApiError && caught.code === 'whatsapp_not_connected'
         ? 'Conecte primeiro o WhatsApp no modo de demonstração.'
@@ -250,7 +250,7 @@ export function ConversationsPage() {
                     onCancel={() => setEditingFollowUp(false)}
                     onSaved={async () => {
                       setEditingFollowUp(false);
-                      setDetail(await api.negotiation(detail.id));
+                      setDetail(await api.negotiation(detail.id, 'contact'));
                     }}
                   />
                 ) : null}

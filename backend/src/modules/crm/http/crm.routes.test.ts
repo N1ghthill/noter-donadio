@@ -25,6 +25,7 @@ const CONTACT_ID = '3a3db76b-c51a-4584-ab4b-6d3e70952e44';
 
 class FakeCrmRepository implements CrmRepository {
   public lastWorkspaceId?: string;
+  public lastMessageScope?: 'negotiation' | 'contact';
   public lastContactCreate?: Parameters<CrmRepository['createContact']>[0];
   public lastContactUpdate?: { workspaceId: string; userId: string; contactId: string; displayName?: string };
   public lastNegotiationCreate?: Parameters<CrmRepository['createNegotiation']>[0];
@@ -100,8 +101,13 @@ class FakeCrmRepository implements CrmRepository {
       updatedAt: '2026-07-21T12:00:00.000Z',
     };
   }
-  public async getNegotiation(workspaceId: string, negotiationId: string): Promise<NegotiationDetailView> {
+  public async getNegotiation(
+    workspaceId: string,
+    negotiationId: string,
+    messageScope: 'negotiation' | 'contact' = 'negotiation',
+  ): Promise<NegotiationDetailView> {
     this.lastWorkspaceId = workspaceId;
+    this.lastMessageScope = messageScope;
     return {
       id: negotiationId,
       contactId: '3a3db76b-c51a-4584-ab4b-6d3e70952e44',
@@ -330,11 +336,12 @@ test('detalhe da negociação usa o workspace autenticado', async (context) => {
   context.after(async () => app.close());
   const response = await app.inject({
     method: 'GET',
-    url: `/api/negotiations/${NEGOTIATION_ID}`,
+    url: `/api/negotiations/${NEGOTIATION_ID}?messageScope=contact`,
     headers: { cookie: SESSION_COOKIE },
   });
   assert.equal(response.statusCode, 200);
   assert.equal(repository.lastWorkspaceId, WORKSPACE_ID);
+  assert.equal(repository.lastMessageScope, 'contact');
   assert.equal(response.json().id, NEGOTIATION_ID);
 });
 

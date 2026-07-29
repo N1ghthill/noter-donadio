@@ -38,6 +38,7 @@ export class PrismaConversationRepository implements ConversationRepository {
         SELECT
                message.negotiation_id,
                message.contact_id,
+               contact.phone_number,
                contact.display_name,
                negotiation.title,
                negotiation.stage,
@@ -47,13 +48,13 @@ export class PrismaConversationRepository implements ConversationRepository {
                message.content,
                message.occurred_at,
                MIN(message.occurred_at) OVER (
-                 PARTITION BY message.negotiation_id
+                 PARTITION BY contact.phone_number
                ) AS first_message_at,
                COUNT(*) OVER (
-                 PARTITION BY message.negotiation_id
+                 PARTITION BY contact.phone_number
                )::integer AS message_count,
                ROW_NUMBER() OVER (
-                 PARTITION BY message.negotiation_id
+                 PARTITION BY contact.phone_number
                  ORDER BY message.occurred_at DESC, message.id DESC
                ) AS row_number
         FROM messages AS message

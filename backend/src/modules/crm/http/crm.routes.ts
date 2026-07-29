@@ -122,9 +122,14 @@ export function registerCrmRoutes(
     const workspaceId = await authenticatedWorkspace(request, options.sessionAuthenticator);
     if (!workspaceId) return reply.code(401).send({ error: 'unauthorized' });
     const params = z.object({ id: z.uuid() }).safeParse(request.params);
-    if (!params.success) return reply.code(400).send({ error: 'invalid_request' });
+    const query = z.object({ messageScope: z.literal('contact').optional() }).strict().safeParse(request.query);
+    if (!params.success || !query.success) return reply.code(400).send({ error: 'invalid_request' });
     try {
-      return await options.repository.getNegotiation(workspaceId, params.data.id);
+      return await options.repository.getNegotiation(
+        workspaceId,
+        params.data.id,
+        query.data.messageScope ?? 'negotiation',
+      );
     } catch (error: unknown) {
       if (error instanceof CrmNotFoundError) return reply.code(404).send({ error: 'not_found' });
       throw error;

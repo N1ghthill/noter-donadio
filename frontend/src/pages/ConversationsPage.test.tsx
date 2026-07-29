@@ -21,7 +21,7 @@ describe('caixa de conversas', () => {
         messageAnalysisEnabled: true,
       });
       if (url.startsWith('/api/conversations?')) return response({ data: [conversation] });
-      if (url === '/api/negotiations/deal-1') return response(detail);
+      if (url === '/api/negotiations/deal-1?messageScope=contact') return response(detail);
       if (url === '/api/whatsapp/demo/messages' && init?.method === 'POST') {
         return response({ messageId: 'message-2', contactId: 'contact-1', negotiationId: 'deal-1', duplicate: false }, 201);
       }
@@ -137,7 +137,7 @@ describe('caixa de conversas', () => {
         messageAnalysisEnabled: false,
       });
       if (url.startsWith('/api/conversations?')) return response({ data: [conversation] });
-      if (url === '/api/negotiations/deal-1') return response(mediaDetail);
+      if (url === '/api/negotiations/deal-1?messageScope=contact') return response(mediaDetail);
       return response({ error: 'not_found' }, 404);
     }));
 

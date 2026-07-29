@@ -30,6 +30,14 @@ test('mídia externa persiste referência e solicitação de download atomicamen
       },
     },
   });
+  const manualContact = await prisma.contact.create({
+    data: {
+      workspaceId,
+      phoneNumber: '5571000000202',
+      displayName: 'Contato manual sintético',
+      source: 'manual',
+    },
+  });
 
   const result = await new PrismaMessageIngestionRepository(prisma).persist({
     workspaceId,
@@ -52,6 +60,10 @@ test('mídia externa persiste referência e solicitação de download atomicamen
       },
     },
   });
+  assert.equal(result.contactId, manualContact.id);
+  assert.equal((await prisma.contact.findUniqueOrThrow({
+    where: { id: manualContact.id },
+  })).jid, '5571000000202@s.whatsapp.net');
 
   const asset = await prisma.mediaAsset.findUniqueOrThrow({
     where: { messageId: result.messageId },

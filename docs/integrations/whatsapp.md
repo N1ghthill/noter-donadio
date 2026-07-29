@@ -57,6 +57,12 @@ A fronteira pura para texto diferencia `inbound` e `outbound`, preserva o ID
 externo e não aceita workspace ou conta vindos do evento. Somente eventos
 `notify` são ingeridos, evitando importar histórico completo.
 
+Depois que um LID é resolvido pelo mapping store, texto e mídia usam o JID
+telefônico canônico na ingestão. Um contato manual do mesmo workspace e
+telefone é reutilizado em vez de criar uma pessoa paralela. A interface de
+conversas também reconcilia registros históricos pelo telefone normalizado,
+sem apagar negociações existentes.
+
 ## Segurança obrigatória
 
 - usar uma versão 7 fixada; nunca `master`, fork desconhecido ou versão 6;

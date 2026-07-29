@@ -163,8 +163,9 @@ export const api = {
     });
   },
 
-  async negotiation(id: string) {
-    return request<NegotiationDetail>(`/api/negotiations/${id}`);
+  async negotiation(id: string, messageScope: 'negotiation' | 'contact' = 'negotiation') {
+    const query = messageScope === 'contact' ? '?messageScope=contact' : '';
+    return request<NegotiationDetail>(`/api/negotiations/${id}${query}`);
   },
 
   async updateNegotiation(id: string, input: {

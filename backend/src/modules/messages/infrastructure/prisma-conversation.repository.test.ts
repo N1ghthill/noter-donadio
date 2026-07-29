@@ -12,7 +12,9 @@ test('lista conversas por início e expõe classificação mais recente sem apli
   const workspaceId = randomUUID();
   const accountId = randomUUID();
   const contactId = randomUUID();
+  const duplicateContactId = randomUUID();
   const negotiationId = randomUUID();
+  const duplicateNegotiationId = randomUUID();
   const firstMessageId = randomUUID();
   const lastMessageId = randomUUID();
   context.after(async () => {
@@ -44,6 +46,24 @@ test('lista conversas por início e expõe classificação mais recente sem apli
       stage: 'lead',
     },
   });
+  await prisma.contact.create({
+    data: {
+      id: duplicateContactId,
+      workspaceId,
+      displayName: 'Contato duplicado por LID',
+      phoneNumber: '5571000000001',
+      jid: '123456789012345@lid',
+    },
+  });
+  await prisma.negotiation.create({
+    data: {
+      id: duplicateNegotiationId,
+      workspaceId,
+      contactId: duplicateContactId,
+      title: 'Negociação duplicada por LID',
+      stage: 'lead',
+    },
+  });
   await prisma.message.createMany({
     data: [
       {
@@ -69,6 +89,16 @@ test('lista conversas por início e expõe classificação mais recente sem apli
         messageType: 'text',
         content: 'Última mensagem sintética.',
         occurredAt: new Date('2026-07-29T11:00:00.000Z'),
+      },
+      {
+        workspaceId,
+        whatsappAccountId: accountId,
+        externalMessageId: 'duplicate-lid-synthetic',
+        contactId: duplicateContactId,
+        negotiationId: duplicateNegotiationId,
+        direction: 'inbound',
+        messageType: 'audio',
+        occurredAt: new Date('2026-07-29T10:30:00.000Z'),
       },
     ],
   });
@@ -96,7 +126,7 @@ test('lista conversas por início e expõe classificação mais recente sem apli
   });
 
   assert.equal(result.length, 1);
-  assert.equal(result[0]?.messageCount, 2);
+  assert.equal(result[0]?.messageCount, 3);
   assert.equal(result[0]?.firstMessageAt, '2026-07-29T10:00:00.000Z');
   assert.equal(result[0]?.lastMessage.id, lastMessageId);
   assert.equal(result[0]?.latestAnalysis?.summary, 'Contato solicitou proposta.');

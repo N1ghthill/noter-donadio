@@ -155,7 +155,10 @@ describe('cliente HTTP', () => {
   });
 
   it('consulta o detalhe de uma negociação pelo identificador', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: 'neg-1' }), { status: 200 }));
+    const fetchMock = vi.fn(async () => new Response(
+      JSON.stringify({ id: 'neg-1' }),
+      { status: 200 },
+    ));
     vi.stubGlobal('fetch', fetchMock);
 
     await api.negotiation('neg-1');
@@ -163,6 +166,12 @@ describe('cliente HTTP', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/negotiations/neg-1', expect.objectContaining({
       credentials: 'include',
     }));
+
+    await api.negotiation('neg-1', 'contact');
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/negotiations/neg-1?messageScope=contact',
+      expect.objectContaining({ credentials: 'include' }),
+    );
   });
 
   it('edita dados comerciais com versão e decimais em string', async () => {

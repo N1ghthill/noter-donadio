@@ -45,7 +45,7 @@ test('usa JID alternativo telefônico para conversa identificada por LID', () =>
     message: { conversation: 'Mensagem fictícia.' },
   } as WAMessage);
 
-  assert.equal(event?.remoteJid, '123456789012345@lid');
+  assert.equal(event?.remoteJid, '5571000000101@s.whatsapp.net');
   assert.equal(event?.phoneNumber, '5571000000101');
 });
 

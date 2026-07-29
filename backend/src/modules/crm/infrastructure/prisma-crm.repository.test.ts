@@ -360,6 +360,49 @@ test('aceite é atômico, auditável e idempotente no PostgreSQL', async (contex
   const detail = await repository.getNegotiation(workspaceId, negotiationId);
   assert.equal(detail.auditTrail.length, 3);
   assert.equal(detail.auditTrail.every((event) => event.actorDisplayName === 'Administrador fictício'), true);
+  const duplicateContactId = randomUUID();
+  const duplicateNegotiationId = randomUUID();
+  const duplicateMessageId = randomUUID();
+  await prisma.contact.create({
+    data: {
+      id: duplicateContactId,
+      workspaceId,
+      phoneNumber: '5571000000000',
+      displayName: 'Contato duplicado por LID',
+      jid: '123456789012345@lid',
+    },
+  });
+  await prisma.negotiation.create({
+    data: {
+      id: duplicateNegotiationId,
+      workspaceId,
+      contactId: duplicateContactId,
+      stage: 'lead',
+    },
+  });
+  await prisma.message.create({
+    data: {
+      id: duplicateMessageId,
+      workspaceId,
+      whatsappAccountId: accountId,
+      externalMessageId: `fake-${duplicateMessageId}`,
+      contactId: duplicateContactId,
+      negotiationId: duplicateNegotiationId,
+      direction: 'inbound',
+      messageType: 'audio',
+      occurredAt: new Date('2026-07-21T07:00:00.000Z'),
+    },
+  });
+  const contactConversation = await repository.getNegotiation(
+    workspaceId,
+    negotiationId,
+    'contact',
+  );
+  assert.deepEqual(
+    contactConversation.messages.map((message) => message.id),
+    [messageId, duplicateMessageId],
+  );
+  assert.equal(detail.messages.length, 1);
   await assert.rejects(
     repository.decideAnalysis({
       ...input,

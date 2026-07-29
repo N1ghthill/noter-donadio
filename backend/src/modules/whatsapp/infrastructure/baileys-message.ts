@@ -66,7 +66,7 @@ export function toBaileysTextEvent(
 
   return {
     externalMessageId,
-    remoteJid,
+    remoteJid: phoneJid,
     fromMe: message.key.fromMe === true,
     phoneNumber: phoneJid.slice(0, -'@s.whatsapp.net'.length),
     ...(message.pushName ? { displayName: message.pushName } : {}),
@@ -135,7 +135,7 @@ export function toBaileysMediaEvent(
   const originalFileName = 'fileName' in media ? safeFileName(media.fileName) : undefined;
   return {
     externalMessageId,
-    remoteJid,
+    remoteJid: phoneJid,
     fromMe: message.key.fromMe === true,
     phoneNumber: phoneJid.slice(0, -'@s.whatsapp.net'.length),
     ...(message.pushName ? { displayName: message.pushName } : {}),

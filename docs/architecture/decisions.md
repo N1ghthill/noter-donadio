@@ -627,3 +627,23 @@ Mídias não sonoras não entram na fila de transcrição. Ao concluir seu downl
 um evento sanitizado `message.media.available`, contendo apenas IDs, solicita
 reconciliação REST da interface. Upload manual e compartilhamento externo
 continuam fora desta fase.
+
+## ADR-063 — Conversas são agrupadas pela pessoa, não pela negociação
+
+O Baileys pode representar o mesmo número por um JID telefônico ou por LID.
+Depois de resolver o telefone pelo mapping store, o adapter passa adiante o JID
+telefônico canônico. A ingestão procura primeiro essa identidade e, quando ela
+ainda não existe, reutiliza um contato do mesmo workspace com o mesmo telefone
+normalizado, dando precedência ao contato criado manualmente. O JID bruto não
+volta a criar uma pessoa paralela.
+
+A rota de listagem de conversas agrupa mensagens pelo telefone normalizado do
+contato. O detalhe aberto a partir dessa tela usa escopo de contato e reúne, em
+ordem cronológica, mensagens e mídias das negociações que pertencem à mesma
+pessoa. Pipeline e detalhe comercial continuam preservando negociações
+separadas: a alteração é de identidade conversacional e não mescla, apaga ou
+reescreve silenciosamente dados comerciais existentes.
+
+Uma eventual consolidação física de contatos ou negociações exige ferramenta
+própria, confirmação explícita, auditoria e regras para resolver campos
+comerciais divergentes. Ela não é executada automaticamente por esta decisão.

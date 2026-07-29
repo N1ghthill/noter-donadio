@@ -322,7 +322,11 @@ export class PrismaCrmRepository implements CrmRepository {
     });
   }
 
-  public async getNegotiation(workspaceId: string, negotiationId: string): Promise<NegotiationDetailView> {
+  public async getNegotiation(
+    workspaceId: string,
+    negotiationId: string,
+    messageScope: 'negotiation' | 'contact' = 'negotiation',
+  ): Promise<NegotiationDetailView> {
     const now = new Date();
     const negotiation = await this.prisma.negotiation.findFirst({
       where: { id: negotiationId, workspaceId },
@@ -346,6 +350,17 @@ export class PrismaCrmRepository implements CrmRepository {
       },
     });
     if (!negotiation) throw new CrmNotFoundError();
+    const conversationMessages = messageScope === 'contact'
+      ? await this.prisma.message.findMany({
+          where: {
+            workspaceId,
+            contact: { phoneNumber: negotiation.contact.phoneNumber },
+          },
+          orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
+          take: 100,
+          include: { mediaAsset: true },
+        })
+      : negotiation.messages;
     const auditTrail = await this.prisma.auditEvent.findMany({
       where: {
         workspaceId,
@@ -372,7 +387,7 @@ export class PrismaCrmRepository implements CrmRepository {
       nextActionConfirmedAt: negotiation.nextActionConfirmedAt?.toISOString() ?? null,
       nextActionDueDateConfirmedAt: negotiation.nextActionDueDateConfirmedAt?.toISOString() ?? null,
       contact: toContactView(negotiation.contact),
-      messages: negotiation.messages.toReversed().map((message) => ({
+      messages: conversationMessages.toReversed().map((message) => ({
         id: message.id,
         direction: message.direction,
         messageType: message.messageType,

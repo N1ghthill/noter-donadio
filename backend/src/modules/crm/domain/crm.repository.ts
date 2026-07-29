@@ -180,7 +180,11 @@ export interface CrmRepository {
     nextAction?: string | undefined;
     nextActionDueDate?: string | undefined;
   }): Promise<NegotiationView>;
-  getNegotiation(workspaceId: string, negotiationId: string): Promise<NegotiationDetailView>;
+  getNegotiation(
+    workspaceId: string,
+    negotiationId: string,
+    messageScope?: 'negotiation' | 'contact',
+  ): Promise<NegotiationDetailView>;
   updateNegotiation(input: {
     workspaceId: string;
     userId: string;

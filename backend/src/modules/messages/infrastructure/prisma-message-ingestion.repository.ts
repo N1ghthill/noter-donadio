@@ -60,27 +60,51 @@ export class PrismaMessageIngestionRepository implements MessageIngestionReposit
           };
         }
 
-        const contact = await transaction.contact.upsert({
+        let contact = await transaction.contact.findUnique({
           where: {
             workspaceId_jid: {
               workspaceId: command.workspaceId,
               jid: command.remoteJid,
             },
           },
-          create: {
-            workspaceId: command.workspaceId,
-            jid: command.remoteJid,
-            phoneNumber: command.phoneNumber,
-            displayName: command.displayName ?? `Novo Contato ${command.phoneNumber.slice(-4)}`,
-            source: 'whatsapp_auto',
-            lastInteractionAt: command.occurredAt,
-          },
-          update: {},
           select: {
             id: true,
             displayName: true,
           },
         });
+        if (!contact) {
+          const phoneMatches = await transaction.contact.findMany({
+            where: {
+              workspaceId: command.workspaceId,
+              phoneNumber: command.phoneNumber,
+            },
+            orderBy: { createdAt: 'asc' },
+            select: {
+              id: true,
+              displayName: true,
+              source: true,
+            },
+          });
+          const phoneMatch = phoneMatches.find((candidate) => candidate.source === 'manual')
+            ?? phoneMatches[0];
+          contact = phoneMatch
+            ? await transaction.contact.update({
+                where: { id: phoneMatch.id },
+                data: { jid: command.remoteJid },
+                select: { id: true, displayName: true },
+              })
+            : await transaction.contact.create({
+                data: {
+                  workspaceId: command.workspaceId,
+                  jid: command.remoteJid,
+                  phoneNumber: command.phoneNumber,
+                  displayName: command.displayName ?? `Novo Contato ${command.phoneNumber.slice(-4)}`,
+                  source: 'whatsapp_auto',
+                  lastInteractionAt: command.occurredAt,
+                },
+                select: { id: true, displayName: true },
+              });
+        }
 
         await transaction.$executeRaw`
           UPDATE contacts

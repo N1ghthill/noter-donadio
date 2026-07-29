@@ -25,9 +25,13 @@ A rota `/conversas` oferece uma tabela operacional clicável, com filtros de:
 - classificação sugerida pela IA;
 - contato ou título da negociação.
 
-“Iniciada” significa a primeira mensagem persistida da negociação. O intervalo
-de hoje respeita o dia local do navegador e é enviado à API como limites UTC.
-Ao selecionar uma linha, o histórico completo é reconciliado pela API REST.
+Cada linha representa uma pessoa pelo telefone normalizado, mesmo quando o
+Baileys já registrou JID telefônico e LID distintos ou existem várias
+negociações para o contato. “Iniciada” significa a primeira mensagem persistida
+desse histórico conversacional. O intervalo de hoje respeita o dia local do
+navegador e é enviado à API como limites UTC. Ao selecionar uma linha, todas as
+mensagens e mídias da pessoa são reconciliadas pela API REST; o atalho comercial
+continua apontando para a negociação da atividade mais recente.
 Os filtros e a conversa selecionada permanecem na URL, permitindo voltar ao
 mesmo contexto. A busca aguarda uma breve pausa na digitação para evitar
 requisições a cada tecla.
