@@ -259,13 +259,17 @@ export function ConversationsPage() {
                 {detail.messages.map((message) => (
                   <article className={`message ${message.direction}`} key={message.id}>
                     <small>{message.direction === 'inbound' ? 'Recebida' : 'Enviada'} · {formatDate(message.occurredAt)}</small>
-                    <p>{message.content ?? (message.messageType === 'audio' ? 'Mensagem de áudio' : 'Conteúdo não textual')}</p>
+                    <p>{message.content ?? messageTypeLabel(message.messageType)}</p>
                     {message.media ? (
                       <>
-                        {message.media.playbackAvailable && ['audio', 'image', 'document'].includes(message.messageType)
+                        <div className="message-media-heading">
+                          <strong>{messageTypeLabel(message.messageType)}</strong>
+                          <small>{message.media.fileName ?? 'Nome não informado'}</small>
+                        </div>
+                        {message.media.playbackAvailable && isSupportedMediaType(message.messageType)
                           ? <MediaPreview
                               messageId={message.id}
-                              messageType={message.messageType as 'audio' | 'image' | 'document'}
+                              messageType={message.messageType}
                               fileName={message.media.fileName ?? 'Arquivo da conversa'}
                             />
                           : <p className="media-unavailable">Arquivo indisponível ou removido pela retenção.</p>}
@@ -291,7 +295,17 @@ export function ConversationsPage() {
 
 function messagePreview(conversation: ConversationSummary): string {
   if (conversation.lastMessage.content) return conversation.lastMessage.content;
-  if (conversation.lastMessage.messageType === 'audio') return 'Mensagem de áudio';
+  return messageTypeLabel(conversation.lastMessage.messageType);
+}
+
+function isSupportedMediaType(value: string): value is 'audio' | 'image' | 'document' {
+  return value === 'audio' || value === 'image' || value === 'document';
+}
+
+function messageTypeLabel(value: string): string {
+  if (value === 'audio') return 'Mensagem de áudio';
+  if (value === 'image') return 'Imagem';
+  if (value === 'document') return 'Documento';
   return 'Conteúdo não textual';
 }
 

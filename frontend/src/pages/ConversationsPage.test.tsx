@@ -79,22 +79,55 @@ describe('caixa de conversas', () => {
   });
 
   it('oculta simulação e informa transcrição desativada no ambiente real', async () => {
-    const audioDetail = {
+    const mediaDetail = {
       ...detail,
-      messages: [{
-        id: 'audio-1',
-        direction: 'inbound',
-        messageType: 'audio',
-        content: null,
-        occurredAt: '2026-07-21T12:00:00.000Z',
-        media: {
-          transcriptionState: 'pending',
-          transcriptionText: null,
-          durationSeconds: 3,
-          mimeType: 'audio/ogg',
-          playbackAvailable: true,
+      messages: [
+        {
+          id: 'audio-1',
+          direction: 'inbound',
+          messageType: 'audio',
+          content: null,
+          occurredAt: '2026-07-21T12:00:00.000Z',
+          media: {
+            transcriptionState: 'pending',
+            transcriptionText: null,
+            durationSeconds: 3,
+            mimeType: 'audio/ogg',
+            fileName: 'audio.ogg',
+            playbackAvailable: true,
+          },
         },
-      }],
+        {
+          id: 'image-1',
+          direction: 'inbound',
+          messageType: 'image',
+          content: null,
+          occurredAt: '2026-07-21T12:01:00.000Z',
+          media: {
+            transcriptionState: 'completed',
+            transcriptionText: null,
+            durationSeconds: null,
+            mimeType: 'image/jpeg',
+            fileName: 'imagem.jpg',
+            playbackAvailable: true,
+          },
+        },
+        {
+          id: 'document-1',
+          direction: 'outbound',
+          messageType: 'document',
+          content: null,
+          occurredAt: '2026-07-21T12:02:00.000Z',
+          media: {
+            transcriptionState: 'completed',
+            transcriptionText: null,
+            durationSeconds: null,
+            mimeType: 'application/pdf',
+            fileName: 'proposta.pdf',
+            playbackAvailable: true,
+          },
+        },
+      ],
     };
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
@@ -104,7 +137,7 @@ describe('caixa de conversas', () => {
         messageAnalysisEnabled: false,
       });
       if (url.startsWith('/api/conversations?')) return response({ data: [conversation] });
-      if (url === '/api/negotiations/deal-1') return response(audioDetail);
+      if (url === '/api/negotiations/deal-1') return response(mediaDetail);
       return response({ error: 'not_found' }, 404);
     }));
 
@@ -117,6 +150,11 @@ describe('caixa de conversas', () => {
     expect(await screen.findByText(
       'Transcrição ainda não ativada. O áudio original continua disponível.',
     )).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Carregar áudio' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ver imagem' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Preparar download' })).toBeInTheDocument();
+    expect(screen.getByText('imagem.jpg')).toBeInTheDocument();
+    expect(screen.getByText('proposta.pdf')).toBeInTheDocument();
     expect(screen.queryByText('Entrada simulada')).not.toBeInTheDocument();
   });
 });
