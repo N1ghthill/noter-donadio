@@ -2,14 +2,13 @@
 
 ## Estado
 
-O Baileys foi autorizado e conectado novamente na VPS por QR após o
-encerramento terminal da sessão anterior. A rodada controlada mais recente
-validou texto, áudio, imagem e documento; o aplicativo continua sem endpoint de
-envio. O runtime e toda configuração da API oficial da Meta foram removidos por
-decisão do produto. Transcrição e análise falsas ficaram restritas ao profile `demo`.
-Os adapters OpenAI e o bloqueio temporal de backlog estão implementados; a
-ativação na VPS depende somente da injeção interativa da chave e da homologação
-autorizada.
+O vínculo Baileys anterior foi encerrado e o novo número controlado ainda
+aguarda liberação. O aplicativo continua sem endpoint de envio. O runtime e
+toda configuração da API oficial da Meta foram removidos por decisão do
+produto. Transcrição e análise falsas ficaram restritas ao profile `demo`.
+Os adapters OpenAI, o bloqueio temporal de backlog e os workers reais estão
+ativos; autenticação e acesso aos dois modelos foram validados sem inferência.
+A homologação ponta a ponta aguarda a nova conexão Baileys.
 
 ## WhatsApp via Baileys
 
@@ -83,11 +82,13 @@ Cada integração real exige:
 6. teste em workspace e conta controlados;
 7. autorização explícita para conectar a sessão ou transmitir dados.
 
-Em 29/07/2026, o proprietário autorizou OpenAI somente para o áudio de
-homologação mais recente e mensagens posteriores. O adapter exige
+Em 30/07/2026, o proprietário configurou a OpenAI para mensagens posteriores
+ao corte operacional. O adapter exige
 `ASSISTIVE_PROCESSING_NOT_BEFORE`; jobs anteriores ao corte não chamam o
 provedor. Áudios anteriores ainda pendentes recebem o código sanitizado
 `OUTSIDE_AUTHORIZED_PROCESSING_WINDOW`.
 
 Credenciais ausentes ou inválidas devem impedir a inicialização. Nenhum
 fallback pode transmitir dados para outro provedor silenciosamente.
+O configurador valida autenticação e acesso aos modelos de transcrição e
+análise antes de alterar o `.env` ou habilitar os workers.

@@ -737,3 +737,17 @@ Caddy e Nginx também publicam isolamento de origem e bloqueio de frames. O
 diagnóstico operacional pode consultar no PostgreSQL apenas o estado agregado
 das contas Baileys (`connected`, `disconnected` ou `not_configured`); telefone,
 JID, conteúdo, QR e credenciais não fazem parte dessa saída.
+
+## ADR-071 — Ativação OpenAI valida acesso antes de alterar o ambiente
+
+O configurador interativo valida o formato local da chave e consulta somente o
+endpoint autenticado de metadados para cada modelo configurado. A chave segue
+pelo `stdin` do cliente HTTP, nunca por argumento de processo, log ou arquivo
+versionado. Falha de rede, autenticação, modelo indisponível ou identificador
+inseguro preserva integralmente a configuração anterior.
+
+Somente depois dessas validações o script grava o segredo com permissão `600`,
+define o corte temporal e habilita os workers. Essa consulta não realiza
+inferência nem substitui a homologação controlada de texto e áudio. O
+diagnóstico assistivo informa contagens rotuladas por estado, sem conteúdo,
+telefone, mensagem, transcrição ou identificador de negócio.

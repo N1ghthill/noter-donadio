@@ -35,6 +35,17 @@ origem e bloqueio de frames. O diagnóstico padrão da VPS informa apenas o
 estado agregado do Baileys persistido no PostgreSQL, sem identificadores ou
 credenciais.
 
+Atualização de 30/07/2026: a chave OpenAI foi injetada externamente e os
+workers reais foram ativados depois da validação sem inferência dos modelos
+`gpt-4o-mini-transcribe` e `gpt-5.6-sol`. O backlog anterior permanece
+bloqueado pelo corte temporal. A homologação paga de uma nova mensagem e de um
+novo áudio aguarda a liberação do número controlado.
+
+O hardening seguinte passou em 217 testes de código (1 de contratos, 167 de
+backend e 49 de frontend), além do teste de script para sucesso, `401`, chave
+inválida e identificador de modelo inseguro. Lint, typecheck, build e auditoria
+de produção permaneceram aprovados sem realizar inferência.
+
 Na evolução da biblioteca de arquivos, o mesmo pipeline privado passou a
 receber também imagens e documentos novos, com filtros por contato, direção,
 período e tipo. Documentos usam download forçado, imagens exigem ação explícita

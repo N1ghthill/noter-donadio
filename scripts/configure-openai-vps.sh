@@ -5,6 +5,9 @@ project_directory="${PROJECT_DIRECTORY:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.."
 compose_file="${COMPOSE_FILE:-compose.vps-demo.yaml}"
 cd "${project_directory}"
 
+# shellcheck source=scripts/lib/openai-access.sh
+source "${project_directory}/scripts/lib/openai-access.sh"
+
 if ! test -f .env; then
   printf '%s\n' "Arquivo .env não encontrado." >&2
   exit 1
@@ -66,6 +69,15 @@ if ! [[ "${openai_api_key}" =~ ^[A-Za-z0-9_-]{20,}$ ]]; then
   exit 1
 fi
 
+transcription_model="${OPENAI_TRANSCRIPTION_MODEL:-gpt-4o-mini-transcribe}"
+analysis_model="${OPENAI_ANALYSIS_MODEL:-gpt-5.6-sol}"
+if ! validate_openai_model_access "${openai_api_key}" "${transcription_model}" \
+  || ! validate_openai_model_access "${openai_api_key}" "${analysis_model}"; then
+  unset openai_api_key
+  printf '%s\n' "A configuração anterior foi preservada sem alterações." >&2
+  exit 1
+fi
+
 cutoff="$(
   docker compose -f "${compose_file}" exec -T postgres \
     psql --username="${DB_USER:?defina DB_USER}" --dbname="${DB_NAME:-noter_donadio}" \
@@ -94,8 +106,8 @@ fi
 set_env_value OPENAI_API_KEY "${openai_api_key}"
 unset openai_api_key
 set_env_value ASSISTIVE_PROCESSING_NOT_BEFORE "${cutoff}"
-set_env_value OPENAI_TRANSCRIPTION_MODEL "${OPENAI_TRANSCRIPTION_MODEL:-gpt-4o-mini-transcribe}"
-set_env_value OPENAI_ANALYSIS_MODEL "${OPENAI_ANALYSIS_MODEL:-gpt-5.6-sol}"
+set_env_value OPENAI_TRANSCRIPTION_MODEL "${transcription_model}"
+set_env_value OPENAI_ANALYSIS_MODEL "${analysis_model}"
 set_env_value TRANSCRIPTION_ADAPTER openai
 set_env_value AI_ADAPTER openai
 set_env_value TRANSCRIPTION_FEATURE_ENABLED true

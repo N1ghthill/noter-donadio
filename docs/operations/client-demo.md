@@ -5,13 +5,16 @@
 Esta demonstração apresenta o CRM do noter.donadio em
 `https://leadcontrol.online`. A VPS usa uma conta Baileys controlada e pode
 conter mensagens enviadas pelo próprio responsável para homologação. Não use
-dados de clientes. Transcrição e análise novas permanecem desligadas enquanto a
-chave OpenAI não for configurada.
+dados de clientes. Transcrição e análise OpenAI estão ativas somente para itens
+posteriores ao corte autorizado; a homologação ponta a ponta aguarda a conexão
+do novo número controlado.
 
 O objetivo é validar a experiência comercial e colher decisões de produto. A demonstração não representa autorização para inserir dados reais.
 
 Para conduzir uma rodada formal, use também o
 [`pilot.md`](pilot.md) e a tela autenticada `/piloto`.
+Para avaliar transcrição e sugestões, use
+[`openai-homologation.md`](openai-homologation.md).
 
 ## Preparação
 

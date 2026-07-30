@@ -1,6 +1,6 @@
 # Estado verificável do MVP
 
-Última auditoria: 29/07/2026.
+Última auditoria: 30/07/2026.
 
 Esta matriz compara o escopo executável com código, testes e runtime da VPS.
 `Pronto` significa implementado e validado. `Preparado` significa que o código
@@ -24,8 +24,8 @@ está pronto, mas a integração externa permanece deliberadamente desligada.
 | Arquivos por contato | Pronto | Mídias privadas, filtros persistidos, retenção visível, renovação de acesso e navegação contextual |
 | Atualização em tempo real | Pronto | Eventos sanitizados por workspace e reconciliação REST |
 | Sugestões sem ação autônoma | Pronto no modo sintético | Saída estrita, edição, aceite/recusa explícitos e auditoria |
-| Transcrição OpenAI | Preparado | Adapter, limites, timeout, retries e corte obrigatório; chave não configurada |
-| Análise OpenAI | Preparado | Responses API, Structured Outputs, `store: false` e corte obrigatório |
+| Transcrição OpenAI | Ativa; homologação ponta a ponta pendente | Chave externa, acesso ao `gpt-4o-mini-transcribe`, worker, limites, retries e corte validados |
+| Análise OpenAI | Ativa; homologação ponta a ponta pendente | Acesso ao `gpt-5.6-sol`, Responses API, Structured Outputs, `store: false`, schema estrito e worker ativo |
 | Retenção, exclusão de contato e exportação | Pronto para a fase | Worker de retenção, remoção de agregado e exportação administrativa |
 | Health checks e observabilidade local | Pronto | Readiness privado, métricas, Prometheus, Grafana e Alertmanager saudáveis |
 
@@ -34,20 +34,24 @@ está pronto, mas a integração externa permanece deliberadamente desligada.
 `https://leadcontrol.online` opera com PostgreSQL, Redis, aplicação, Caddy,
 processo Baileys, download de mídia, outbox, tempo real, retenção e
 observabilidade na mesma VPS. A aplicação e as dependências foram verificadas
-saudáveis em 29/07/2026. Depois do encerramento terminal da sessão anterior, o
+saudáveis em 30/07/2026. Depois do encerramento terminal da sessão anterior, o
 responsável realizou um novo pareamento por QR e homologou manualmente texto,
 áudio, imagem e documento. A última rodada preservou uma unidade de cada tipo
 de mídia e concluiu os três downloads privados. O sistema não conecta, troca ou
-desconecta a sessão por conta própria.
+desconecta a sessão por conta própria. O vínculo usado nessa rodada foi
+removido; o estado atual é desconectado enquanto o novo número aguarda
+liberação.
 
 O ambiente publicado não oferece simulação de mensagens. Ele preserva análises
-sintéticas históricas claramente identificadas, mas novas transcrições e
-análises permanecem desligadas enquanto a chave OpenAI não for configurada.
-As mídias originais permanecem consultáveis mesmo sem processamento assistivo.
+sintéticas históricas claramente identificadas. Em 30/07/2026, a chave OpenAI
+foi injetada externamente, os dois modelos foram validados por consulta de
+metadados sem inferência e os workers assistivos foram ativados com corte
+temporal. A homologação paga ponta a ponta aguarda o novo número controlado.
+As mídias originais permanecem consultáveis mesmo se o provedor falhar.
 
 ## Pendências que não impedem continuar o produto
 
-- homologar transcrição e análise reais quando houver chave e autorização;
+- homologar uma nova mensagem e um novo áudio depois da conexão do número controlado;
 - aceitar formalmente o risco operacional e os termos aplicáveis ao Baileys;
 - escolher e configurar um destino externo para alertas, com política e responsável;
 - implementar backup criptografado fora da VPS quando a fase exigir recuperação
@@ -59,10 +63,10 @@ As mídias originais permanecem consultáveis mesmo sem processamento assistivo.
 
 ## Regra para continuidade
 
-Novas funcionalidades comerciais podem continuar sem OpenAI. Mudanças não
-devem usar análises falsas no profile Baileys nem apresentar recursos
-desligados como processamento pendente. A ativação assistiva continuará
-exigindo chave interativa, profile `assistive` e corte temporal.
+Novas funcionalidades comerciais podem continuar sem conexão do WhatsApp.
+Mudanças não devem usar análises falsas no profile Baileys nem reprocessar o
+backlog anterior ao corte. A ativação assistiva exige chave interativa, acesso
+prévio aos dois modelos, profile `assistive` e corte temporal.
 
 O piloto controlado deve seguir
 [`docs/operations/pilot.md`](../operations/pilot.md). Concluir o checklist no

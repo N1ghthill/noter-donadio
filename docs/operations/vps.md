@@ -108,6 +108,8 @@ sudo /opt/noter-donadio/scripts/status-vps.sh --diagnose-assistive
 ```
 
 O primeiro comando lê a chave sem eco pelo TTY e não a recebe como argumento.
+Antes de alterar o ambiente, ele consulta somente os metadados dos modelos
+configurados e recusa chave inválida, modelo indisponível ou falha de rede.
 O corte é o horário da mídia Baileys real mais recente, incluindo o áudio
 enviado para homologação e excluindo o backlog anterior. O script marca áudios
 antigos ainda pendentes como fora da janela autorizada, habilita o profile

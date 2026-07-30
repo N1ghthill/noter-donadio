@@ -58,6 +58,8 @@ As definições da Home, controle, conversas, agenda e arquivos estão em
 
 O preparo da homologação publicada e o roteiro de apresentação estão em
 [`docs/operations/client-demo.md`](docs/operations/client-demo.md).
+O roteiro sintético e os critérios da homologação assistiva estão em
+[`docs/operations/openai-homologation.md`](docs/operations/openai-homologation.md).
 O fluxo de exclusão, cascatas, auditoria minimizada e limpeza de mídia está em [`docs/security/privacy-deletion.md`](docs/security/privacy-deletion.md).
 O fluxo da interface e sua execução local estão em [`docs/frontend/mvp-ui.md`](docs/frontend/mvp-ui.md).
 O fluxo Socket.IO, isolamento por workspace e contratos de eventos estão em [`docs/realtime/events.md`](docs/realtime/events.md).

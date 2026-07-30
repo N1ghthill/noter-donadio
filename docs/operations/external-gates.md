@@ -29,10 +29,11 @@ mínimo, adapter testável e migração que não quebre referências já persist
 
 ## OpenAI
 
-Adapters, limites, kill switch e corte temporal estão preparados. Sem chave, os
-workers assistivos permanecem desligados e não geram alerta de backlog. A
-ativação exige chave inserida interativamente, corte autorizado e homologação
-com amostra controlada; nenhuma sugestão pode ser aplicada automaticamente.
+Adapters, limites, kill switch, chave e corte temporal estão ativos. O
+configurador validou autenticação e acesso aos dois modelos sem inferência, e
+os workers assistivos estão em execução. Resta homologar uma nova mensagem e
+um novo áudio controlados depois da conexão do novo número; nenhuma sugestão
+pode ser aplicada automaticamente.
 
 ## Baileys e revisão formal
 

@@ -114,19 +114,23 @@ if test "${diagnose_assistive}" = "1"; then
     psql --username="${DB_USER}" --dbname="${DB_NAME:-noter_donadio}" \
       --no-align --tuples-only --field-separator='|' \
       --command="
-        SELECT
-          COUNT(*) FILTER (WHERE transcription_state = 'pending') AS transcription_pending,
-          COUNT(*) FILTER (WHERE transcription_state = 'processing') AS transcription_processing,
-          COUNT(*) FILTER (WHERE transcription_state = 'completed') AS transcription_completed,
-          COUNT(*) FILTER (WHERE transcription_state = 'failed') AS transcription_failed
+        SELECT format(
+          'Transcrições: pending=%s processing=%s completed=%s failed=%s',
+          COUNT(*) FILTER (WHERE transcription_state = 'pending'),
+          COUNT(*) FILTER (WHERE transcription_state = 'processing'),
+          COUNT(*) FILTER (WHERE transcription_state = 'completed'),
+          COUNT(*) FILTER (WHERE transcription_state = 'failed')
+        )
         FROM media_assets
         INNER JOIN messages ON messages.id = media_assets.message_id
         WHERE messages.message_type = 'audio';
-        SELECT
-          COUNT(*) FILTER (WHERE state = 'pending') AS analysis_pending,
-          COUNT(*) FILTER (WHERE state = 'processing') AS analysis_processing,
-          COUNT(*) FILTER (WHERE state = 'completed') AS analysis_completed,
-          COUNT(*) FILTER (WHERE state = 'failed') AS analysis_failed
+        SELECT format(
+          'Análises: pending=%s processing=%s completed=%s failed=%s',
+          COUNT(*) FILTER (WHERE state = 'pending'),
+          COUNT(*) FILTER (WHERE state = 'processing'),
+          COUNT(*) FILTER (WHERE state = 'completed'),
+          COUNT(*) FILTER (WHERE state = 'failed')
+        )
         FROM ai_analyses;
       "
   docker compose "${compose_arguments[@]}" logs --tail 100 --no-color transcription analysis
