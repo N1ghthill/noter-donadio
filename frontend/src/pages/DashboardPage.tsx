@@ -47,6 +47,16 @@ export function DashboardPage() {
       </section>
 
       <section className="panel">
+        <div className="panel-heading"><div><p className="eyebrow">Resultado do período</p><h2>Entrada e conversão</h2></div><small>Últimos {data.periodDays} dias</small></div>
+        <div className="report-grid">
+          <article><span>Novos contatos</span><strong>{data.newContactsCount}</strong><small>adicionados no período</small></article>
+          <article><span>Novas negociações</span><strong>{data.createdNegotiationsCount}</strong><small>oportunidades iniciadas</small></article>
+          <article><span>Valor ganho</span><strong>{formatMoney(data.wonValue)}</strong><small>negociações fechadas como ganhas</small></article>
+          <article><span>Ticket médio ganho</span><strong>{formatMoney(data.averageWonValue)}</strong><small>considera ganhos com valor informado</small></article>
+        </div>
+      </section>
+
+      <section className="panel">
         <div className="panel-heading"><div><p className="eyebrow">Distribuição</p><h2>Pipeline por etapa</h2></div></div>
         {data.stages.length === 0 ? <p className="muted">Ainda não há negociações para consolidar.</p> : (
           <div className="stage-summary">

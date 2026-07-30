@@ -41,6 +41,9 @@ export class PrismaCrmRepository implements CrmRepository {
       missingFollowUpsCount,
       wonCount,
       lostCount,
+      newContactsCount,
+      createdNegotiationsCount,
+      wonValues,
       groupedStages,
       recent,
     ] = await Promise.all([
@@ -59,6 +62,17 @@ export class PrismaCrmRepository implements CrmRepository {
       }),
       this.prisma.negotiation.count({
         where: { workspaceId, stage: 'closed_lost', closedAt: { gte: periodStart } },
+      }),
+      this.prisma.contact.count({
+        where: { workspaceId, createdAt: { gte: periodStart } },
+      }),
+      this.prisma.negotiation.count({
+        where: { workspaceId, createdAt: { gte: periodStart } },
+      }),
+      this.prisma.negotiation.aggregate({
+        where: { workspaceId, stage: 'closed_won', closedAt: { gte: periodStart } },
+        _sum: { value: true },
+        _avg: { value: true },
       }),
       this.prisma.negotiation.groupBy({
         by: ['stage'], where: { workspaceId }, _count: { _all: true }, _sum: { value: true },
@@ -82,6 +96,10 @@ export class PrismaCrmRepository implements CrmRepository {
       wonCount,
       lostCount,
       winRatePercent: closedCount === 0 ? null : ((wonCount * 100) / closedCount).toFixed(2),
+      newContactsCount,
+      createdNegotiationsCount,
+      wonValue: wonValues._sum.value?.toString() ?? '0',
+      averageWonValue: wonValues._avg.value?.toString() ?? null,
       stages: groupedStages.map((item) => ({
         stage: item.stage,
         count: item._count._all,

@@ -17,6 +17,7 @@ const NegotiationDetailPage = lazy(async () => ({ default: (await import('./page
 const WhatsappSetupPage = lazy(async () => ({ default: (await import('./pages/WhatsappSetupPage.js')).WhatsappSetupPage }));
 const ConversationsPage = lazy(async () => ({ default: (await import('./pages/ConversationsPage.js')).ConversationsPage }));
 const AdministrationPage = lazy(async () => ({ default: (await import('./pages/AdministrationPage.js')).AdministrationPage }));
+const PilotPage = lazy(async () => ({ default: (await import('./pages/PilotPage.js')).PilotPage }));
 
 export function App() {
   const auth = useAuth();
@@ -39,6 +40,7 @@ export function App() {
             <Route path="arquivos" element={<FilesPage />} />
             <Route path="whatsapp" element={<WhatsappSetupPage />} />
             <Route path="administracao" element={<AdministrationPage />} />
+            <Route path="piloto" element={<PilotPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

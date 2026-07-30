@@ -154,6 +154,10 @@ test('criação manual de negociação é atômica, auditável e isolada por wor
   assert.equal(dashboard.pipelineValue, '9800.75');
   assert.equal(dashboard.overdueFollowUpsCount, 1);
   assert.equal(dashboard.missingFollowUpsCount, 0);
+  assert.equal(dashboard.newContactsCount, 1);
+  assert.equal(dashboard.createdNegotiationsCount, 1);
+  assert.equal(dashboard.wonValue, '0');
+  assert.equal(dashboard.averageWonValue, null);
   assert.deepEqual(dashboard.stages, [{ stage: 'qualified', count: 1, value: '9800.75' }]);
 
   const completed = await repository.completeNextAction({
@@ -189,6 +193,10 @@ test('criação manual de negociação é atômica, auditável e isolada por wor
   const closedRecord = await prisma.negotiation.findUniqueOrThrow({ where: { id: created.id } });
   assert.equal(closedRecord.closeReason, 'Contrato fictício aprovado em teste');
   assert.ok(closedRecord.closedAt);
+  const closedDashboard = await repository.getDashboard(workspaceId, 30);
+  assert.equal(closedDashboard.wonCount, 1);
+  assert.equal(closedDashboard.wonValue, '9800.75');
+  assert.equal(closedDashboard.averageWonValue, '9800.75');
   const stageAudit = await prisma.auditEvent.findFirstOrThrow({
     where: { negotiationId: created.id, action: 'negotiation_stage_changed' },
   });

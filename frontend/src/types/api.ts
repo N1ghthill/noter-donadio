@@ -126,6 +126,10 @@ export interface Dashboard {
   wonCount: number;
   lostCount: number;
   winRatePercent: string | null;
+  newContactsCount: number;
+  createdNegotiationsCount: number;
+  wonValue: string;
+  averageWonValue: string | null;
   stages: Array<{ stage: NegotiationStage; count: number; value: string }>;
   recentNegotiations: Negotiation[];
 }

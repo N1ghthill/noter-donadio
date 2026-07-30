@@ -688,3 +688,22 @@ análise. A idade pendente de uma capacidade desligada é exposta como zero e as
 regras de backlog exigem o indicador habilitado. Mensagens e mídias originais
 permanecem preservadas, mas a ausência intencional de chave OpenAI não produz
 um falso incidente operacional.
+
+## ADR-068 — Pendências e homologação não criam novos dados de negócio
+
+A central de pendências da interface soma próximas ações vencidas, previstas
+para hoje e ausentes a partir da projeção autenticada do dashboard. Seus links
+abrem os filtros correspondentes da Agenda. Não há tabela, fila ou contador
+persistido paralelo; eventos em tempo real apenas solicitam nova leitura REST.
+Uma falha nessa leitura aparece como indisponibilidade e não como ausência de
+pendências.
+
+O checklist do piloto é uma ajuda de navegação armazenada somente no navegador.
+Ele não representa aceite formal, não entra na auditoria e não altera a fonte
+de verdade comercial. Evidências, severidade e decisão de saída continuam no
+processo operacional documentado.
+
+Os indicadores de entrada e resultado permanecem agregações PostgreSQL
+isoladas por workspace. Contatos e negociações usam `createdAt`; valor ganho,
+ticket médio e conversão usam somente negociações fechadas como ganhas dentro
+da janela por `closedAt`. Dinheiro continua trafegando como decimal em string.

@@ -148,6 +148,10 @@ export interface DashboardView {
   readonly wonCount: number;
   readonly lostCount: number;
   readonly winRatePercent: string | null;
+  readonly newContactsCount: number;
+  readonly createdNegotiationsCount: number;
+  readonly wonValue: string;
+  readonly averageWonValue: string | null;
   readonly stages: readonly {
     readonly stage: NegotiationStage;
     readonly count: number;

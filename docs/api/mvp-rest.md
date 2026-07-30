@@ -76,7 +76,12 @@ desligados quando essa consulta falha.
 
 Criação e edição manual de contato, criação, edição e mudança de etapa da negociação e decisão sobre análise gravam `audit_events` na mesma transação da ação. A resposta expõe nome do usuário, instante, campos alterados, versões e transição de etapa quando aplicável. Telefone, observações, mensagens, transcrições, valores comerciais e valores completos de tags não são copiados para a auditoria ou para notificações.
 
-O dashboard agrega contagens e somas diretamente no PostgreSQL, sempre pelo `workspaceId` da sessão. Valores monetários retornam como decimal em string. A taxa de ganho considera somente negociações fechadas dentro do período escolhido; sem fechamentos, retorna `null`.
+O dashboard agrega contagens e somas diretamente no PostgreSQL, sempre pelo
+`workspaceId` da sessão. Valores monetários retornam como decimal em string.
+Além do estoque atual e dos acompanhamentos, a resposta informa contatos e
+negociações criados, valor ganho e ticket médio ganho dentro do período. A taxa
+de ganho considera somente negociações fechadas dentro do período escolhido;
+sem fechamentos, a taxa e o ticket médio retornam `null`.
 
 Os filtros `startedFrom` e `startedTo` usam ISO 8601 UTC e formam um intervalo
 semiaberto. O início da conversa é a primeira mensagem persistida da

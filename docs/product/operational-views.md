@@ -14,7 +14,21 @@ autenticadas; nenhum número comercial fica fixo no frontend.
 
 A rota `/controle` mantém o painel agregado por período, com contatos,
 negociações abertas, valor do pipeline, conversão, tarefas vencidas e previstas
-para hoje. Essa tela serve à supervisão; a Home serve à execução diária.
+para hoje. O relatório de entrada e resultado acrescenta novos contatos, novas
+negociações, valor ganho e ticket médio ganho na mesma janela. Essa tela serve
+à supervisão; a Home serve à execução diária.
+
+## Pendências e piloto
+
+A navegação autenticada resume ações vencidas, ações para hoje e negociações
+sem próxima ação. A central não cria uma segunda cópia das tarefas: ela deriva
+os números do mesmo dashboard e leva aos filtros correspondentes da Agenda.
+Se a leitura falhar, a interface mostra indisponibilidade em vez de zero.
+
+A rota `/piloto` apresenta seis jornadas guiadas de homologação. As marcações
+ficam no `localStorage` do navegador, não são evidência de auditoria e não
+alteram contatos, negociações, mensagens ou a sessão WhatsApp. O roteiro pode
+ser impresso e reiniciado mediante confirmação.
 
 ## Conversas
 

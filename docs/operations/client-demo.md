@@ -10,6 +10,9 @@ chave OpenAI não for configurada.
 
 O objetivo é validar a experiência comercial e colher decisões de produto. A demonstração não representa autorização para inserir dados reais.
 
+Para conduzir uma rodada formal, use também o
+[`pilot.md`](pilot.md) e a tela autenticada `/piloto`.
+
 ## Preparação
 
 Antes da reunião, acesse a VPS e confira o ambiente:
@@ -49,7 +52,9 @@ Entre com o workspace e o administrador de demonstração. Explique que:
 - o dashboard usa agregações do PostgreSQL, não apenas os cartões carregados na tela;
 - os valores e prazos exibidos são fictícios.
 
-Mostre quantidade de contatos, negociações ativas, valor do pipeline e próximas ações.
+Mostre quantidade de contatos, negociações ativas, valor do pipeline, próximas
+ações, entrada de contatos e negociações, valor ganho e ticket médio no
+período.
 
 ### 2. Pipeline comercial
 

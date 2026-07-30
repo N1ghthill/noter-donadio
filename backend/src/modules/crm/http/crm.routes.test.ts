@@ -42,6 +42,7 @@ class FakeCrmRepository implements CrmRepository {
       periodDays, contactsCount: 3, activeNegotiationsCount: 2, pipelineValue: '1250.5',
       overdueFollowUpsCount: 1, todayFollowUpsCount: 0, missingFollowUpsCount: 1,
       wonCount: 1, lostCount: 1, winRatePercent: '50.00', stages: [], recentNegotiations: [],
+      newContactsCount: 2, createdNegotiationsCount: 2, wonValue: '1250.5', averageWonValue: '1250.5',
     };
   }
   public async listContacts(

@@ -23,6 +23,10 @@ describe('dashboard operacional', () => {
       wonCount: 3,
       lostCount: 1,
       winRatePercent: '75.00',
+      newContactsCount: 5,
+      createdNegotiationsCount: 4,
+      wonValue: '9000',
+      averageWonValue: '3000',
       stages: [{ stage: 'qualified', count: 2, value: '8000' }],
       recentNegotiations: [],
     }), { status: 200 }));
@@ -32,6 +36,8 @@ describe('dashboard operacional', () => {
 
     expect(await screen.findByText(/12\.500,50/)).toBeInTheDocument();
     expect(screen.getByText('75.00%')).toBeInTheDocument();
+    expect(screen.getByText('Novos contatos')).toBeInTheDocument();
+    expect(screen.getByText(/9.000,00/)).toBeInTheDocument();
     expect(screen.getByText('2', { selector: '.metric-card.warning strong' })).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Período de conversão'), { target: { value: '90' } });
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(

@@ -63,6 +63,7 @@ export function HomePage() {
           <Link to="/arquivos"><strong>Arquivos por contato</strong><span>Localizar áudios, imagens e documentos.</span></Link>
           <Link to="/conversas"><strong>Conversas</strong><span>Consultar classificação, resumo e histórico.</span></Link>
           <Link to="/whatsapp"><strong>Integração</strong><span>Acompanhar o estado do WhatsApp.</span></Link>
+          <Link to="/piloto"><strong>Piloto do cliente</strong><span>Executar o checklist guiado de homologação.</span></Link>
         </div>
       </section>
 

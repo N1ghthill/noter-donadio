@@ -31,6 +31,10 @@ describe('home operacional', () => {
         wonCount: 1,
         lostCount: 0,
         winRatePercent: '100.00',
+        newContactsCount: 1,
+        createdNegotiationsCount: 1,
+        wonValue: '1000',
+        averageWonValue: '1000',
         stages: [],
         recentNegotiations: [],
       });
@@ -47,6 +51,7 @@ describe('home operacional', () => {
     expect(await screen.findByRole('heading', { name: 'Olá, Ana.' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Tarefas para hoje/ })).toHaveAttribute('href', '/agenda?followUp=today');
     expect(screen.getByRole('link', { name: /Arquivos por contato/ })).toHaveAttribute('href', '/arquivos');
+    expect(screen.getByRole('link', { name: /Piloto do cliente/ })).toHaveAttribute('href', '/piloto');
     expect(screen.getByText('3')).toBeInTheDocument();
   });
 });

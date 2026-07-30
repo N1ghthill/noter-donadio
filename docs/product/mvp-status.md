@@ -16,8 +16,9 @@ está pronto, mas a integração externa permanece deliberadamente desligada.
 | Contatos manuais e automáticos | Pronto | Cadastro, edição, prevenção de duplicação manual, consolidação confirmada e auditada e criação pela ingestão |
 | Pipeline, Kanban e dados comerciais | Pronto | Filtros, drag/select de etapa, concorrência otimista e fechamento com motivo |
 | Próxima ação e histórico de conclusão | Pronto | Edição, filtros de prazo, conclusão auditável e histórico imutável |
-| Dashboard comercial | Pronto | Agregações PostgreSQL, acompanhamentos e conversão em 30/90/365 dias |
-| Home e central de controle | Pronto | Prioridades diárias, atalhos e painel agregado em rotas separadas |
+| Dashboard comercial | Pronto | Agregações PostgreSQL, acompanhamentos, entrada, valor ganho, ticket médio e conversão em 30/90/365 dias |
+| Home e central de controle | Pronto | Prioridades diárias, central de pendências, atalhos e painel agregado em rotas separadas |
+| Piloto guiado | Pronto | Seis jornadas navegáveis, progresso local sem mutação comercial e roteiro operacional |
 | Conversas, filtros, classificação e histórico | Pronto | Tabela clicável, paginação, detalhe cronológico por pessoa, mídias, follow-up rápido e navegação contextual |
 | Agenda de próximas ações | Pronto | Filtros, resumo, classificação, edição rápida e conclusão auditável |
 | Arquivos por contato | Pronto | Mídias privadas, filtros persistidos, retenção visível, renovação de acesso e navegação contextual |
@@ -62,3 +63,8 @@ Novas funcionalidades comerciais podem continuar sem OpenAI. Mudanças não
 devem usar análises falsas no profile Baileys nem apresentar recursos
 desligados como processamento pendente. A ativação assistiva continuará
 exigindo chave interativa, profile `assistive` e corte temporal.
+
+O piloto controlado deve seguir
+[`docs/operations/pilot.md`](../operations/pilot.md). Concluir o checklist no
+navegador auxilia a reunião, mas o aceite formal depende do registro de
+resultado, severidade e responsável descrito nesse roteiro.

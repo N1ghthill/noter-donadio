@@ -18,6 +18,11 @@ restrita aos workers e bloqueio do backlog. A validação local aprovou 208 test
 produção e os perfis Compose `baileys+assistive`. A aceitação real depende da
 injeção interativa da chave e de uma chamada homologada no áudio autorizado.
 
+Atualização de 29/07/2026: a preparação do piloto acrescentou central de
+pendências reconciliada com a Agenda, relatório de entrada e resultado e seis
+jornadas guiadas sem mutação comercial. A validação local passou a 211 testes
+(1 contratos, 161 backend e 49 frontend), mantendo lint e typecheck sem erros.
+
 Na evolução da biblioteca de arquivos, o mesmo pipeline privado passou a
 receber também imagens e documentos novos, com filtros por contato, direção,
 período e tipo. Documentos usam download forçado, imagens exigem ação explícita

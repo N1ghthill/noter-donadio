@@ -38,6 +38,15 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible {
 .realtime-status > span { width: .45rem; height: .45rem; border-radius: 50%; background: #a96e68; }
 .realtime-status.online > span { background: #c9f065; box-shadow: 0 0 .55rem rgb(201 240 101 / 55%); }
 .mobile-session { display: none; }
+.notification-center { position: relative; margin-top: 1rem; }
+.notification-trigger { display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: 2.7rem; padding: .65rem .85rem; border: 1px solid #3a5145; border-radius: .65rem; color: #b9c7bf; background: #20352b; cursor: pointer; }
+.notification-trigger strong { display: grid; place-items: center; min-width: 1.55rem; height: 1.55rem; padding-inline: .35rem; border-radius: 1rem; color: #17261f; background: #aab9b0; font-size: .72rem; }
+.notification-trigger.has-pending strong { background: #c9f065; }
+.notification-panel { position: absolute; z-index: 20; bottom: calc(100% + .55rem); left: 0; display: grid; width: min(20rem, calc(100vw - 2rem)); padding: .85rem; border: 1px solid #dce2dd; border-radius: .8rem; color: #25372d; background: #fff; box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 24%); }
+.notification-panel > strong, .notification-panel > small { padding: .35rem .4rem .65rem; }
+.notification-panel > small { color: #748078; line-height: 1.4; }
+.notification-panel a { display: flex; justify-content: space-between; padding: .65rem .4rem; border-top: 1px solid #edf0ed; color: #40594b; text-decoration: none; }
+.notification-panel a:hover { background: #f4f8f3; }
 
 .app-content { min-width: 0; padding: clamp(1.5rem, 4vw, 3.5rem); }
 .page-stack { display: grid; gap: 1.5rem; width: min(100%, 88rem); margin-inline: auto; }
@@ -67,12 +76,32 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible {
 .stage-summary article { display: grid; gap: .45rem; padding: .9rem; border: 1px solid #ebede9; border-radius: .75rem; background: #fbfcfa; }
 .stage-summary article > strong { color: #17261f; font-family: Georgia, serif; font-size: 1.75rem; font-weight: 500; }
 .stage-summary article > small { color: #78817c; }
+.report-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; }
+.report-grid article { display: grid; gap: .4rem; padding: 1rem; border: 1px solid #e7eae6; border-radius: .75rem; background: #fafcf9; }
+.report-grid span, .report-grid small { color: #77817b; }
+.report-grid strong { color: #1f362a; font-family: Georgia, serif; font-size: 1.55rem; font-weight: 500; }
 .session-list { display: grid; }
 .session-list article { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem .25rem; border-top: 1px solid #ebede9; }
 .session-list article:first-child { border-top: 0; }
 .session-list strong, .session-list small { display: block; }
 .session-list small { margin-top: .3rem; color: #78817c; }
 .privacy-summary ul { display: grid; gap: .65rem; padding-left: 1.25rem; line-height: 1.5; }
+.pilot-progress { display: grid; gap: 1rem; }
+.pilot-progress h2, .pilot-safety h2 { margin: 0; color: #17261f; font-family: Georgia, serif; font-weight: 500; }
+.progress-track { height: .75rem; overflow: hidden; border-radius: 1rem; background: #e6eae6; }
+.progress-track span { display: block; height: 100%; border-radius: inherit; background: #78a23a; transition: width .2s ease; }
+.pilot-actions { display: flex; align-items: center; gap: 1rem; }
+.pilot-actions .button-link { grid-column: auto; color: #994d46; }
+.pilot-checklist { display: grid; grid-template-columns: repeat(3, 1fr); gap: .85rem; }
+.pilot-checklist article { display: grid; align-content: start; min-height: 14rem; padding: 1.1rem; border: 1px solid #dde2dd; border-radius: .9rem; background: #fff; }
+.pilot-checklist article.completed { border-color: #a8c178; background: #f5faea; }
+.pilot-checklist label { display: flex; align-items: center; gap: .5rem; color: #68776f; font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; }
+.pilot-checklist input { width: 1.1rem; height: 1.1rem; }
+.pilot-checklist h2 { margin: 1rem 0 .55rem; color: #20352a; font-family: Georgia, serif; font-size: 1.35rem; font-weight: 500; }
+.pilot-checklist p { color: #6e7973; font-size: .82rem; line-height: 1.55; }
+.pilot-checklist .card-link { align-self: end; margin-top: auto; }
+.pilot-safety ul { display: grid; gap: .55rem; padding-left: 1.25rem; color: #56665d; line-height: 1.5; }
+.pilot-safety > small { color: #7b8580; }
 
 .panel { padding: 1.35rem; border: 1px solid #dedfd9; border-radius: 1rem; background: #fff; box-shadow: 0 .8rem 2rem rgb(23 38 31 / 4%); }
 .panel-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
@@ -356,6 +385,10 @@ label { display: grid; gap: .4rem; color: #4c5b53; font-size: .8rem; font-weight
   .mobile-session { display: flex; grid-column: 1 / -1; justify-content: space-between; align-items: center; }
   .mobile-session .realtime-status { grid-column: auto; }
   .mobile-session .button-link { grid-column: auto; min-height: 2.5rem; padding-inline: .75rem; color: #e9f1ec; }
+  .notification-center { grid-column: 1 / -1; margin-top: 0; }
+  .notification-panel { top: calc(100% + .55rem); bottom: auto; }
+  .report-grid { grid-template-columns: repeat(2, 1fr); }
+  .pilot-checklist { grid-template-columns: repeat(2, 1fr); }
   .metric-grid { grid-template-columns: 1fr; }
   .home-priorities, .function-grid { grid-template-columns: 1fr; }
   .compact-table a { grid-template-columns: 1fr; }
@@ -369,6 +402,19 @@ label { display: grid; gap: .4rem; color: #4c5b53; font-size: .8rem; font-weight
   .file-search { grid-column: 1 / -1; }
   .login-page { grid-template-columns: 1fr; }
   .login-copy h1 { font-size: clamp(2.7rem, 12vw, 5rem); }
+}
+
+@media (max-width: 35rem) {
+  .report-grid { grid-template-columns: 1fr; }
+  .pilot-checklist { grid-template-columns: 1fr; }
+  .pilot-actions { align-items: stretch; flex-direction: column; }
+}
+
+@media print {
+  .sidebar, .notification-center, .pilot-actions, .pilot-checklist .card-link { display: none !important; }
+  .app-frame { display: block; }
+  .app-content { padding: 0; }
+  .pilot-checklist { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 40rem) {
