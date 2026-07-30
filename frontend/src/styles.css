@@ -88,8 +88,10 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible {
 .privacy-summary ul { display: grid; gap: .65rem; padding-left: 1.25rem; line-height: 1.5; }
 .pilot-progress { display: grid; gap: 1rem; }
 .pilot-progress h2, .pilot-safety h2 { margin: 0; color: #17261f; font-family: Georgia, serif; font-weight: 500; }
-.progress-track { height: .75rem; overflow: hidden; border-radius: 1rem; background: #e6eae6; }
-.progress-track span { display: block; height: 100%; border-radius: inherit; background: #78a23a; transition: width .2s ease; }
+.progress-track { width: 100%; height: .75rem; overflow: hidden; border: 0; border-radius: 1rem; background: #e6eae6; appearance: none; }
+.progress-track::-webkit-progress-bar { border-radius: inherit; background: #e6eae6; }
+.progress-track::-webkit-progress-value { border-radius: inherit; background: #78a23a; transition: width .2s ease; }
+.progress-track::-moz-progress-bar { border-radius: inherit; background: #78a23a; transition: width .2s ease; }
 .pilot-actions { display: flex; align-items: center; gap: 1rem; }
 .pilot-actions .button-link { grid-column: auto; color: #994d46; }
 .pilot-checklist { display: grid; grid-template-columns: repeat(3, 1fr); gap: .85rem; }

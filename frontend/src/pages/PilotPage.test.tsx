@@ -12,9 +12,11 @@ describe('checklist do piloto', () => {
     render(<MemoryRouter><PilotPage /></MemoryRouter>);
 
     expect(screen.getByRole('heading', { name: '0 de 6 jornadas validadas' })).toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: '0% do checklist concluído' })).toHaveValue(0);
     expect(screen.getByRole('link', { name: 'Abrir conversas' })).toHaveAttribute('href', '/conversas?period=all');
     fireEvent.click(screen.getByRole('checkbox', { name: /Jornada 1/ }));
     expect(screen.getByRole('heading', { name: '1 de 6 jornadas validadas' })).toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: '17% do checklist concluído' })).toHaveValue(1);
     expect(window.localStorage.getItem('noter-pilot-checklist-v1')).toContain('access');
   });
 

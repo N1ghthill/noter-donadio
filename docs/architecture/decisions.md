@@ -724,3 +724,16 @@ como fallback. A renovação ocorre no máximo uma vez por execução e nunca é
 tentada para limite de tamanho, MIME inválido, erro criptográfico ou timeout
 local. Falhas permanecem sob a política idempotente do BullMQ e não removem a
 mensagem nem o ativo pendente.
+
+## ADR-070 — A superfície web usa política restritiva sem exceção para estilo inline
+
+A interface usa somente arquivos de estilo e script gerados pelo próprio
+frontend. A barra de progresso nativa evita atributos `style`, permitindo
+remover `unsafe-inline` da política de estilos. Conexões WebSocket públicas são
+restritas ao domínio HTTPS configurado, sem liberar os esquemas `ws:` ou `wss:`
+de forma global.
+
+Caddy e Nginx também publicam isolamento de origem e bloqueio de frames. O
+diagnóstico operacional pode consultar no PostgreSQL apenas o estado agregado
+das contas Baileys (`connected`, `disconnected` ou `not_configured`); telefone,
+JID, conteúdo, QR e credenciais não fazem parte dessa saída.

@@ -79,6 +79,10 @@ sudo /opt/noter-donadio/scripts/status-vps.sh --diagnose-baileys
 sudo /opt/noter-donadio/scripts/status-vps.sh --diagnose-media
 ```
 
+O status padrão informa somente se existe alguma conta Baileys conectada,
+desconectada ou ainda não configurada. O valor vem do PostgreSQL e não expõe
+telefone, JID, QR ou credenciais.
+
 O diagnóstico de mídia retorna somente contagens agregadas de áudio, imagem e
 documento por estado de download e logs sanitizados do worker.
 

@@ -86,16 +86,12 @@ export function PilotPage() {
           <p className="eyebrow">Progresso neste navegador</p>
           <h2 id="pilot-progress-title">{completedCount} de {PILOT_ITEMS.length} jornadas validadas</h2>
         </div>
-        <div
+        <progress
           className="progress-track"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={PILOT_ITEMS.length}
-          aria-valuenow={completedCount}
+          max={PILOT_ITEMS.length}
+          value={completedCount}
           aria-label={`${percentage}% do checklist concluído`}
-        >
-          <span style={{ width: `${percentage}%` }} />
-        </div>
+        />
         <div className="pilot-actions">
           <button className="button secondary" type="button" onClick={() => window.print()}>Imprimir roteiro</button>
           <button className="button-link danger" type="button" onClick={reset}>Reiniciar marcações</button>

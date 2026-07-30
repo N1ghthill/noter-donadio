@@ -44,6 +44,20 @@ docker compose -f "${compose_file}" exec -T postgres \
   pg_isready --username="${DB_USER:?defina DB_USER}" --dbname="${DB_NAME:-noter_donadio}"
 docker compose -f "${compose_file}" exec -T redis redis-cli ping
 
+baileys_state="$(
+  docker compose -f "${compose_file}" exec -T postgres \
+    psql --username="${DB_USER}" --dbname="${DB_NAME:-noter_donadio}" \
+      --no-align --tuples-only \
+      --command="
+        SELECT CASE
+          WHEN COUNT(*) = 0 THEN 'not_configured'
+          WHEN COUNT(*) FILTER (WHERE connection_status = 'connected') > 0 THEN 'connected'
+          ELSE 'disconnected'
+        END
+        FROM whatsapp_accounts;
+      "
+)"
+
 public_url="${PUBLIC_ORIGIN:?defina PUBLIC_ORIGIN}"
 curl --fail --silent --show-error "${public_url%/}/" >/dev/null
 internal_status="$(curl --silent --output /dev/null --write-out '%{http_code}' "${public_url%/}/api/internal/health/ready")"
@@ -62,6 +76,7 @@ grep --quiet '^permitrootlogin no$' <<<"${ssh_configuration}"
 grep --quiet '^allowusers noterops$' <<<"${ssh_configuration}"
 
 printf '%s\n' "Aplicação e dependências saudáveis; endpoint interno bloqueado; firewall e SSH endurecidos."
+printf 'Estado agregado do Baileys: %s\n' "${baileys_state}"
 
 if test "${diagnose_baileys}" = "1"; then
   docker compose "${compose_arguments[@]}" logs --tail 100 --no-color baileys

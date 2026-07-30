@@ -29,6 +29,12 @@ uma renovação única ao processo Baileys somente para respostas `403`, `404` o
 operação não envia mensagem. A validação local passou a 216 testes (1
 contratos, 166 backend e 49 frontend).
 
+Atualização de 29/07/2026: a superfície web deixou de depender de estilo inline,
+restringiu WebSocket ao próprio domínio e passou a publicar isolamento de
+origem e bloqueio de frames. O diagnóstico padrão da VPS informa apenas o
+estado agregado do Baileys persistido no PostgreSQL, sem identificadores ou
+credenciais.
+
 Na evolução da biblioteca de arquivos, o mesmo pipeline privado passou a
 receber também imagens e documentos novos, com filtros por contato, direção,
 período e tipo. Documentos usam download forçado, imagens exigem ação explícita
