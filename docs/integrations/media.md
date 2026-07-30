@@ -13,6 +13,13 @@ AES-256-GCM e AAD vinculada a workspace, conta e mensagem antes do commit. O
 downloader reabre essa referência somente no worker, identifica áudio, imagem
 ou documento pela mensagem, impõe timeout de 30
 segundos e `MEDIA_MAX_BYTES` e não transporta credencial ou bytes pelo Redis.
+Quando o host de mídia responde `403`, `404` ou `410`, o worker solicita ao
+processo Baileys conectado uma única renovação. O comando Redis contém somente
+workspace, conta, mensagem e UUID da solicitação. O processo usa o JID técnico
+original preservado dentro da referência cifrada, solicita o reupload ao
+telefone e substitui somente `url` e `directPath` cifrados antes de uma nova
+tentativa. Falha, ausência da sessão ou timeout mantêm o retry normal da fila.
+Erros de tamanho, tipo, decriptação ou política não acionam reupload.
 
 O arquivo não é servido como conteúdo estático. A timeline e a biblioteca
 autenticadas informam apenas se o acesso está disponível. Reprodução de áudio,
@@ -62,9 +69,9 @@ associados à mensagem quando a remoção ocorreu apenas por retenção.
 - não há endpoint público, URL permanente nem chave física na resposta da API;
 - o endpoint entrega o arquivo completo; suporte otimizado a `Range` e
   thumbnails geradas no servidor ficam para uma evolução;
-- o downloader usa a referência entregue na mensagem nova; recuperação de uma
-  URL muito antiga por solicitação de reupload do telefone ainda não foi
-  implementada;
+- a recuperação depende de o telefone ainda possuir a mídia e de a sessão
+  Baileys permanecer conectada; ela não recria arquivos já removidos por
+  retenção;
 - exclusão manual por contato possui tarefas duráveis e tentativas `.media`
   órfãs são reconciliadas; exclusão integral do workspace ainda será
   implementada antes de produção;

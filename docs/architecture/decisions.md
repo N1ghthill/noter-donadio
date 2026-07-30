@@ -707,3 +707,20 @@ Os indicadores de entrada e resultado permanecem agregações PostgreSQL
 isoladas por workspace. Contatos e negociações usam `createdAt`; valor ganho,
 ticket médio e conversão usam somente negociações fechadas como ganhas dentro
 da janela por `closedAt`. Dinheiro continua trafegando como decimal em string.
+
+## ADR-069 — Recuperação de mídia expirada pertence ao socket Baileys dedicado
+
+O worker de download não abre uma segunda sessão WhatsApp. Quando a primeira
+tentativa falha com `403`, `404` ou `410`, ele publica uma solicitação efêmera
+contendo somente workspace, conta, mensagem e UUID. O processo Baileys já
+conectado reconstrói o envelope mínimo, chama `updateMediaMessage` e grava a
+nova referência cifrada. O resultado efêmero informa apenas sucesso ou falha;
+bytes, JID, URL, chave e conteúdo não atravessam o Redis.
+
+O JID técnico original da chave da mensagem é incluído na referência
+AES-256-GCM para permitir retry de conversas LID sem substituir a identidade
+canônica do contato. Referências antigas sem esse campo usam o JID canônico
+como fallback. A renovação ocorre no máximo uma vez por execução e nunca é
+tentada para limite de tamanho, MIME inválido, erro criptográfico ou timeout
+local. Falhas permanecem sob a política idempotente do BullMQ e não removem a
+mensagem nem o ativo pendente.

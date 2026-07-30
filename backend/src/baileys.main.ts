@@ -4,6 +4,8 @@ import { PrismaBaileysAuthStateRepository } from './modules/whatsapp/infrastruct
 import { PrismaWhatsappConnectionRepository } from './modules/whatsapp/infrastructure/prisma-whatsapp.repository.js';
 import { RedisBaileysControl } from './modules/whatsapp/infrastructure/redis-baileys.gateway.js';
 import { BaileysMediaReferenceCipher } from './modules/whatsapp/infrastructure/baileys-media-reference.js';
+import { BaileysMediaRecovery } from './modules/whatsapp/infrastructure/baileys-media-recovery.js';
+import { PrismaBaileysMediaRecoveryRepository } from './modules/whatsapp/infrastructure/prisma-baileys-media-recovery.repository.js';
 import { MessageIngestionService } from './modules/messages/domain/message-ingestion.js';
 import { PrismaMessageIngestionRepository } from './modules/messages/infrastructure/prisma-message-ingestion.repository.js';
 import { readBaileysEnvironment } from './config/baileys-env.js';
@@ -18,13 +20,18 @@ const cipher = new AuthStateCipher(
   new Map([[environment.BAILEYS_ENCRYPTION_KEY_VERSION, environment.BAILEYS_ENCRYPTION_KEY]]),
   environment.BAILEYS_ENCRYPTION_KEY_VERSION,
 );
+const mediaReferenceCipher = new BaileysMediaReferenceCipher(cipher);
 const session = new BaileysSession(
   {
     workspaceId: environment.BAILEYS_WORKSPACE_ID,
     accountId: environment.BAILEYS_ACCOUNT_ID,
   },
   new PrismaBaileysAuthStateRepository(prisma, cipher),
-  new BaileysMediaReferenceCipher(cipher),
+  mediaReferenceCipher,
+  new BaileysMediaRecovery(
+    new PrismaBaileysMediaRecoveryRepository(prisma),
+    mediaReferenceCipher,
+  ),
   new PrismaWhatsappConnectionRepository(prisma),
   new MessageIngestionService(new PrismaMessageIngestionRepository(prisma)),
   control,

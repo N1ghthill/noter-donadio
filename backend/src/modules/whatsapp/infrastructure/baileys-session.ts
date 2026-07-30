@@ -15,6 +15,7 @@ import type { PrismaBaileysAuthStateRepository } from './prisma-baileys-auth-sta
 import type { PrismaWhatsappConnectionRepository } from './prisma-whatsapp.repository.js';
 import type { RedisBaileysControl } from './redis-baileys.gateway.js';
 import type { BaileysMediaReferenceCipher } from './baileys-media-reference.js';
+import type { BaileysMediaRecovery } from './baileys-media-recovery.js';
 import {
   resolveBaileysPhoneJid,
   shouldIngestBaileysUpsert,
@@ -40,6 +41,7 @@ export class BaileysSession {
     private readonly binding: BaileysSessionBinding,
     private readonly authRepository: PrismaBaileysAuthStateRepository,
     private readonly mediaReferenceCipher: BaileysMediaReferenceCipher,
+    private readonly mediaRecovery: BaileysMediaRecovery,
     private readonly connectionRepository: PrismaWhatsappConnectionRepository,
     private readonly ingestionService: MessageIngestionService,
     private readonly control: RedisBaileysControl,
@@ -50,9 +52,25 @@ export class BaileysSession {
   public async run(): Promise<void> {
     await this.control.subscribe(async (command) => {
       if (
-        command.workspaceId === this.binding.workspaceId
-        && command.accountId === this.binding.accountId
-      ) await this.restart();
+        command.workspaceId !== this.binding.workspaceId
+        || command.accountId !== this.binding.accountId
+      ) return;
+      if (command.type === 'start') {
+        await this.restart();
+        return;
+      }
+      try {
+        if (!this.socket || !this.connectedAt) throw new Error('baileys_session_not_connected');
+        await this.mediaRecovery.execute(this.socket, {
+          workspaceId: command.workspaceId,
+          accountId: command.accountId,
+          messageId: command.messageId,
+        });
+        await this.control.completeMediaRecovery(command.requestId, true);
+      } catch (error: unknown) {
+        this.logger.warn(safeError(error), 'Não foi possível renovar a referência da mídia');
+        await this.control.completeMediaRecovery(command.requestId, false);
+      }
     });
     await this.restart();
   }

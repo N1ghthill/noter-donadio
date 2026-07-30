@@ -12,7 +12,7 @@ está pronto, mas a integração externa permanece deliberadamente desligada.
 | QR, sessão e reconexão Baileys | Pronto e homologado | Auth state PostgreSQL cifrado, processo dedicado, QR real, reconexão e nova rodada controlada de texto e mídia |
 | Substituição controlada do número | Pronto no código; não executada | Confirmação da conta, recusa de sessão ativa, limpeza atômica somente do auth state e auditoria |
 | Ingestão direta de texto recebido e enviado | Pronto | Normalização `notify`/`fromMe`, deduplicação e persistência transacional |
-| Ingestão e download privado de mídia | Pronto | Áudio, imagem e documento preservados, referência mínima cifrada, worker pós-commit e acesso privado renovável |
+| Ingestão e download privado de mídia | Pronto | Áudio, imagem e documento preservados, referência mínima cifrada, worker pós-commit, recuperação de URL expirada e acesso privado renovável |
 | Contatos manuais e automáticos | Pronto | Cadastro, edição, prevenção de duplicação manual, consolidação confirmada e auditada e criação pela ingestão |
 | Pipeline, Kanban e dados comerciais | Pronto | Filtros, drag/select de etapa, concorrência otimista e fechamento com motivo |
 | Próxima ação e histórico de conclusão | Pronto | Edição, filtros de prazo, conclusão auditável e histórico imutável |

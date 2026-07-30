@@ -30,6 +30,8 @@ Estado implementado:
 - pipeline genérico de mídia, filas e retenção;
 - referência mínima de áudio, imagem e documento cifrada, download pós-commit
   e acesso privado;
+- recuperação de URL expirada por solicitação idempotente de reupload ao
+  telefone, com comando Redis restrito a IDs;
 - filtros de grupos, status, newsletters e protocolo no domínio.
 
 Antes de promover para uso amplo:
@@ -39,7 +41,7 @@ Antes de promover para uso amplo:
    controlado conforme
    [`whatsapp-homologation.md`](whatsapp-homologation.md);
 3. documentar aceite do risco de bloqueio e dos termos de uso;
-4. implementar recuperação por reupload para referências antigas de mídia.
+4. medir em piloto a taxa de sucesso da recuperação de mídia expirada.
 
 `useMultiFileAuthState` não será usado na VPS. A própria documentação do
 Baileys recomenda auth state próprio para produção; o diretório de autenticação

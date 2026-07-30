@@ -16,11 +16,13 @@ import { parseMediaDownloadJob } from './modules/media/infrastructure/media-down
 import { PrismaMediaDownloadRepository } from './modules/media/infrastructure/prisma-media-download.repository.js';
 import { AuthStateCipher } from './modules/whatsapp/infrastructure/auth-state-cipher.js';
 import { BaileysMediaReferenceCipher } from './modules/whatsapp/infrastructure/baileys-media-reference.js';
+import { RedisBaileysMediaRecoveryGateway } from './modules/whatsapp/infrastructure/redis-baileys.gateway.js';
 
 const environment = readEnvironment();
 const logger = createAppLogger('media-download-worker');
 const prisma = createPrismaClient(environment.DATABASE_URL);
 let downloader: MediaDownloader;
+let mediaRecoveryGateway: RedisBaileysMediaRecoveryGateway | undefined;
 if (environment.MEDIA_DOWNLOAD_ADAPTER === 'fake') {
   downloader = new FakeMediaDownloader();
 } else if (environment.MEDIA_DOWNLOAD_ADAPTER === 'baileys') {
@@ -32,10 +34,14 @@ if (environment.MEDIA_DOWNLOAD_ADAPTER === 'fake') {
     ]]),
     baileysEnvironment.BAILEYS_ENCRYPTION_KEY_VERSION,
   );
+  const recoveryGateway = new RedisBaileysMediaRecoveryGateway(environment.REDIS_URL);
+  mediaRecoveryGateway = recoveryGateway;
   downloader = new BaileysMediaDownloader(
     prisma,
     new BaileysMediaReferenceCipher(cipher),
     environment.MEDIA_MAX_BYTES,
+    undefined,
+    (input) => recoveryGateway.recover(input),
   );
 } else {
   throw new Error('MEDIA_DOWNLOAD_ADAPTER precisa estar habilitado explicitamente');
@@ -66,6 +72,7 @@ worker.on('error', (error) => {
 
 async function shutdown(): Promise<void> {
   await worker.close();
+  await mediaRecoveryGateway?.close();
   await connection.quit();
   await prisma.$disconnect();
 }

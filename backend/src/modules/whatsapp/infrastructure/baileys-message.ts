@@ -145,7 +145,10 @@ export function toBaileysMediaEvent(
     ...(mimeType ? { mimeType } : {}),
     ...(originalFileName ? { originalFileName } : {}),
     ...(durationSeconds !== undefined ? { durationSeconds } : {}),
-    mediaReference: reference,
+    mediaReference: {
+      ...reference,
+      retryRemoteJid: remoteJid,
+    },
   };
 }
 

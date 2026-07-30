@@ -23,6 +23,12 @@ pendências reconciliada com a Agenda, relatório de entrada e resultado e seis
 jornadas guiadas sem mutação comercial. A validação local passou a 211 testes
 (1 contratos, 161 backend e 49 frontend), mantendo lint e typecheck sem erros.
 
+Atualização de 29/07/2026: referências de mídia expiradas passaram a solicitar
+uma renovação única ao processo Baileys somente para respostas `403`, `404` ou
+`410`. JID, URL e chave permanecem cifrados; Redis transporta apenas IDs e a
+operação não envia mensagem. A validação local passou a 216 testes (1
+contratos, 166 backend e 49 frontend).
+
 Na evolução da biblioteca de arquivos, o mesmo pipeline privado passou a
 receber também imagens e documentos novos, com filtros por contato, direção,
 período e tipo. Documentos usam download forçado, imagens exigem ação explícita

@@ -92,7 +92,10 @@ test('adapta áudio novo sem expor a referência do SDK ao domínio', () => {
     messageType: 'audio',
     mimeType: 'audio/ogg; codecs=opus',
     durationSeconds: 7,
-    mediaReference,
+    mediaReference: {
+      ...mediaReference,
+      retryRemoteJid: '5571000000101@s.whatsapp.net',
+    },
   });
 });
 

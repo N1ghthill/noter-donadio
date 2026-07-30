@@ -35,6 +35,24 @@ test('persiste referência mínima de áudio Baileys cifrada e vinculada à mens
   );
 });
 
+test('preserva o JID técnico original somente dentro da referência cifrada', () => {
+  const mediaCipher = new BaileysMediaReferenceCipher(
+    new AuthStateCipher(new Map([[1, Buffer.alloc(32, 7)]]), 1),
+  );
+  const reference = {
+    directPath: '/synthetic/path',
+    mediaKey: Buffer.alloc(32, 9),
+    retryRemoteJid: '123456789012345@lid',
+  };
+  const encrypted = mediaCipher.encrypt(reference, binding);
+
+  assert.equal(
+    Buffer.from(encrypted.encryptedData).indexOf(Buffer.from(reference.retryRemoteJid)),
+    -1,
+  );
+  assert.deepEqual(mediaCipher.decrypt(encrypted, binding), reference);
+});
+
 test('recusa referência de mídia sem chave ou localização', () => {
   const mediaCipher = new BaileysMediaReferenceCipher(
     new AuthStateCipher(new Map([[1, Buffer.alloc(32, 7)]]), 1),

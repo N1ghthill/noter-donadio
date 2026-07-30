@@ -12,6 +12,7 @@ interface SerializedBaileysMediaReference {
   readonly url?: string;
   readonly directPath?: string;
   readonly mediaKey: string;
+  readonly retryRemoteJid?: string;
 }
 
 export interface BaileysMediaReferenceBinding {
@@ -24,6 +25,7 @@ export interface BaileysMediaReference {
   readonly url?: string;
   readonly directPath?: string;
   readonly mediaKey: Uint8Array;
+  readonly retryRemoteJid?: string;
 }
 
 export class BaileysMediaReferenceCipher {
@@ -59,6 +61,7 @@ export class BaileysMediaReferenceCipher {
       ...(reference.url ? { url: reference.url } : {}),
       ...(reference.directPath ? { directPath: reference.directPath } : {}),
       mediaKey: Buffer.from(reference.mediaKey).toString('base64'),
+      ...(reference.retryRemoteJid ? { retryRemoteJid: reference.retryRemoteJid } : {}),
     };
     return this.cipher.encrypt(
       Buffer.from(JSON.stringify(serialized), 'utf8'),
@@ -89,6 +92,7 @@ export class BaileysMediaReferenceCipher {
       ...(value.url ? { url: value.url } : {}),
       ...(value.directPath ? { directPath: value.directPath } : {}),
       mediaKey,
+      ...(value.retryRemoteJid ? { retryRemoteJid: value.retryRemoteJid } : {}),
     };
   }
 }
@@ -117,5 +121,9 @@ function isSerializedReference(value: unknown): value is SerializedBaileysMediaR
     && candidate.mediaKey.length > 0
     && (typeof candidate.url === 'string' || typeof candidate.directPath === 'string')
     && (candidate.url === undefined || candidate.url.length > 0)
-    && (candidate.directPath === undefined || candidate.directPath.length > 0);
+    && (candidate.directPath === undefined || candidate.directPath.length > 0)
+    && (candidate.retryRemoteJid === undefined
+      || (typeof candidate.retryRemoteJid === 'string'
+        && candidate.retryRemoteJid.length > 0
+        && candidate.retryRemoteJid.length <= 255));
 }

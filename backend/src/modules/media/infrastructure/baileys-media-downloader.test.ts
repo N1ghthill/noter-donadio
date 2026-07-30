@@ -104,3 +104,110 @@ test('interrompe download que ultrapassa o limite configurado', async () => {
     messageType: 'audio',
   }), /baileys_media_too_large/);
 });
+
+test('renova uma referência expirada uma única vez pelo processo Baileys', async () => {
+  const cipher = new BaileysMediaReferenceCipher(
+    new AuthStateCipher(new Map([[1, Buffer.alloc(32, 4)]]), 1),
+  );
+  let encrypted = cipher.encrypt({
+    directPath: '/synthetic/expired',
+    mediaKey: Buffer.alloc(32, 5),
+  }, { workspaceId, accountId, externalMessageId });
+  const prisma = {
+    mediaAsset: {
+      async findFirst() {
+        return {
+          encryptedProviderReference: Buffer.from(encrypted.encryptedData),
+          providerReferenceIv: Buffer.from(encrypted.iv),
+          providerReferenceAuthTag: Buffer.from(encrypted.authTag),
+          providerReferenceKeyVersion: encrypted.encryptionKeyVersion,
+          mimeType: 'image/jpeg',
+          durationSeconds: null,
+          message: { externalMessageId, whatsappAccountId: accountId },
+        };
+      },
+    },
+  } as unknown as PrismaClient;
+  const paths: string[] = [];
+  let recoveryCount = 0;
+  const downloader = new BaileysMediaDownloader(
+    prisma,
+    cipher,
+    10,
+    async function* (reference) {
+      paths.push(reference.directPath ?? '');
+      if (reference.directPath === '/synthetic/expired') {
+        throw { output: { statusCode: 404 } };
+      }
+      yield new Uint8Array([7, 8]);
+    },
+    async (input) => {
+      recoveryCount += 1;
+      assert.deepEqual(input, { workspaceId, accountId, messageId });
+      encrypted = cipher.encrypt({
+        directPath: '/synthetic/recovered',
+        mediaKey: Buffer.alloc(32, 5),
+      }, { workspaceId, accountId, externalMessageId });
+    },
+  );
+
+  const result = await downloader.download({
+    workspaceId,
+    messageId,
+    attemptId: '40000000-0000-4000-8000-000000000004',
+    externalMediaId: externalMessageId,
+    expectedMimeType: 'image/jpeg',
+    provider: null,
+    providerPhoneNumberId: null,
+    messageType: 'image',
+  });
+
+  assert.deepEqual(result.bytes, Buffer.from([7, 8]));
+  assert.deepEqual(paths, ['/synthetic/expired', '/synthetic/recovered']);
+  assert.equal(recoveryCount, 1);
+});
+
+test('não solicita recuperação para erro de política ou falha não expirada', async () => {
+  const cipher = new BaileysMediaReferenceCipher(
+    new AuthStateCipher(new Map([[1, Buffer.alloc(32, 4)]]), 1),
+  );
+  const encrypted = cipher.encrypt({
+    directPath: '/synthetic/audio',
+    mediaKey: Buffer.alloc(32, 5),
+  }, { workspaceId, accountId, externalMessageId });
+  const prisma = {
+    mediaAsset: {
+      async findFirst() {
+        return {
+          encryptedProviderReference: Buffer.from(encrypted.encryptedData),
+          providerReferenceIv: Buffer.from(encrypted.iv),
+          providerReferenceAuthTag: Buffer.from(encrypted.authTag),
+          providerReferenceKeyVersion: encrypted.encryptionKeyVersion,
+          mimeType: 'audio/ogg',
+          durationSeconds: null,
+          message: { externalMessageId, whatsappAccountId: accountId },
+        };
+      },
+    },
+  } as unknown as PrismaClient;
+  let recoveryCount = 0;
+  const downloader = new BaileysMediaDownloader(
+    prisma,
+    cipher,
+    2,
+    async function* () { yield new Uint8Array([1, 2, 3]); },
+    async () => { recoveryCount += 1; },
+  );
+
+  await assert.rejects(() => downloader.download({
+    workspaceId,
+    messageId,
+    attemptId: '40000000-0000-4000-8000-000000000004',
+    externalMediaId: externalMessageId,
+    expectedMimeType: 'audio/ogg',
+    provider: null,
+    providerPhoneNumberId: null,
+    messageType: 'audio',
+  }), /baileys_media_too_large/);
+  assert.equal(recoveryCount, 0);
+});
