@@ -52,8 +52,6 @@ test('baixa somente a referência Baileys cifrada vinculada à mensagem', async 
     attemptId: '40000000-0000-4000-8000-000000000004',
     externalMediaId: externalMessageId,
     expectedMimeType: 'audio/ogg; codecs=opus',
-    provider: null,
-    providerPhoneNumberId: null,
     messageType: 'audio',
   }), {
     bytes: Buffer.from([1, 2, 3]),
@@ -99,8 +97,6 @@ test('interrompe download que ultrapassa o limite configurado', async () => {
     attemptId: '40000000-0000-4000-8000-000000000004',
     externalMediaId: externalMessageId,
     expectedMimeType: 'audio/ogg',
-    provider: null,
-    providerPhoneNumberId: null,
     messageType: 'audio',
   }), /baileys_media_too_large/);
 });
@@ -157,8 +153,6 @@ test('renova uma referência expirada uma única vez pelo processo Baileys', asy
     attemptId: '40000000-0000-4000-8000-000000000004',
     externalMediaId: externalMessageId,
     expectedMimeType: 'image/jpeg',
-    provider: null,
-    providerPhoneNumberId: null,
     messageType: 'image',
   });
 
@@ -205,8 +199,6 @@ test('não solicita recuperação para erro de política ou falha não expirada'
     attemptId: '40000000-0000-4000-8000-000000000004',
     externalMediaId: externalMessageId,
     expectedMimeType: 'audio/ogg',
-    provider: null,
-    providerPhoneNumberId: null,
     messageType: 'audio',
   }), /baileys_media_too_large/);
   assert.equal(recoveryCount, 0);

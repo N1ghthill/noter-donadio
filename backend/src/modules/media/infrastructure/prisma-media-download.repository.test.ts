@@ -28,8 +28,6 @@ test('conclusão do download libera transcrição pela outbox na mesma transaç�
       workspaceId,
       identifier: 'download-synthetic',
       provider: 'synthetic_provider',
-      providerBusinessAccountId: 'business-download-synthetic',
-      providerPhoneNumberId: 'account-download-synthetic',
       connectionStatus: 'connected',
     },
   });
@@ -82,10 +80,6 @@ test('conclusão do download libera transcrição pela outbox na mesma transaç�
     staleBefore: new Date('2026-07-28T05:56:00Z'),
   });
   assert.equal(claim.status, 'claimed');
-  if (claim.status === 'claimed') {
-    assert.equal(claim.target.provider, 'synthetic_provider');
-    assert.equal(claim.target.providerPhoneNumberId, 'account-download-synthetic');
-  }
 
   assert.equal(await repository.complete({
     workspaceId,

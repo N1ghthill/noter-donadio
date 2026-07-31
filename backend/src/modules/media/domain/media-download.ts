@@ -14,8 +14,6 @@ export interface MediaDownloadTarget {
   readonly externalMediaId: string;
   readonly expectedMimeType: string | null;
   readonly messageType: Extract<MessageType, 'audio' | 'image' | 'document'>;
-  readonly provider: string | null;
-  readonly providerPhoneNumberId: string | null;
 }
 
 export interface DownloadedMedia {

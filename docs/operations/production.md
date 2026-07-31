@@ -4,13 +4,16 @@
 
 O repositório possui imagens reproduzíveis para backend e frontend e uma composição que separa API, outbox, eventos em tempo real, retenção, PostgreSQL e Redis. Isso permite validar o formato operacional sem publicar, fazer deploy ou conectar provedores reais.
 
-O processo Baileys, QR, auth state PostgreSQL criptografado e ingestão de texto
-e áudio novos estão implementados na VPS controlada. Transcrição e IA falsas
-são exclusivas do profile `demo` e ficam desligadas no runtime real.
+O processo Baileys, QR, auth state PostgreSQL criptografado e ingestão de texto,
+áudio, imagem e documento estão implementados na VPS controlada. Transcrição e
+IA falsas são exclusivas do profile `demo` e ficam desligadas no runtime real.
 Armazenamento de objetos privado e backup externo continuam sendo a evolução
 necessária para disponibilidade e recuperação de desastre.
 
-O perfil público por IP definido em `compose.vps-demo.yaml` é um ambiente transitório de desenvolvimento e demonstração, não uma variação de produção. Sua operação e seus portões estão documentados em [`vps.md`](vps.md).
+O arquivo historicamente chamado `compose.vps-demo.yaml` sustenta o ambiente
+controlado publicado em `https://leadcontrol.online`. Ele ainda representa a
+fase de desenvolvimento e piloto, não uma declaração de prontidão para operação
+ampla. Sua operação e seus portões estão documentados em [`vps.md`](vps.md).
 
 ## Validação das imagens
 
@@ -98,8 +101,10 @@ A verificação confere o checksum quando disponível, restaura com `--exit-on-e
 
 Já estão implementados e validados na VPS: TLS, rate limiting da aplicação,
 sessão Baileys controlada com reconexão, referência cifrada e download de áudio,
-adapters OpenAI isolados e restauração de backup sintético. Os adapters
-assistivos continuam sem chave e, portanto, sem homologação real.
+imagem e documento, adapters OpenAI isolados, chave injetada externamente,
+workers assistivos ativos e restauração de backup sintético. A homologação paga
+ponta a ponta de uma nova mensagem e de um novo áudio aguarda a conexão do novo
+número controlado.
 
 O inventário de portões por integração está em [`provider-readiness.md`](provider-readiness.md), e a evidência do marco atual em [`acceptance.md`](acceptance.md).
 

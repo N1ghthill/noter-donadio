@@ -751,3 +751,21 @@ define o corte temporal e habilita os workers. Essa consulta não realiza
 inferência nem substitui a homologação controlada de texto e áudio. O
 diagnóstico assistivo informa contagens rotuladas por estado, sem conteúdo,
 telefone, mensagem, transcrição ou identificador de negócio.
+
+## ADR-072 — O runtime Baileys não preserva mapeamento legado da Meta
+
+Baileys permanece como único caminho de conexão real. Os identificadores de
+conta específicos da Meta, que já não possuíam consumidor, são removidos do
+schema atual e do contrato de download de mídia. A migration preserva o
+histórico anterior, mas interrompe a aplicação se encontrar um mapeamento Meta
+preenchido; dados desconhecidos não são descartados silenciosamente.
+
+O alvo de download contém somente IDs internos, referência externa cifrada,
+tipo e MIME esperados. A escolha do adapter ocorre na composição do processo,
+sem campo específico de provedor no domínio.
+
+Referências opcionais da auditoria para contato e negociação passam a usar
+chaves compostas com `workspaceId`. Como a trilha deve sobreviver à exclusão do
+agregado, o fluxo de privacidade remove explicitamente essas referências na
+mesma transação antes da exclusão. Assim, o banco impede vínculos cruzados entre
+workspaces sem enfraquecer a auditoria minimizada.

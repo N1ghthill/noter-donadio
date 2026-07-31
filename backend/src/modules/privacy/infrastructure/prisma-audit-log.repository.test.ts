@@ -54,3 +54,51 @@ test('lista somente auditorias do workspace e sanitiza detalhes', async (context
   assert.deepEqual(result[0]?.details, { schemaVersion: 'workspace-export-v1' });
   assert.doesNotMatch(JSON.stringify(result), /NAO_EXPOR|Segundo admin/);
 });
+
+test('recusa referência de auditoria para contato de outro workspace', async (context) => {
+  const firstWorkspaceId = randomUUID();
+  const secondWorkspaceId = randomUUID();
+  const firstUserId = randomUUID();
+  const secondContactId = randomUUID();
+  context.after(async () => {
+    await prisma.workspace.deleteMany({
+      where: { id: { in: [firstWorkspaceId, secondWorkspaceId] } },
+    });
+  });
+
+  await prisma.workspace.create({
+    data: {
+      id: firstWorkspaceId,
+      slug: `audit-scope-${firstWorkspaceId}`,
+      name: 'Primeiro workspace',
+      users: { create: {
+        id: firstUserId,
+        email: `first-${firstWorkspaceId}@example.invalid`,
+        displayName: 'Primeiro admin',
+        passwordHash: 'hash-ficticio',
+      } },
+    },
+  });
+  await prisma.workspace.create({
+    data: {
+      id: secondWorkspaceId,
+      slug: `audit-scope-${secondWorkspaceId}`,
+      name: 'Segundo workspace',
+      contacts: { create: {
+        id: secondContactId,
+        phoneNumber: '5571000000042',
+        displayName: 'Contato fictício',
+        source: 'manual',
+      } },
+    },
+  });
+
+  await assert.rejects(prisma.auditEvent.create({
+    data: {
+      workspaceId: firstWorkspaceId,
+      userId: firstUserId,
+      contactId: secondContactId,
+      action: 'contact_updated',
+    },
+  }));
+});

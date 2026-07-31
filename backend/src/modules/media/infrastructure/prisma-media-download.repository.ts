@@ -57,12 +57,6 @@ export class PrismaMediaDownloadRepository implements MediaDownloadRepository {
           message: {
             select: {
               messageType: true,
-              whatsappAccount: {
-                select: {
-                  provider: true,
-                  providerPhoneNumberId: true,
-                },
-              },
             },
           },
         },
@@ -80,8 +74,6 @@ export class PrismaMediaDownloadRepository implements MediaDownloadRepository {
           externalMediaId: asset.externalMediaId,
           expectedMimeType: asset.mimeType,
           messageType: asset.message.messageType as 'audio' | 'image' | 'document',
-          provider: asset.message.whatsappAccount.provider,
-          providerPhoneNumberId: asset.message.whatsappAccount.providerPhoneNumberId,
         },
       };
     });

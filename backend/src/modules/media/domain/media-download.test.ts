@@ -16,8 +16,6 @@ const target: MediaDownloadTarget = {
   attemptId: '91a408dd-6933-4d69-bcdb-93e1e23c03d5',
   externalMediaId: 'media-synthetic',
   expectedMimeType: null,
-  provider: null,
-  providerPhoneNumberId: null,
   messageType: 'audio',
 };
 

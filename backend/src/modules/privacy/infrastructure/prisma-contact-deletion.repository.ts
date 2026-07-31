@@ -46,6 +46,10 @@ export class PrismaContactDeletionRepository implements ContactDeletionRepositor
         select: { storageKey: true },
       });
       const storageKeys = media.flatMap((asset) => asset.storageKey ? [asset.storageKey] : []);
+      const negotiations = await transaction.negotiation.findMany({
+        where: { workspaceId: input.workspaceId, contactId: input.contactId },
+        select: { id: true },
+      });
       if (storageKeys.length) {
         await transaction.mediaDeletionTask.createMany({
           data: storageKeys.map((storageKey) => ({ workspaceId: input.workspaceId, storageKey })),
@@ -70,6 +74,16 @@ export class PrismaContactDeletionRepository implements ContactDeletionRepositor
           eventType: 'contact.deleted',
           payload: { workspaceId: input.workspaceId, contactId: input.contactId },
         },
+      });
+      await transaction.auditEvent.updateMany({
+        where: {
+          workspaceId: input.workspaceId,
+          OR: [
+            { contactId: input.contactId },
+            { negotiationId: { in: negotiations.map((negotiation) => negotiation.id) } },
+          ],
+        },
+        data: { contactId: null, negotiationId: null },
       });
       await transaction.contact.delete({ where: { id: input.contactId } });
 

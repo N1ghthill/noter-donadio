@@ -166,24 +166,21 @@ model Session {
 }
 
 model WhatsappAccount {
-  id                        String                   @id @default(uuid()) @db.Uuid
-  workspaceId               String                   @map("workspace_id") @db.Uuid
-  identifier                String                   @db.VarChar(100)
-  phoneNumber               String?                  @map("phone_number") @db.VarChar(20)
-  provider                  String?                  @db.VarChar(50)
-  providerBusinessAccountId String?                  @map("provider_business_account_id") @db.VarChar(255)
-  providerPhoneNumberId     String?                  @map("provider_phone_number_id") @db.VarChar(255)
-  connectionStatus          WhatsappConnectionStatus @default(disconnected) @map("connection_status")
-  lastConnectedAt           DateTime?                @map("last_connected_at") @db.Timestamptz(6)
-  createdAt                 DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt                 DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
-  workspace                 Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  messages                  Message[]
-  authKeys                  WhatsappAuthKey[]
+  id               String                   @id @default(uuid()) @db.Uuid
+  workspaceId      String                   @map("workspace_id") @db.Uuid
+  identifier       String                   @db.VarChar(100)
+  phoneNumber      String?                  @map("phone_number") @db.VarChar(20)
+  provider         String?                  @db.VarChar(50)
+  connectionStatus WhatsappConnectionStatus @default(disconnected) @map("connection_status")
+  lastConnectedAt  DateTime?                @map("last_connected_at") @db.Timestamptz(6)
+  createdAt        DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  workspace        Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  messages         Message[]
+  authKeys         WhatsappAuthKey[]
 
   @@unique([workspaceId, identifier])
   @@unique([workspaceId, id])
-  @@unique([provider, providerPhoneNumberId])
   @@index([workspaceId])
   @@map("whatsapp_accounts")
 }
@@ -326,38 +323,38 @@ model Message {
 }
 
 model MediaAsset {
-  id                      String          @id @default(uuid()) @db.Uuid
-  workspaceId             String          @map("workspace_id") @db.Uuid
-  messageId               String          @unique @map("message_id") @db.Uuid
-  storageKey              String?         @map("storage_key") @db.VarChar(500)
-  externalMediaId         String?         @map("external_media_id") @db.VarChar(255)
-  encryptedProviderReference Bytes?       @map("encrypted_provider_reference")
-  providerReferenceIv        Bytes?       @map("provider_reference_iv")
-  providerReferenceAuthTag   Bytes?       @map("provider_reference_auth_tag")
-  providerReferenceKeyVersion Int?        @map("provider_reference_key_version") @db.SmallInt
-  fileSizeBytes           BigInt?         @map("file_size_bytes")
-  durationSeconds         Int?            @map("duration_seconds")
-  mimeType                String?         @map("mime_type") @db.VarChar(100)
-  originalFileName        String?         @map("original_file_name") @db.VarChar(255)
-  downloadState           ProcessingState @default(completed) @map("download_state")
-  downloadAttemptId       String?         @map("download_attempt_id") @db.Uuid
-  downloadStartedAt       DateTime?       @map("download_started_at") @db.Timestamptz(6)
-  downloadFailureCode     String?         @map("download_failure_code") @db.VarChar(100)
-  transcriptionState      ProcessingState @default(pending) @map("transcription_state")
-  transcriptionAttemptId  String?         @map("transcription_attempt_id") @db.Uuid
-  processingStartedAt     DateTime?       @map("processing_started_at") @db.Timestamptz(6)
-  transcriptionText       String?         @map("transcription_text")
-  transcriptionConfidence Decimal?        @map("transcription_confidence") @db.Decimal(5, 4)
-  transcriptionLanguage   String?         @map("transcription_language") @db.VarChar(10)
-  transcriptionModel      String?         @map("transcription_model") @db.VarChar(100)
-  failureCode             String?         @map("failure_code") @db.VarChar(100)
-  retentionUntil          DateTime?       @map("retention_until") @db.Timestamptz(6)
-  removedAt               DateTime?       @map("removed_at") @db.Timestamptz(6)
-  transcribedAt           DateTime?       @map("transcribed_at") @db.Timestamptz(6)
-  createdAt               DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt               DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
-  workspace               Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  message                 Message         @relation(fields: [workspaceId, messageId], references: [workspaceId, id], onDelete: Cascade)
+  id                          String          @id @default(uuid()) @db.Uuid
+  workspaceId                 String          @map("workspace_id") @db.Uuid
+  messageId                   String          @unique @map("message_id") @db.Uuid
+  storageKey                  String?         @map("storage_key") @db.VarChar(500)
+  externalMediaId             String?         @map("external_media_id") @db.VarChar(255)
+  encryptedProviderReference  Bytes?          @map("encrypted_provider_reference")
+  providerReferenceIv         Bytes?          @map("provider_reference_iv")
+  providerReferenceAuthTag    Bytes?          @map("provider_reference_auth_tag")
+  providerReferenceKeyVersion Int?            @map("provider_reference_key_version") @db.SmallInt
+  fileSizeBytes               BigInt?         @map("file_size_bytes")
+  durationSeconds             Int?            @map("duration_seconds")
+  mimeType                    String?         @map("mime_type") @db.VarChar(100)
+  originalFileName            String?         @map("original_file_name") @db.VarChar(255)
+  downloadState               ProcessingState @default(completed) @map("download_state")
+  downloadAttemptId           String?         @map("download_attempt_id") @db.Uuid
+  downloadStartedAt           DateTime?       @map("download_started_at") @db.Timestamptz(6)
+  downloadFailureCode         String?         @map("download_failure_code") @db.VarChar(100)
+  transcriptionState          ProcessingState @default(pending) @map("transcription_state")
+  transcriptionAttemptId      String?         @map("transcription_attempt_id") @db.Uuid
+  processingStartedAt         DateTime?       @map("processing_started_at") @db.Timestamptz(6)
+  transcriptionText           String?         @map("transcription_text")
+  transcriptionConfidence     Decimal?        @map("transcription_confidence") @db.Decimal(5, 4)
+  transcriptionLanguage       String?         @map("transcription_language") @db.VarChar(10)
+  transcriptionModel          String?         @map("transcription_model") @db.VarChar(100)
+  failureCode                 String?         @map("failure_code") @db.VarChar(100)
+  retentionUntil              DateTime?       @map("retention_until") @db.Timestamptz(6)
+  removedAt                   DateTime?       @map("removed_at") @db.Timestamptz(6)
+  transcribedAt               DateTime?       @map("transcribed_at") @db.Timestamptz(6)
+  createdAt                   DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                   DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  workspace                   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  message                     Message         @relation(fields: [workspaceId, messageId], references: [workspaceId, id], onDelete: Cascade)
 
   @@unique([workspaceId, messageId])
   @@index([workspaceId, downloadState])
@@ -459,8 +456,8 @@ model AuditEvent {
   createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
   workspace        Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user             User         @relation(fields: [workspaceId, userId], references: [workspaceId, id], onDelete: Restrict)
-  contact          Contact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
-  negotiation      Negotiation? @relation(fields: [negotiationId], references: [id], onDelete: SetNull)
+  contact          Contact?     @relation(fields: [workspaceId, contactId], references: [workspaceId, id], onDelete: Restrict)
+  negotiation      Negotiation? @relation(fields: [workspaceId, negotiationId], references: [workspaceId, id], onDelete: Restrict)
 
   @@index([workspaceId, createdAt])
   @@index([contactId, createdAt])
