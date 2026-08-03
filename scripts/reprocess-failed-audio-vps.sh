@@ -5,7 +5,7 @@ project_directory="${PROJECT_DIRECTORY:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.."
 compose_file="${COMPOSE_FILE:-compose.vps-demo.yaml}"
 cd "${project_directory}"
 
-exec 9>"${project_directory}/.reprocess-failed-audio.lock"
+exec 9>"/var/lock/noter-donadio-reprocess-failed-audio.lock"
 if ! flock --nonblock 9; then
   printf '%s\n' "Já existe um reprocessamento de áudio em execução." >&2
   exit 1
