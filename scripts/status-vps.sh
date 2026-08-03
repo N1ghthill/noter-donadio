@@ -136,6 +136,16 @@ if test "${diagnose_assistive}" = "1"; then
           COUNT(*) FILTER (WHERE state = 'failed')
         )
         FROM ai_analyses;
+        SELECT format('Falha de transcrição: %s=%s', failure_code, COUNT(*))
+        FROM media_assets
+        WHERE transcription_state = 'failed'
+        GROUP BY failure_code
+        ORDER BY failure_code;
+        SELECT format('Falha de análise: %s=%s', failure_code, COUNT(*))
+        FROM ai_analyses
+        WHERE state = 'failed'
+        GROUP BY failure_code
+        ORDER BY failure_code;
       "
   docker compose "${compose_arguments[@]}" logs --tail 100 --no-color transcription analysis
 fi
