@@ -60,7 +60,7 @@ const worker = new Worker(
     const result = await service.execute(payload.workspaceId, payload.messageId);
     if (result.status === 'busy') throw new Error('analysis_lease_busy');
   },
-  { connection, concurrency: 2 },
+  { connection, concurrency: environment.AI_ADAPTER === 'groq' ? 1 : 2 },
 );
 worker.on('error', (error) => {
   logger.error(safeErrorContext(error), 'Falha interna no worker de análise');

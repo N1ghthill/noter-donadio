@@ -52,7 +52,7 @@ target_summary="$(psql_query --field-separator='|' --command="
   FROM media_assets
   INNER JOIN messages ON messages.id = media_assets.message_id
   WHERE messages.message_type = 'audio'
-    AND media_assets.transcription_state IN ('pending', 'failed')
+    AND media_assets.transcription_state IN ('pending', 'failed', 'completed')
     AND media_assets.download_state = 'completed'
     AND media_assets.storage_key IS NOT NULL
     AND messages.negotiation_id IS NOT NULL;
@@ -73,7 +73,7 @@ auditable_count="$(psql_query --command="
   FROM media_assets
   INNER JOIN messages ON messages.id = media_assets.message_id
   WHERE messages.message_type = 'audio'
-    AND media_assets.transcription_state IN ('pending', 'failed')
+    AND media_assets.transcription_state IN ('pending', 'failed', 'completed')
     AND media_assets.download_state = 'completed'
     AND media_assets.storage_key IS NOT NULL
     AND messages.negotiation_id IS NOT NULL
@@ -139,11 +139,22 @@ queued_count="$(psql_query --command="
     FROM media_assets
     INNER JOIN messages ON messages.id = media_assets.message_id
     WHERE messages.message_type = 'audio'
-      AND media_assets.transcription_state IN ('pending', 'failed')
+      AND media_assets.transcription_state IN ('pending', 'failed', 'completed')
       AND media_assets.download_state = 'completed'
       AND media_assets.storage_key IS NOT NULL
       AND messages.negotiation_id IS NOT NULL
     FOR UPDATE OF media_assets
+  ), reset_analyses AS (
+    UPDATE ai_analyses
+    SET state = 'pending',
+        failure_code = NULL,
+        analysis_attempt_id = NULL,
+        processing_started_at = NULL
+    FROM targets
+    WHERE ai_analyses.message_id = targets.message_id
+      AND ai_analyses.prompt_version = 'message-context-v2'
+      AND ai_analyses.state IN ('processing', 'failed')
+    RETURNING ai_analyses.message_id
   ), updated AS (
     UPDATE media_assets
     SET transcription_state = 'pending',
@@ -221,18 +232,18 @@ remaining="${result_summary#*|}"
 failed_count="${remaining%%|*}"
 active_count="${remaining##*|}"
 
-analysis_deadline=$((SECONDS + 300))
+analysis_deadline=$((SECONDS + 600))
 while test "${SECONDS}" -lt "${analysis_deadline}"; do
-  analysis_terminal_count="$(psql_query --command="
+  analysis_completed_in_window="$(psql_query --command="
     SELECT COUNT(*)
     FROM ai_analyses
     INNER JOIN messages ON messages.id = ai_analyses.message_id
     WHERE messages.message_type = 'audio'
       AND messages.created_at >= '${temporary_cutoff}'::timestamptz
       AND ai_analyses.prompt_version = 'message-context-v2'
-      AND ai_analyses.state IN ('completed', 'failed');
+      AND ai_analyses.state = 'completed';
   ")"
-  if test "${analysis_terminal_count}" -ge "${target_count}"; then break; fi
+  if test "${analysis_completed_in_window}" -ge "${target_count}"; then break; fi
   sleep 2
 done
 
