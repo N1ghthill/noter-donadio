@@ -107,7 +107,7 @@ test('saída com campo extra é recusada e falha com código sanitizado', async 
     new MessageAnalysisService(repository, analyzer).execute(TARGET.workspaceId, TARGET.messageId),
     MessageAnalysisFailedError,
   );
-  assert.equal(failureCode, 'ANALYSIS_PROCESSING_FAILED');
+  assert.equal(failureCode, 'ANALYSIS_OUTPUT_INVALID');
 });
 
 test('parser recusa confiança, etapa e entidades fora do contrato', () => {

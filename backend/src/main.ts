@@ -26,6 +26,7 @@ import { PrismaWorkspaceExportRepository } from './modules/privacy/infrastructur
 import { PrismaAuditLogRepository } from './modules/privacy/infrastructure/prisma-audit-log.repository.js';
 import { DependencyReadinessProbe } from './modules/health/infrastructure/dependency-readiness.js';
 import { PrismaBullMqOperationalMetricsCollector } from './modules/health/infrastructure/operational-metrics.js';
+import { PrismaProcessingFailureRepository } from './modules/operations/infrastructure/prisma-processing-failure.repository.js';
 
 const environment = readEnvironment();
 const prisma = createPrismaClient(environment.DATABASE_URL);
@@ -55,6 +56,9 @@ const demoMessageService = environment.WHATSAPP_ADAPTER === 'fake'
     )
   : undefined;
 const authService = new AuthService(new PrismaAuthRepository(prisma), new ScryptPasswordHasher());
+const processingNotBefore = environment.ASSISTIVE_PROCESSING_NOT_BEFORE
+  ? new Date(environment.ASSISTIVE_PROCESSING_NOT_BEFORE)
+  : undefined;
 const whatsappGateway = environment.WHATSAPP_ADAPTER === 'fake'
   ? new FakeWhatsappGateway()
   : environment.WHATSAPP_ADAPTER === 'baileys'
@@ -83,6 +87,10 @@ const app = buildApp({
   contactDeletionService,
   workspaceExportRepository: new PrismaWorkspaceExportRepository(prisma),
   auditLogRepository: new PrismaAuditLogRepository(prisma),
+  ...(processingNotBefore ? {
+    processingFailureRepository: new PrismaProcessingFailureRepository(prisma),
+    processingNotBefore,
+  } : {}),
   allowedOrigins: environment.APP_ORIGINS,
   readinessProbe,
   metricsCollector,

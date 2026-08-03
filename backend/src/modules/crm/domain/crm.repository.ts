@@ -93,7 +93,7 @@ export interface NegotiationDetailView extends NegotiationView {
 
 export interface AuditEventView {
   readonly id: string;
-  readonly action: 'contact_created' | 'contact_updated' | 'contact_deleted' | 'contact_merged' | 'negotiation_created' | 'negotiation_updated' | 'negotiation_stage_changed' | 'negotiation_follow_up_completed' | 'analysis_accepted' | 'analysis_ignored' | 'workspace_exported' | 'whatsapp_auth_reset';
+  readonly action: 'contact_created' | 'contact_updated' | 'contact_deleted' | 'contact_merged' | 'negotiation_created' | 'negotiation_updated' | 'negotiation_stage_changed' | 'negotiation_follow_up_completed' | 'analysis_accepted' | 'analysis_ignored' | 'workspace_exported' | 'whatsapp_auth_reset' | 'processing_retry_requested';
   readonly actorDisplayName: string;
   readonly changedFields: readonly string[];
   readonly previousVersion: number | null;

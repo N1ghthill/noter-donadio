@@ -2,13 +2,15 @@
 
 ## Estado
 
-O vínculo Baileys anterior foi encerrado e o novo número controlado ainda
-aguarda liberação. O aplicativo continua sem endpoint de envio. O runtime e
+O número permanente foi pareado pelo cliente e a sessão Baileys está conectada.
+O aplicativo continua sem endpoint de envio. O runtime e
 toda configuração da API oficial da Meta foram removidos por decisão do
 produto. Transcrição e análise falsas ficaram restritas ao profile `demo`.
 Os adapters OpenAI, o bloqueio temporal de backlog e os workers reais estão
-ativos; autenticação e acesso aos dois modelos foram validados sem inferência.
-A homologação ponta a ponta aguarda a nova conexão Baileys.
+ativos. A primeira rodada real preservou integralmente mensagens e mídias, mas
+as análises falharam; a homologação OpenAI continua pendente até uma nova
+tentativa administrativa controlada identificar e corrigir a categoria segura
+da falha.
 
 ## WhatsApp via Baileys
 
@@ -36,8 +38,8 @@ Estado implementado:
 Antes de promover para uso amplo:
 
 1. concluir a auditoria da release 7 fixada e acompanhar sua estabilização;
-2. concluir a homologação de texto, áudio, imagem e documento com o novo número
-   controlado conforme
+2. manter a homologação de texto, áudio, imagem e documento com o número
+   permanente conforme
    [`whatsapp-homologation.md`](whatsapp-homologation.md);
 3. documentar aceite do risco de bloqueio e dos termos de uso;
 4. medir em piloto a taxa de sucesso da recuperação de mídia expirada.
@@ -92,3 +94,9 @@ Credenciais ausentes ou inválidas devem impedir a inicialização. Nenhum
 fallback pode transmitir dados para outro provedor silenciosamente.
 O configurador valida autenticação e acesso aos modelos de transcrição e
 análise antes de alterar o `.env` ou habilitar os workers.
+
+Falhas são persistidas apenas em categorias sanitizadas. A tela Administração
+lista análise e transcrição falhas sem conteúdo e permite nova tentativa apenas
+para mensagens posteriores ao corte. O usuário precisa confirmar que o
+conteúdo será reenviado à OpenAI; a ação muda o estado e cria a outbox na mesma
+transação, além de registrar `processing_retry_requested` na auditoria.

@@ -8,6 +8,8 @@ import { PrismaMediaRetentionRepository } from './modules/media/infrastructure/p
 import { ContactDeletionService } from './modules/privacy/domain/contact-deletion.js';
 import { PrismaContactDeletionRepository } from './modules/privacy/infrastructure/prisma-contact-deletion.repository.js';
 import { createAppLogger, safeErrorContext } from './config/logger.js';
+import { OutboxRetentionService } from './modules/outbox/domain/outbox-retention.js';
+import { PrismaOutboxRetentionRepository } from './modules/outbox/infrastructure/prisma-outbox-retention.repository.js';
 
 const BATCH_SIZE = 100;
 const INTERVAL_MS = 60 * 60 * 1_000;
@@ -28,6 +30,10 @@ const orphanReconciliationService = new MediaOrphanReconciliationService(
 const pendingDeletionService = new ContactDeletionService(
   new PrismaContactDeletionRepository(prisma),
   mediaStorage,
+);
+const outboxRetentionService = new OutboxRetentionService(
+  new PrismaOutboxRetentionRepository(prisma),
+  environment.OUTBOX_RETENTION_DAYS * 24 * 60 * 60 * 1_000,
 );
 
 let stopping = false;
@@ -56,6 +62,15 @@ async function sweep(): Promise<void> {
         { removedMedia: reconciliation.removed },
         'Mídias órfãs antigas foram removidas do armazenamento privado',
       );
+    }
+    let removedOutbox = await outboxRetentionService.runBatch(new Date(), BATCH_SIZE);
+    let totalRemovedOutbox = removedOutbox;
+    while (!stopping && removedOutbox === BATCH_SIZE) {
+      removedOutbox = await outboxRetentionService.runBatch(new Date(), BATCH_SIZE);
+      totalRemovedOutbox += removedOutbox;
+    }
+    if (totalRemovedOutbox > 0) {
+      logger.info({ removedOutbox: totalRemovedOutbox }, 'Eventos publicados antigos foram removidos da outbox');
     }
   } catch (error: unknown) {
     logger.error(

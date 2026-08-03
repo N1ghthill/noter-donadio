@@ -84,6 +84,12 @@ export class PrismaWhatsappConnectionRepository implements WhatsappConnectionRep
     phoneNumber: string | null,
   ): Promise<StoredWhatsappConnection> {
     return this.prisma.$transaction(async (transaction) => {
+      const current = await transaction.whatsappAccount.findUnique({
+        where: { workspaceId_identifier: { workspaceId, identifier: PRIMARY_ACCOUNT_IDENTIFIER } },
+      });
+      if (current?.connectionStatus === status && current.phoneNumber === phoneNumber) {
+        return toStoredConnection(current);
+      }
       const account = await transaction.whatsappAccount.upsert({
         where: {
           workspaceId_identifier: { workspaceId, identifier: PRIMARY_ACCOUNT_IDENTIFIER },

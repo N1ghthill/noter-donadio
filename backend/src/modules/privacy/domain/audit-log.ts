@@ -11,6 +11,7 @@ export const AUDIT_ACTIONS = [
   'analysis_ignored',
   'workspace_exported',
   'whatsapp_auth_reset',
+  'processing_retry_requested',
 ] as const;
 
 export type AuditAction = typeof AUDIT_ACTIONS[number];
@@ -29,6 +30,7 @@ export interface WorkspaceAuditEvent {
     readonly resultingStage?: string | undefined;
     readonly schemaVersion?: string | undefined;
     readonly mediaAssets?: number | undefined;
+    readonly kind?: 'analysis' | 'transcription' | undefined;
   };
   readonly createdAt: string;
 }

@@ -37,6 +37,7 @@ export const AUDIT_ACTION_LABELS = {
   analysis_ignored: 'Sugestão da IA ignorada',
   workspace_exported: 'Workspace exportado',
   whatsapp_auth_reset: 'Autenticação do WhatsApp preparada para substituição',
+  processing_retry_requested: 'Nova tentativa de processamento solicitada',
 } as const;
 
 export const AUDIT_FIELD_LABELS: Record<string, string> = {
@@ -56,6 +57,8 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   whatsappAuthentication: 'autenticação do WhatsApp',
   messages: 'mensagens',
   negotiations: 'negociações',
+  analysisProcessing: 'processamento da análise',
+  transcriptionProcessing: 'processamento da transcrição',
 };
 
 export function formatDateOnly(value: string | null): string {

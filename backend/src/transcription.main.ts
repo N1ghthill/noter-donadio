@@ -60,6 +60,12 @@ const worker = new Worker(
 worker.on('error', (error) => {
   logger.error(safeErrorContext(error), 'Falha interna no worker de transcrição');
 });
+worker.on('failed', (job, error) => {
+  logger.warn(
+    { ...safeErrorContext(error), jobId: job?.id, attemptsMade: job?.attemptsMade },
+    'Job de transcrição falhou; áudio original foi preservado',
+  );
+});
 
 async function shutdown(): Promise<void> {
   await worker.close();

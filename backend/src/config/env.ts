@@ -26,6 +26,7 @@ const environmentSchema = z.object({
   MEDIA_STORAGE_PATH: z.string().trim().min(1).default('storage/media'),
   MEDIA_SIGNING_SECRET: z.string().min(32),
   MEDIA_RETENTION_DAYS: z.coerce.number().int().min(1).max(365).default(30),
+  OUTBOX_RETENTION_DAYS: z.coerce.number().int().min(1).max(365).default(7),
   MEDIA_ORPHAN_GRACE_HOURS: z.coerce.number().int().min(1).max(168).default(24),
   MEDIA_MAX_BYTES: z.coerce.number().int().min(1_024).max(100 * 1024 * 1024).default(10 * 1024 * 1024),
   APP_ORIGINS: z.string()

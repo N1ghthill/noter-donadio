@@ -13,6 +13,7 @@ import type {
   SessionUser,
   SessionInfo,
   WorkspaceAuditEvent,
+  ProcessingFailure,
   WhatsappConnection,
 } from '../types/api.js';
 
@@ -91,6 +92,17 @@ export const api = {
 
   async auditEvents(limit = 50) {
     return request<{ data: WorkspaceAuditEvent[] }>(`/api/audit-events?limit=${limit}`);
+  },
+
+  async processingFailures(limit = 50) {
+    return request<{ data: ProcessingFailure[] }>(`/api/processing-failures?limit=${limit}`);
+  },
+
+  async retryProcessing(failure: ProcessingFailure) {
+    return request<{ status: 'queued' }>(
+      `/api/processing-failures/${failure.kind}/${failure.messageId}/retry`,
+      { method: 'POST', body: JSON.stringify({ confirmation: failure.messageId }) },
+    );
   },
 
   async dashboard(periodDays: 30 | 90 | 365 = 30) {

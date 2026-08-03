@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { NEGOTIATION_STAGES, type NegotiationStage } from '@noter/contracts';
+import { classifyExternalProcessingFailure } from '../../../shared/domain/external-processing-failure.js';
 
 const LEASE_DURATION_MS = 5 * 60 * 1_000;
 const PROMPT_VERSION = 'message-extraction-v1';
@@ -93,31 +94,45 @@ export class MessageAnalysisService {
 
     const startedAt = Date.now();
     try {
-      const result = parseMessageAnalysisResult(await this.analyzer.analyze({
+      const rawResult = await this.analyzer.analyze({
         text: claim.target.text,
         direction: claim.target.direction,
         promptVersion: claim.target.promptVersion,
-      }));
+      });
+      let result: MessageAnalysisResult;
+      try {
+        result = parseMessageAnalysisResult(rawResult);
+      } catch {
+        throw new InvalidAnalysisOutputError();
+      }
       const completed = await this.repository.complete({
         ...claim.target,
         ...result,
         processingTimeMs: Math.max(0, Date.now() - startedAt),
       });
       return { status: completed ? 'completed' : 'busy' } as const;
-    } catch {
+    } catch (error: unknown) {
+      const failureCode = `ANALYSIS_${classifyExternalProcessingFailure(error)}`;
       await this.repository.fail({
         ...claim.target,
-        failureCode: 'ANALYSIS_PROCESSING_FAILED',
+        failureCode,
       });
-      throw new MessageAnalysisFailedError();
+      throw new MessageAnalysisFailedError(failureCode);
     }
   }
 }
 
 export class MessageAnalysisFailedError extends Error {
-  public constructor() {
+  public constructor(public readonly code: string) {
     super('Falha no processamento da análise');
     this.name = 'MessageAnalysisFailedError';
+  }
+}
+
+class InvalidAnalysisOutputError extends Error {
+  public constructor() {
+    super('Saída da análise fora do contrato');
+    this.name = 'InvalidAnalysisOutputError';
   }
 }
 

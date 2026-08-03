@@ -56,6 +56,12 @@ const worker = new Worker(
 worker.on('error', (error) => {
   logger.error(safeErrorContext(error), 'Falha interna no worker de análise');
 });
+worker.on('failed', (job, error) => {
+  logger.warn(
+    { ...safeErrorContext(error), jobId: job?.id, attemptsMade: job?.attemptsMade },
+    'Job de análise falhou; conteúdo da mensagem foi preservado',
+  );
+});
 
 async function shutdown(): Promise<void> {
   await worker.close();

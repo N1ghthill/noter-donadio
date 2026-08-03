@@ -30,6 +30,8 @@ import {
   registerCapabilitiesRoutes,
   type ProductCapabilities,
 } from './modules/capabilities/http/capabilities.routes.js';
+import type { ProcessingFailureRepository } from './modules/operations/domain/processing-retry.js';
+import { registerProcessingRetryRoutes } from './modules/operations/http/processing-retry.routes.js';
 
 interface AppOptions {
   readonly trustProxy?: boolean;
@@ -51,6 +53,8 @@ interface AppOptions {
   readonly readinessProbe?: ReadinessProbe;
   readonly metricsCollector?: OperationalMetricsCollector;
   readonly productCapabilities?: ProductCapabilities;
+  readonly processingFailureRepository?: ProcessingFailureRepository;
+  readonly processingNotBefore?: Date;
 }
 
 export function buildApp(options: AppOptions = {}): FastifyInstance {
@@ -162,6 +166,14 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
     registerAuditLogRoute(app, {
       repository: options.auditLogRepository,
       sessionAuthenticator,
+    });
+  }
+
+  if (options.processingFailureRepository && options.processingNotBefore && sessionAuthenticator) {
+    registerProcessingRetryRoutes(app, {
+      repository: options.processingFailureRepository,
+      sessionAuthenticator,
+      notBefore: options.processingNotBefore,
     });
   }
 

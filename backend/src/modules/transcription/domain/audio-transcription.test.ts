@@ -97,5 +97,5 @@ test('saída inválida falha com código sanitizado e permite retry', async () =
     new AudioTranscriptionService(repository, transcriber).execute(TARGET.workspaceId, TARGET.messageId),
     AudioTranscriptionFailedError,
   );
-  assert.equal(failureCode, 'TRANSCRIPTION_PROCESSING_FAILED');
+  assert.equal(failureCode, 'TRANSCRIPTION_OUTPUT_INVALID');
 });

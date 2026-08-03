@@ -769,3 +769,22 @@ chaves compostas com `workspaceId`. Como a trilha deve sobreviver à exclusão d
 agregado, o fluxo de privacidade remove explicitamente essas referências na
 mesma transação antes da exclusão. Assim, o banco impede vínculos cruzados entre
 workspaces sem enfraquecer a auditoria minimizada.
+
+## ADR-073 — Falhas assistivas exigem diagnóstico sanitizado e retry humano
+
+Workers de análise e transcrição classificam falhas externas usando apenas
+nome técnico, código e status: autenticação, permissão, limite, modelo, timeout,
+indisponibilidade, requisição, entrada ou saída inválida. Mensagens brutas de
+erro e conteúdo de negócio não são persistidos nem registrados. O evento final
+do BullMQ registra somente código seguro, ID interno do job e número da
+tentativa.
+
+Não existe retry administrativo implícito do backlog. Uma nova tentativa só
+pode ser pedida por administrador autenticado, após confirmação explícita na
+interface e para mensagem posterior a `ASSISTIVE_PROCESSING_NOT_BEFORE`. A
+transação altera `failed` para `pending`, cria uma nova outbox contendo IDs e
+grava auditoria. Cliques concorrentes não duplicam a solicitação.
+
+Eventos da outbox já publicados são dados técnicos transitórios e podem ser
+removidos após sete dias; estados pendentes, em processamento ou falhos não são
+afetados. Atualizações idênticas da conexão Baileys não criam nova notificação.

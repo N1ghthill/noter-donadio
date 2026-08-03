@@ -21,6 +21,7 @@ describe('administração', () => {
         changedFields: [], previousVersion: null, resultingVersion: null, details: {},
         createdAt: '2026-07-21T12:30:00.000Z',
       }] }), { status: 200 });
+      if (path.startsWith('/api/processing-failures')) return new Response(JSON.stringify({ data: [] }), { status: 200 });
       return new Response(JSON.stringify({ data: [{
         id: sessionId, current: false, createdAt: '2026-07-21T10:00:00.000Z',
         lastSeenAt: '2026-07-21T12:00:00.000Z', expiresAt: '2026-07-21T20:00:00.000Z',
@@ -46,6 +47,7 @@ describe('administração', () => {
         status: 200,
         headers: { 'content-disposition': 'attachment; filename="noter-demo-2026-07-21.json"' },
       });
+      if (path.startsWith('/api/processing-failures')) return new Response(JSON.stringify({ data: [] }), { status: 200 });
       return new Response(JSON.stringify({ data: [] }), { status: 200 });
     });
     const createObjectURL = vi.fn().mockReturnValue('blob:exportacao');
@@ -64,5 +66,37 @@ describe('administração', () => {
     expect(click).toHaveBeenCalledOnce();
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:exportacao');
     click.mockRestore();
+  });
+
+  it('reprocessa somente após confirmação explícita do envio à OpenAI', async () => {
+    const messageId = 'fbdff1c4-5a25-4e24-b694-d5dc6c21f227';
+    let retried = false;
+    const fetchMock = vi.fn().mockImplementation(async (path: string, init?: RequestInit) => {
+      if (path === `/api/processing-failures/analysis/${messageId}/retry` && init?.method === 'POST') {
+        retried = true;
+        return new Response(JSON.stringify({ status: 'queued' }), { status: 202 });
+      }
+      if (path.startsWith('/api/processing-failures')) return new Response(JSON.stringify({
+        data: retried ? [] : [{
+          id: '87507894-44d7-4127-a909-89358db1944a', kind: 'analysis', messageId,
+          negotiationId: 'db71084e-5829-4a90-8346-5832998294ea', contactName: 'Contato fictício',
+          failureCode: 'ANALYSIS_AUTHENTICATION_FAILED', failedAt: '2026-08-02T20:30:00.000Z',
+          retryEligible: true,
+        }],
+      }), { status: 200 });
+      return new Response(JSON.stringify({ data: [] }), { status: 200 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const confirm = vi.fn().mockReturnValue(true);
+    vi.stubGlobal('confirm', confirm);
+
+    render(<AdministrationPage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Tentar novamente' }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      `/api/processing-failures/analysis/${messageId}/retry`,
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ confirmation: messageId }) }),
+    ));
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining('OpenAI'));
   });
 });

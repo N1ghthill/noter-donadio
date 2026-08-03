@@ -136,7 +136,7 @@ export interface Dashboard {
 
 export interface AuditEvent {
   id: string;
-  action: 'contact_created' | 'contact_updated' | 'contact_deleted' | 'contact_merged' | 'negotiation_created' | 'negotiation_updated' | 'negotiation_stage_changed' | 'negotiation_follow_up_completed' | 'analysis_accepted' | 'analysis_ignored' | 'workspace_exported' | 'whatsapp_auth_reset';
+  action: 'contact_created' | 'contact_updated' | 'contact_deleted' | 'contact_merged' | 'negotiation_created' | 'negotiation_updated' | 'negotiation_stage_changed' | 'negotiation_follow_up_completed' | 'analysis_accepted' | 'analysis_ignored' | 'workspace_exported' | 'whatsapp_auth_reset' | 'processing_retry_requested';
   actorDisplayName: string;
   changedFields: string[];
   previousVersion: number | null;
@@ -155,6 +155,17 @@ export interface WorkspaceAuditEvent extends AuditEvent {
     schemaVersion?: string;
     mediaAssets?: number;
   };
+}
+
+export interface ProcessingFailure {
+  id: string;
+  kind: 'analysis' | 'transcription';
+  messageId: string;
+  negotiationId: string;
+  contactName: string;
+  failureCode: string;
+  failedAt: string;
+  retryEligible: boolean;
 }
 
 export interface AnalysisDecision {

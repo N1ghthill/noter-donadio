@@ -78,3 +78,28 @@ test('reset de autenticação é atômico, isolado e auditado', async (context) 
   });
   assert.deepEqual(event.payload, { workspaceId, accountId, status: 'disconnected' });
 });
+
+test('estado idêntico da conexão não cria evento redundante', async (context) => {
+  const databaseUrl = process.env.DATABASE_URL;
+  assert.ok(databaseUrl, 'DATABASE_URL é obrigatória para o teste de integração');
+  const prisma = createPrismaClient(databaseUrl);
+  const workspaceId = randomUUID();
+  context.after(async () => {
+    await prisma.workspace.deleteMany({ where: { id: workspaceId } });
+    await prisma.$disconnect();
+  });
+  await prisma.workspace.create({
+    data: { id: workspaceId, slug: `connection-${workspaceId}`, name: 'Workspace sintético' },
+  });
+  const repository = new PrismaWhatsappConnectionRepository(prisma);
+  await repository.markConnected(workspaceId, '5571000000009');
+  const first = await prisma.whatsappAccount.findFirstOrThrow({ where: { workspaceId } });
+  await repository.markConnected(workspaceId, '5571000000009');
+  const second = await prisma.whatsappAccount.findFirstOrThrow({ where: { workspaceId } });
+
+  assert.equal(second.updatedAt.toISOString(), first.updatedAt.toISOString());
+  assert.equal(second.lastConnectedAt?.toISOString(), first.lastConnectedAt?.toISOString());
+  assert.equal(await prisma.outboxEvent.count({
+    where: { workspaceId, eventType: 'whatsapp.connection.changed' },
+  }), 1);
+});
