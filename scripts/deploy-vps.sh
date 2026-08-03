@@ -3,6 +3,7 @@ set -euo pipefail
 
 reboot_if_required=0
 enable_baileys=0
+enable_groq=0
 reset_admin_password=0
 reset_workspace_data=0
 
@@ -13,6 +14,9 @@ for argument in "$@"; do
       ;;
     --enable-baileys)
       enable_baileys=1
+      ;;
+    --enable-groq)
+      enable_groq=1
       ;;
     --reset-admin-password)
       reset_admin_password=1
@@ -82,6 +86,14 @@ add_compose_profile() {
     printf '%s' "${profile}"
   fi
 }
+
+if test "${enable_groq}" = "1"; then
+  "${project_directory}/scripts/configure-groq-vps.sh"
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
+fi
 
 if test "${enable_baileys}" = "1"; then
   binding="$(

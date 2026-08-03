@@ -121,8 +121,7 @@ sanitizados, nunca mensagem, transcrição, áudio ou chave.
 Para selecionar Groq como provedor alternativo explícito, use:
 
 ```bash
-sudo /opt/noter-donadio/scripts/configure-groq-vps.sh
-sudo /opt/noter-donadio/scripts/deploy-vps.sh
+sudo /opt/noter-donadio/scripts/deploy-vps.sh --enable-groq
 sudo /opt/noter-donadio/scripts/status-vps.sh --diagnose-assistive
 ```
 

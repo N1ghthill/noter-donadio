@@ -17,12 +17,11 @@ Modelos padrão:
 Na VPS, execute em terminal interativo:
 
 ```bash
-sudo /opt/noter-donadio/scripts/configure-groq-vps.sh
-sudo /opt/noter-donadio/scripts/deploy-vps.sh
+sudo /opt/noter-donadio/scripts/deploy-vps.sh --enable-groq
 sudo /opt/noter-donadio/scripts/status-vps.sh --diagnose-assistive
 ```
 
-O configurador recebe a chave com entrada oculta, valida apenas os metadados dos
+O deploy chama o configurador, recebe a chave com entrada oculta e valida apenas os metadados dos
 dois modelos e grava o segredo no `.env` não versionado com permissão restrita.
 Se qualquer validação falhar, a configuração anterior é preservada. Um novo
 corte UTC impede envio do backlog ao Groq.
