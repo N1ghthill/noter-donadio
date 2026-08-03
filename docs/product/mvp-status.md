@@ -23,7 +23,7 @@ está pronto, mas a integração externa permanece deliberadamente desligada.
 | Agenda de próximas ações | Pronto | Filtros, resumo, classificação, edição rápida e conclusão auditável |
 | Arquivos por contato | Pronto | Mídias privadas, filtros persistidos, grade/lista responsivas, transcrição de áudio, retenção visível, renovação de acesso e navegação contextual |
 | Atualização em tempo real | Pronto | Eventos sanitizados por workspace e reconciliação REST |
-| Sugestões sem ação autônoma | Pronto; integração real em diagnóstico controlado | Saída estrita, edição, aceite/recusa explícitos, falhas sanitizadas, retry manual e auditoria |
+| Sugestões sem ação autônoma | Pronto; integração real em diagnóstico controlado | Saída estrita, contexto limitado da pessoa e de negociações ativas, classificação de novo lead/assunto/continuação/devolutiva/múltiplos assuntos, revisão de vínculo, edição, aceite/recusa explícitos, falhas sanitizadas, retry manual e auditoria |
 | Transcrição OpenAI | Disponível; não selecionada | Adapter preservado, `gpt-4o-mini-transcribe`, corte temporal, diagnóstico sanitizado e retry administrativo explícito |
 | Análise OpenAI | Disponível; não selecionada | Responses API, Structured Outputs, `store: false`, corte temporal, diagnóstico sanitizado e retry administrativo explícito |
 | Groq alternativo | Ativo; áudio real pendente de homologação | Seleção explícita, análise sintética validada com GPT-OSS 20B, Whisper Large V3 Turbo, corte próprio e sem fallback silencioso |
@@ -44,8 +44,15 @@ O ambiente publicado não oferece simulação de mensagens. Ele preserva anális
 sintéticas históricas claramente identificadas. Em 30/07/2026, a chave OpenAI
 foi injetada externamente e os workers assistivos foram ativados com corte
 temporal. Em 03/08/2026, o Groq foi selecionado explicitamente para análise e
-transcrição, com novo corte temporal. A análise estruturada foi homologada com
-dados sintéticos; a transcrição aguarda um novo áudio real posterior ao corte.
+transcrição, com novo corte temporal. A análise contextual `message-context-v2`
+foi publicada no mesmo dia: a identidade continua sendo resolvida de forma
+determinística por workspace/JID/telefone normalizado, enquanto a IA apenas
+sugere se a mensagem representa novo lead, novo assunto, continuação,
+devolutiva ou múltiplos assuntos e quais negociações podem estar relacionadas.
+Mais de uma negociação ativa por contato passou a ser aceita e vínculos
+ambíguos exigem revisão humana. A análise estruturada foi homologada com dados
+sintéticos; a classificação contextual e a transcrição aguardam uma nova rodada
+real posterior ao corte.
 As falhas antigas permanecem registradas, sem jobs pendentes ou em processamento,
 e não serão repetidas automaticamente. A administração oferece retry somente
 após confirmação explícita. As mídias originais permanecem consultáveis mesmo
