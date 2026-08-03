@@ -4,6 +4,7 @@ set -euo pipefail
 diagnose_baileys=0
 diagnose_media=0
 diagnose_assistive=0
+diagnose_outbox=0
 for argument in "$@"; do
   case "${argument}" in
     --diagnose-baileys)
@@ -14,6 +15,9 @@ for argument in "$@"; do
       ;;
     --diagnose-assistive)
       diagnose_assistive=1
+      ;;
+    --diagnose-outbox)
+      diagnose_outbox=1
       ;;
     *)
       printf 'Argumento desconhecido: %s\n' "${argument}" >&2
@@ -134,4 +138,21 @@ if test "${diagnose_assistive}" = "1"; then
         FROM ai_analyses;
       "
   docker compose "${compose_arguments[@]}" logs --tail 100 --no-color transcription analysis
+fi
+
+if test "${diagnose_outbox}" = "1"; then
+  docker compose -f "${compose_file}" exec -T postgres \
+    psql --username="${DB_USER}" --dbname="${DB_NAME:-noter_donadio}" \
+      --no-align --tuples-only --field-separator='|' \
+      --command="
+        SELECT format(
+          'Outbox: pending=%s processing=%s published=%s failed=%s',
+          COUNT(*) FILTER (WHERE status = 'pending'),
+          COUNT(*) FILTER (WHERE status = 'processing'),
+          COUNT(*) FILTER (WHERE status = 'published'),
+          COUNT(*) FILTER (WHERE status = 'failed')
+        )
+        FROM outbox_events;
+      "
+  docker compose "${compose_arguments[@]}" logs --tail 100 --no-color outbox
 fi
