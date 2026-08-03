@@ -131,6 +131,21 @@ UTC e preserva todo o histórico anterior sem enviá-lo ao Groq. A seleção nã
 fallback automático: somente o provider indicado em `AI_ADAPTER` e
 `TRANSCRIPTION_ADAPTER` recebe novas unidades elegíveis.
 
+Se houver autorização explícita para enviar ao provedor todos os áudios
+históricos cuja transcrição falhou, execute a operação única:
+
+```bash
+sudo /opt/noter-donadio/scripts/deploy-vps.sh --reprocess-failed-audio
+```
+
+O deploy cria primeiro o snapshot obrigatório. A operação seleciona apenas
+áudios baixados e preservados, exige um administrador ativo para a auditoria,
+abre temporariamente o corte até o áudio elegível mais antigo, reenfileira as
+transcrições com falha e aguarda a respectiva análise contextual. Ao terminar
+ou falhar, restaura o corte original e recria os processos que o aplicam. A
+saída contém somente contagens por estado; IDs, conteúdo e transcrições não são
+impressos.
+
 Quando o sistema operacional indicar que um novo kernel exige reinicialização,
 execute o deploy com reinicialização condicionada ao health check:
 

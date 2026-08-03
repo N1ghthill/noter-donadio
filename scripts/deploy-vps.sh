@@ -6,6 +6,7 @@ enable_baileys=0
 enable_groq=0
 reset_admin_password=0
 reset_workspace_data=0
+reprocess_failed_audio=0
 
 for argument in "$@"; do
   case "${argument}" in
@@ -23,6 +24,9 @@ for argument in "$@"; do
       ;;
     --reset-workspace-data)
       reset_workspace_data=1
+      ;;
+    --reprocess-failed-audio)
+      reprocess_failed_audio=1
       ;;
     *)
       printf 'Argumento desconhecido: %s\n' "${argument}" >&2
@@ -203,6 +207,12 @@ if test "${reset_admin_password}" = "1"; then
   printf 'Workspace: %s\nE-mail: %s\nSenha temporária: %s\n' \
     "${RESET_ADMIN_WORKSPACE}" "${RESET_ADMIN_EMAIL}" "${RESET_ADMIN_PASSWORD}"
   unset RESET_ADMIN_PASSWORD
+fi
+
+if test "${reprocess_failed_audio}" = "1"; then
+  CONFIRM_REPROCESS_FAILED_AUDIO=1 \
+  COMPOSE_FILE="${compose_file}" \
+    scripts/reprocess-failed-audio-vps.sh
 fi
 
 if test "${reboot_if_required}" = "1"; then
