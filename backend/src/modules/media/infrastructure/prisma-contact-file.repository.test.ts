@@ -74,6 +74,7 @@ test('lista somente arquivos acessíveis do contato e não expõe a chave privad
   assert.equal(result[0]?.messageType, 'image');
   assert.equal(result[0]?.fileName, 'proposta-ficticia.jpg');
   assert.equal(result[0]?.caption, 'Imagem da proposta fictícia');
+  assert.equal(result[0]?.transcriptionText, null);
   assert.equal(result[0]?.fileSizeBytes, '1024');
   assert.equal(result[0]?.retentionUntil, '2026-08-29T12:00:00.000Z');
   assert.doesNotMatch(JSON.stringify(result), /storageKey|private/);

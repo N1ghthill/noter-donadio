@@ -1,6 +1,6 @@
-import { NEGOTIATION_STAGES, type NegotiationStage } from '@noter/contracts';
+import { isActiveNegotiation, NEGOTIATION_STAGES, type NegotiationStage } from '@noter/contracts';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 import { ApiError, api } from '../api/client.js';
 import { ErrorState, LoadingState } from '../components/Feedback.js';
@@ -10,13 +10,16 @@ import { useRealtime } from '../realtime/RealtimeContext.js';
 
 export function PipelinePage() {
   const { revision } = useRealtime();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState<Negotiation[]>();
   const [contacts, setContacts] = useState<Contact[]>();
   const [showForm, setShowForm] = useState(false);
-  const [search, setSearch] = useState('');
-  const [appliedSearch, setAppliedSearch] = useState('');
-  const [stageFilter, setStageFilter] = useState<NegotiationStage | ''>('');
-  const [followUpFilter, setFollowUpFilter] = useState<'overdue' | 'today' | 'upcoming' | 'missing' | ''>('');
+  const initialSearch = (searchParams.get('search') ?? '').trim();
+  const [search, setSearch] = useState(initialSearch);
+  const [appliedSearch, setAppliedSearch] = useState(initialSearch);
+  const [stageFilter, setStageFilter] = useState<NegotiationStage | ''>(pipelineStageFrom(searchParams.get('stage')));
+  const [followUpFilter, setFollowUpFilter] = useState<'overdue' | 'today' | 'upcoming' | 'missing' | ''>(followUpFrom(searchParams.get('followUp')));
+  const [activeOnly, setActiveOnly] = useState(searchParams.get('activeOnly') === 'true');
   const [saving, setSaving] = useState(false);
   const [draggedId, setDraggedId] = useState<string>();
   const [updatingId, setUpdatingId] = useState<string>();
@@ -34,6 +37,7 @@ export function PipelinePage() {
         api.negotiations({
           ...(stageFilter ? { stage: stageFilter } : {}),
           ...(followUpFilter ? { followUp: followUpFilter } : {}),
+          ...(activeOnly ? { activeOnly: true } : {}),
           ...(appliedSearch ? { search: appliedSearch } : {}),
           limit: 100,
           offset,
@@ -50,9 +54,17 @@ export function PipelinePage() {
       setMoreContactsAvailable(contactList.meta.hasMore);
     }
     catch { setError('Não foi possível carregar o pipeline.'); }
-  }, [appliedSearch, followUpFilter, stageFilter]);
+  }, [activeOnly, appliedSearch, followUpFilter, stageFilter]);
 
   useEffect(() => { void load(); }, [load, revision]);
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (stageFilter) params.set('stage', stageFilter);
+    if (followUpFilter) params.set('followUp', followUpFilter);
+    if (activeOnly) params.set('activeOnly', 'true');
+    if (appliedSearch) params.set('search', appliedSearch);
+    setSearchParams(params, { replace: true });
+  }, [activeOnly, appliedSearch, followUpFilter, setSearchParams, stageFilter]);
 
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -217,15 +229,23 @@ export function PipelinePage() {
               <option value="missing">Sem próxima ação</option>
             </select>
           </label>
+          <label>Escopo
+            <select value={activeOnly ? 'active' : 'all'} onChange={(event) => setActiveOnly(event.target.value === 'active')}>
+              <option value="all">Todas as negociações</option>
+              <option value="active">Somente ativas</option>
+            </select>
+          </label>
           <div className="filter-actions">
             <button className="button secondary" type="submit">Aplicar</button>
-            <button className="button-link" type="button" onClick={() => { setSearch(''); setAppliedSearch(''); setStageFilter(''); setFollowUpFilter(''); }}>Limpar</button>
+            <button className="button-link" type="button" onClick={() => { setSearch(''); setAppliedSearch(''); setStageFilter(''); setFollowUpFilter(''); setActiveOnly(false); }}>Limpar</button>
           </div>
         </form>
       </section>
       {error ? <ErrorState message={error} /> : null}
       <section className="kanban" aria-label="Pipeline de negociações">
-        {NEGOTIATION_STAGES.filter((stage) => !stageFilter || stage === stageFilter).map((stage) => {
+        {NEGOTIATION_STAGES.filter((stage) => (
+          (!activeOnly || isActiveNegotiation(stage)) && (!stageFilter || stage === stageFilter)
+        )).map((stage) => {
           const stageItems = items.filter((item) => item.stage === stage);
           return (
             <div className="kanban-column" key={stage} onDragOver={(event) => event.preventDefault()} onDrop={() => { if (draggedId) void move(draggedId, stage); setDraggedId(undefined); }}>
@@ -267,6 +287,16 @@ export function PipelinePage() {
       ) : null}
     </div>
   );
+}
+
+function pipelineStageFrom(value: string | null): NegotiationStage | '' {
+  return NEGOTIATION_STAGES.includes(value as NegotiationStage) ? value as NegotiationStage : '';
+}
+
+function followUpFrom(value: string | null): 'overdue' | 'today' | 'upcoming' | 'missing' | '' {
+  return value === 'overdue' || value === 'today' || value === 'upcoming' || value === 'missing'
+    ? value
+    : '';
 }
 
 function localIsoDate(): string {

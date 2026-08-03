@@ -48,7 +48,7 @@ test('lista conversas somente do workspace autenticado', async (context) => {
     method: 'GET',
     url: '/api/conversations?limit=25&stage=qualified&aiStage=proposal_sent'
       + '&startedFrom=2026-07-29T00%3A00%3A00.000Z&startedTo=2026-07-30T00%3A00%3A00.000Z'
-      + '&search=Contato',
+      + '&search=Contato&contactId=3a3db76b-c51a-4584-ab4b-6d3e70952e44',
     headers: { cookie: SESSION_COOKIE },
   });
   assert.equal(response.statusCode, 200);
@@ -58,6 +58,7 @@ test('lista conversas somente do workspace autenticado', async (context) => {
     offset: 0,
     stage: 'qualified',
     aiStage: 'proposal_sent',
+    contactId: '3a3db76b-c51a-4584-ab4b-6d3e70952e44',
     startedFrom: new Date('2026-07-29T00:00:00.000Z'),
     startedTo: new Date('2026-07-30T00:00:00.000Z'),
     search: 'Contato',

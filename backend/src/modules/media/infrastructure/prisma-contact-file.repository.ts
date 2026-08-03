@@ -39,6 +39,7 @@ export class PrismaContactFileRepository implements ContactFileRepository {
               { contact: { displayName: { contains: input.search, mode: 'insensitive' } } },
               { content: { contains: input.search, mode: 'insensitive' } },
               { mediaAsset: { originalFileName: { contains: input.search, mode: 'insensitive' } } },
+              { mediaAsset: { transcriptionText: { contains: input.search, mode: 'insensitive' } } },
             ],
           } : {}),
         },
@@ -50,6 +51,7 @@ export class PrismaContactFileRepository implements ContactFileRepository {
         durationSeconds: true,
         originalFileName: true,
         transcriptionState: true,
+        transcriptionText: true,
         retentionUntil: true,
         message: {
           select: {
@@ -83,6 +85,7 @@ export class PrismaContactFileRepository implements ContactFileRepository {
       fileSizeBytes: item.fileSizeBytes?.toString() ?? null,
       durationSeconds: item.durationSeconds,
       transcriptionState: item.transcriptionState,
+      transcriptionText: item.transcriptionText,
       retentionUntil: item.retentionUntil?.toISOString() ?? null,
       caption: item.message.content,
       occurredAt: item.message.occurredAt.toISOString(),

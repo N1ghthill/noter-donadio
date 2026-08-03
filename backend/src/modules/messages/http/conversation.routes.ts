@@ -33,6 +33,7 @@ export function registerConversationRoutes(
       startedTo: z.iso.datetime({ offset: true }).optional(),
       stage: stageSchema.optional(),
       aiStage: stageSchema.optional(),
+      contactId: z.uuid().optional(),
       search: z.string().trim().min(1).max(255).optional(),
     }).strict().refine((value) => (
       !value.startedFrom || !value.startedTo || value.startedFrom < value.startedTo
@@ -45,6 +46,7 @@ export function registerConversationRoutes(
         ...(query.data.startedTo ? { startedTo: new Date(query.data.startedTo) } : {}),
         ...(query.data.stage ? { stage: query.data.stage } : {}),
         ...(query.data.aiStage ? { aiStage: query.data.aiStage } : {}),
+        ...(query.data.contactId ? { contactId: query.data.contactId } : {}),
         ...(query.data.search ? { search: query.data.search } : {}),
       });
     const hasMore = conversations.length > query.data.limit;

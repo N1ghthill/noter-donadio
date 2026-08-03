@@ -12,6 +12,7 @@ export interface ContactFileView {
   readonly fileSizeBytes: string | null;
   readonly durationSeconds: number | null;
   readonly transcriptionState: ProcessingState;
+  readonly transcriptionText: string | null;
   readonly retentionUntil: string | null;
   readonly caption: string | null;
   readonly occurredAt: string;

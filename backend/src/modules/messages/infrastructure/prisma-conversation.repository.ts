@@ -63,6 +63,14 @@ export class PrismaConversationRepository implements ConversationRepository {
         INNER JOIN negotiations AS negotiation
           ON negotiation.workspace_id = message.workspace_id AND negotiation.id = message.negotiation_id
         WHERE message.workspace_id = ${workspaceId}::uuid
+          ${filters.contactId ? Prisma.sql`
+            AND contact.phone_number = (
+              SELECT selected.phone_number
+              FROM contacts AS selected
+              WHERE selected.workspace_id = ${workspaceId}::uuid
+                AND selected.id = ${filters.contactId}::uuid
+            )
+          ` : Prisma.empty}
           AND message.negotiation_id IS NOT NULL
       )
       SELECT ranked.negotiation_id AS "negotiationId",

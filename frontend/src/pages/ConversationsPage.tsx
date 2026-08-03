@@ -18,6 +18,7 @@ export function ConversationsPage() {
   const { revision } = useRealtime();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedPeriod = searchParams.get('period');
+  const contactId = searchParams.get('contactId') ?? '';
   const [conversations, setConversations] = useState<ConversationSummary[]>();
   const [selectedId, setSelectedId] = useState<string | undefined>(searchParams.get('selected') ?? undefined);
   const [period, setPeriod] = useState<ConversationPeriod>(
@@ -44,6 +45,7 @@ export function ConversationsPage() {
         ...range,
         ...(stage ? { stage } : {}),
         ...(aiStage ? { aiStage } : {}),
+        ...(contactId ? { contactId } : {}),
         ...(search.trim() ? { search: search.trim() } : {}),
         limit: 50,
         offset,
@@ -63,7 +65,7 @@ export function ConversationsPage() {
     } catch {
       setError('Não foi possível carregar as conversas.');
     }
-  }, [aiStage, period, search, stage]);
+  }, [aiStage, contactId, period, search, stage]);
 
   useEffect(() => { void loadConversations(); }, [loadConversations, revision]);
   useEffect(() => {
@@ -75,10 +77,11 @@ export function ConversationsPage() {
     params.set('period', period);
     if (stage) params.set('stage', stage);
     if (aiStage) params.set('aiStage', aiStage);
+    if (contactId) params.set('contactId', contactId);
     if (search) params.set('search', search);
     if (selectedId) params.set('selected', selectedId);
     setSearchParams(params, { replace: true });
-  }, [aiStage, period, search, selectedId, setSearchParams, stage]);
+  }, [aiStage, contactId, period, search, selectedId, setSearchParams, stage]);
   useEffect(() => {
     void api.capabilities()
       .then(setCapabilities)

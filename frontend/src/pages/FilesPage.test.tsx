@@ -47,6 +47,38 @@ describe('arquivos por contato', () => {
     ));
     expect(document.body).not.toHaveTextContent('storage/');
   });
+
+  it('alterna para lista e apresenta transcrição de áudio concluída', async () => {
+    const audio = {
+      ...file,
+      messageId: '70b4fca9-7bcc-45d5-b960-72f82ce952ea',
+      negotiationId: 'aa4c6ac6-29b8-423f-9655-683684d51b19',
+      messageType: 'audio',
+      fileName: 'audio-ficticio.ogg',
+      mimeType: 'audio/ogg',
+      transcriptionText: 'Transcrição fictícia concluída.',
+    } as const;
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/contacts') return response({
+        data: [contact], meta: { limit: 50, offset: 0, hasMore: false, nextOffset: null },
+      });
+      if (url.startsWith('/api/files')) return response({
+        data: [audio], meta: { limit: 50, offset: 0, hasMore: false, nextOffset: null },
+      });
+      return response({ error: 'not_found' }, 404);
+    }));
+
+    render(<MemoryRouter><RealtimeProvider><FilesPage /></RealtimeProvider></MemoryRouter>);
+
+    expect(await screen.findByText('Transcrição fictícia concluída.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: contact.displayName })).toHaveAttribute(
+      'href', `/conversas?period=all&contactId=${contact.id}`,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Lista' }));
+    expect(screen.getByRole('button', { name: 'Lista' })).toHaveAttribute('aria-pressed', 'true');
+    expect(document.querySelector('.file-view-list')).not.toBeNull();
+  });
 });
 
 const contact = {
@@ -71,6 +103,7 @@ const file = {
   fileSizeBytes: '1024',
   durationSeconds: null,
   transcriptionState: 'completed',
+  transcriptionText: null,
   caption: 'Imagem da proposta fictícia',
   occurredAt: '2026-07-29T12:00:00.000Z',
   retentionUntil: '2027-01-29T12:00:00.000Z',

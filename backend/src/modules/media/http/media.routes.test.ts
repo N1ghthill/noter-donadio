@@ -133,6 +133,7 @@ test('catálogo de arquivos usa workspace da sessão e filtros validados', async
         fileSizeBytes: '1024',
         durationSeconds: 3,
         transcriptionState: 'pending',
+        transcriptionText: null,
         retentionUntil: '2026-08-29T12:00:00.000Z',
         caption: null,
         occurredAt: '2026-07-29T12:00:00.000Z',

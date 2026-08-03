@@ -123,6 +123,7 @@ test('lista conversas por início e expõe classificação mais recente sem apli
     startedTo: new Date('2026-07-30T00:00:00.000Z'),
     stage: 'lead',
     aiStage: 'qualified',
+    contactId,
     search: 'classificação',
   });
 

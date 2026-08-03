@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 
 import { DashboardPage } from './DashboardPage.js';
 import { RealtimeProvider } from '../realtime/RealtimeContext.js';
@@ -32,13 +33,20 @@ describe('dashboard operacional', () => {
     }), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
 
-    render(<RealtimeProvider><DashboardPage /></RealtimeProvider>);
+    render(<MemoryRouter><RealtimeProvider><DashboardPage /></RealtimeProvider></MemoryRouter>);
 
     expect(await screen.findByText(/12\.500,50/)).toBeInTheDocument();
     expect(screen.getByText('75.00%')).toBeInTheDocument();
     expect(screen.getByText('Novos contatos')).toBeInTheDocument();
     expect(screen.getByText(/9.000,00/)).toBeInTheDocument();
     expect(screen.getByText('2', { selector: '.metric-card.warning strong' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Contatos12/ })).toHaveAttribute('href', '/contatos');
+    expect(screen.getByRole('link', { name: /Negociações ativas4/ })).toHaveAttribute(
+      'href', '/pipeline?activeOnly=true',
+    );
+    expect(screen.getByRole('link', { name: /Ações vencidas2/ })).toHaveAttribute(
+      'href', '/agenda?followUp=overdue',
+    );
     fireEvent.change(screen.getByLabelText('Período de conversão'), { target: { value: '90' } });
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
       '/api/dashboard?periodDays=90', expect.objectContaining({ credentials: 'include' }),

@@ -33,12 +33,16 @@ describe('caixa de conversas', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/conversas?period=all&contactId=3a3db76b-c51a-4584-ab4b-6d3e70952e44']}>
         <RealtimeProvider><ConversationsPage /></RealtimeProvider>
       </MemoryRouter>,
     );
 
     expect(await screen.findByText('Contato fictício')).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/conversations?contactId=3a3db76b-c51a-4584-ab4b-6d3e70952e44&limit=50&offset=0',
+      expect.objectContaining({ credentials: 'include' }),
+    );
     expect(screen.getByText('Contato solicitou uma proposta.')).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
     expect(await screen.findByText('Histórico preservado.')).toBeInTheDocument();

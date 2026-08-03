@@ -7,6 +7,7 @@ export interface ConversationListFilters {
   readonly startedTo?: Date | undefined;
   readonly stage?: NegotiationStage | undefined;
   readonly aiStage?: NegotiationStage | undefined;
+  readonly contactId?: string | undefined;
   readonly search?: string | undefined;
 }
 

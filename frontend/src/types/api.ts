@@ -235,6 +235,7 @@ export interface ContactFile {
   fileSizeBytes: string | null;
   durationSeconds: number | null;
   transcriptionState: ProcessingState;
+  transcriptionText: string | null;
   retentionUntil: string | null;
   caption: string | null;
   occurredAt: string;

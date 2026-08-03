@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { api } from '../api/client.js';
 import { ErrorState, LoadingState } from '../components/Feedback.js';
@@ -38,21 +39,21 @@ export function DashboardPage() {
       </header>
 
       <section className="metric-grid" aria-label="Indicadores">
-        <article className="metric-card"><span>Contatos</span><strong>{data.contactsCount}</strong><small>na base atual</small></article>
-        <article className="metric-card"><span>Negociações ativas</span><strong>{data.activeNegotiationsCount}</strong><small>em andamento</small></article>
-        <article className="metric-card accent"><span>Valor no pipeline</span><strong>{formatMoney(data.pipelineValue)}</strong><small>oportunidades abertas</small></article>
-        <article className="metric-card warning"><span>Ações vencidas</span><strong>{data.overdueFollowUpsCount}</strong><small>{data.todayFollowUpsCount} vencem hoje</small></article>
-        <article className="metric-card"><span>Sem próxima ação</span><strong>{data.missingFollowUpsCount}</strong><small>negociações ativas</small></article>
-        <article className="metric-card"><span>Taxa de ganho</span><strong>{data.winRatePercent === null ? '—' : `${data.winRatePercent}%`}</strong><small>{data.wonCount} ganhas · {data.lostCount} perdidas</small></article>
+        <Link className="metric-card" to="/contatos"><span>Contatos</span><strong>{data.contactsCount}</strong><small>Abrir base de contatos →</small></Link>
+        <Link className="metric-card" to="/pipeline?activeOnly=true"><span>Negociações ativas</span><strong>{data.activeNegotiationsCount}</strong><small>Ver oportunidades em andamento →</small></Link>
+        <Link className="metric-card accent" to="/pipeline?activeOnly=true"><span>Valor no pipeline</span><strong>{formatMoney(data.pipelineValue)}</strong><small>Abrir oportunidades abertas →</small></Link>
+        <Link className="metric-card warning" to="/agenda?followUp=overdue"><span>Ações vencidas</span><strong>{data.overdueFollowUpsCount}</strong><small>{data.todayFollowUpsCount} vencem hoje · priorizar →</small></Link>
+        <Link className="metric-card" to="/agenda?followUp=missing"><span>Sem próxima ação</span><strong>{data.missingFollowUpsCount}</strong><small>Organizar negociações sem tarefa →</small></Link>
+        <Link className="metric-card" to="/pipeline?stage=closed_won"><span>Taxa de ganho</span><strong>{data.winRatePercent === null ? '—' : `${data.winRatePercent}%`}</strong><small>{data.wonCount} ganhas · {data.lostCount} perdidas →</small></Link>
       </section>
 
       <section className="panel">
         <div className="panel-heading"><div><p className="eyebrow">Resultado do período</p><h2>Entrada e conversão</h2></div><small>Últimos {data.periodDays} dias</small></div>
         <div className="report-grid">
-          <article><span>Novos contatos</span><strong>{data.newContactsCount}</strong><small>adicionados no período</small></article>
-          <article><span>Novas negociações</span><strong>{data.createdNegotiationsCount}</strong><small>oportunidades iniciadas</small></article>
-          <article><span>Valor ganho</span><strong>{formatMoney(data.wonValue)}</strong><small>negociações fechadas como ganhas</small></article>
-          <article><span>Ticket médio ganho</span><strong>{formatMoney(data.averageWonValue)}</strong><small>considera ganhos com valor informado</small></article>
+          <Link to="/contatos"><span>Novos contatos</span><strong>{data.newContactsCount}</strong><small>Abrir contatos adicionados</small></Link>
+          <Link to="/pipeline"><span>Novas negociações</span><strong>{data.createdNegotiationsCount}</strong><small>Abrir pipeline</small></Link>
+          <Link to="/pipeline?stage=closed_won"><span>Valor ganho</span><strong>{formatMoney(data.wonValue)}</strong><small>Ver negociações ganhas</small></Link>
+          <Link to="/pipeline?stage=closed_won"><span>Ticket médio ganho</span><strong>{formatMoney(data.averageWonValue)}</strong><small>Consultar negócios com valor</small></Link>
         </div>
       </section>
 
@@ -60,10 +61,10 @@ export function DashboardPage() {
         <div className="panel-heading"><div><p className="eyebrow">Distribuição</p><h2>Pipeline por etapa</h2></div></div>
         {data.stages.length === 0 ? <p className="muted">Ainda não há negociações para consolidar.</p> : (
           <div className="stage-summary">
-            {data.stages.map((item) => <article key={item.stage}>
+            {data.stages.map((item) => <Link to={`/pipeline?stage=${item.stage}`} key={item.stage}>
               <span className={`stage-badge stage-${item.stage}`}>{STAGE_LABELS[item.stage]}</span>
               <strong>{item.count}</strong><small>{formatMoney(item.value)}</small>
-            </article>)}
+            </Link>)}
           </div>
         )}
       </section>
@@ -73,12 +74,12 @@ export function DashboardPage() {
         {data.recentNegotiations.length === 0 ? <p className="muted">As negociações aparecerão aqui quando forem criadas.</p> : (
           <div className="list-table">
             {data.recentNegotiations.map((item) => (
-              <article className="list-row" key={item.id}>
+              <Link className="list-row" to={`/pipeline/${item.id}`} key={item.id}>
                 <div><strong>{item.title ?? item.contactName}</strong><small>{item.contactName}</small></div>
                 <span className={`stage-badge stage-${item.stage}`}>{STAGE_LABELS[item.stage]}</span>
                 <span>{formatMoney(item.value, item.currency)}</span>
                 <small>{formatDate(item.updatedAt)}</small>
-              </article>
+              </Link>
             ))}
           </div>
         )}

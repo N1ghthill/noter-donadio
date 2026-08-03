@@ -11,6 +11,7 @@ import type { Contact, ContactFile } from '../types/api.js';
 type FileType = 'all' | 'audio' | 'image' | 'document';
 type Direction = 'all' | 'inbound' | 'outbound';
 type Period = 'all' | 'today' | '7d' | '30d';
+type FileView = 'grid' | 'list';
 
 const TYPE_LABELS = { audio: 'Áudio', image: 'Imagem', document: 'Documento' } as const;
 
@@ -23,6 +24,7 @@ export function FilesPage() {
   const [fileType, setFileType] = useState<FileType>(fileTypeFrom(searchParams.get('fileType')));
   const [direction, setDirection] = useState<Direction>(directionFrom(searchParams.get('direction')));
   const [period, setPeriod] = useState<Period>(periodFrom(searchParams.get('period')));
+  const [view, setView] = useState<FileView>(searchParams.get('view') === 'list' ? 'list' : 'grid');
   const [searchDraft, setSearchDraft] = useState(searchParams.get('search') ?? '');
   const [search, setSearch] = useState((searchParams.get('search') ?? '').trim());
   const [nextOffset, setNextOffset] = useState<number | null>(null);
@@ -41,8 +43,9 @@ export function FilesPage() {
     if (direction !== 'all') params.set('direction', direction);
     if (period !== 'all') params.set('period', period);
     if (search) params.set('search', search);
+    if (view === 'list') params.set('view', 'list');
     setSearchParams(params, { replace: true });
-  }, [contactId, direction, fileType, period, search, setSearchParams]);
+  }, [contactId, direction, fileType, period, search, setSearchParams, view]);
 
   const load = useCallback(async (offset = 0, append = false) => {
     setError(false);
@@ -94,6 +97,8 @@ export function FilesPage() {
     return <ErrorState message="Não foi possível carregar os arquivos." retry={() => void load()} />;
   }
   if (!contacts || !files) return <LoadingState label="Organizando seus arquivos…" />;
+  const selectedContact = contacts.find((contact) => contact.id === contactId);
+  const hasFilters = Boolean(contactId || search || fileType !== 'all' || direction !== 'all' || period !== 'all');
 
   return (
     <div className="page-stack files-page">
@@ -151,8 +156,18 @@ export function FilesPage() {
       </section>
 
       <section className="panel file-results">
-        <div className="panel-heading">
-          <div><p className="eyebrow">Resultados</p><h2>{files.length} arquivo(s) encontrado(s)</h2></div>
+        <div className="panel-heading file-results-heading">
+          <div><p className="eyebrow">Resultados</p><h2>{files.length} arquivo(s) encontrado(s)</h2>
+            {hasFilters ? <p className="active-filter-summary">
+              Exibindo {fileType === 'all' ? 'todos os tipos' : TYPE_LABELS[fileType].toLowerCase()}
+              {selectedContact ? ` de ${selectedContact.displayName}` : ''}
+              {period !== 'all' ? ` · ${periodLabel(period)}` : ''}
+            </p> : null}
+          </div>
+          <div className="file-view-toggle" role="group" aria-label="Modo de exibição">
+            <button type="button" aria-pressed={view === 'grid'} onClick={() => setView('grid')}>Grade</button>
+            <button type="button" aria-pressed={view === 'list'} onClick={() => setView('list')}>Lista</button>
+          </div>
         </div>
         {files.length === 0 ? (
           <div className="empty-state">
@@ -161,7 +176,7 @@ export function FilesPage() {
             <button className="button secondary" type="button" onClick={clearFilters}>Ver todos os arquivos</button>
           </div>
         ) : (
-          <div className="file-grid">
+          <div className={`file-grid file-view-${view}`}>
             {files.map((file) => (
               <article className={`file-card file-${file.messageType}`} key={file.messageId}>
                 <div className="file-card-preview">
@@ -174,8 +189,11 @@ export function FilesPage() {
                 </div>
                 <div className="file-card-copy">
                   <strong title={file.fileName}>{file.fileName}</strong>
-                  <span>{file.contactName}</span>
+                  <Link className="file-contact-link" to={`/conversas?period=all&contactId=${file.contactId}`}>{file.contactName}</Link>
                   {file.caption ? <p>{file.caption}</p> : null}
+                  {file.messageType === 'audio' && file.transcriptionText
+                    ? <blockquote className="file-transcription"><strong>Transcrição</strong><span>{file.transcriptionText}</span></blockquote>
+                    : null}
                   <dl>
                     <div><dt>Data</dt><dd>{formatDateTime(file.occurredAt)}</dd></div>
                     <div><dt>Origem</dt><dd>{file.direction === 'inbound' ? 'Recebido' : 'Enviado'}</dd></div>
@@ -235,6 +253,11 @@ function directionFrom(value: string | null): Direction {
 
 function periodFrom(value: string | null): Period {
   return value === 'today' || value === '7d' || value === '30d' ? value : 'all';
+}
+
+function periodLabel(period: Exclude<Period, 'all'>): string {
+  if (period === 'today') return 'hoje';
+  return period === '7d' ? 'últimos 7 dias' : 'últimos 30 dias';
 }
 
 function formatBytes(value: string | null): string {

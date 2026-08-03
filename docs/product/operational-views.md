@@ -16,7 +16,9 @@ A rota `/controle` mantém o painel agregado por período, com contatos,
 negociações abertas, valor do pipeline, conversão, tarefas vencidas e previstas
 para hoje. O relatório de entrada e resultado acrescenta novos contatos, novas
 negociações, valor ganho e ticket médio ganho na mesma janela. Essa tela serve
-à supervisão; a Home serve à execução diária.
+à supervisão; a Home serve à execução diária. Indicadores, etapas e registros
+recentes são atalhos para as respectivas visões de contatos, pipeline ou agenda,
+já com o filtro correspondente aplicado quando houver.
 
 ## Pendências e piloto
 
@@ -85,10 +87,12 @@ solicitam acesso curto e assinado somente quando necessário. Chaves físicas de
 armazenamento não chegam ao navegador.
 
 O catálogo usa cartões responsivos, estados vazios orientativos, ação para
-limpar filtros, URL compartilhável e acessos separados à conversa e à
-negociação. Um atalho vindo da conversa abre a biblioteca já filtrada pelo
-contato. Upload manual, pastas e compartilhamento externo não fazem parte
-desta fatia.
+limpar filtros, resumo dos filtros ativos, modos grade e lista, URL
+compartilhável e acessos separados à conversa e à negociação. Áudios concluídos
+exibem também a transcrição persistida, sem substituir o arquivo original. Um
+atalho vindo da conversa abre a biblioteca já filtrada pelo contato; selecionar
+o nome do contato abre exatamente a conversa associada. Upload manual, pastas e
+compartilhamento externo não fazem parte desta fatia.
 
 Contatos, pipeline, conversas e arquivos carregam páginas adicionais sob
 demanda. O histórico começa pelas mensagens mais recentes e permite buscar
@@ -99,6 +103,10 @@ Contatos com o mesmo telefone podem ser consolidados após escolher
 explicitamente qual registro será mantido. A operação preserva mensagens e
 negociações e fica auditada; duas negociações ativas precisam ser resolvidas
 manualmente antes da consolidação.
+
+Na listagem de contatos, selecionar o nome abre a caixa de conversas filtrada
+pelo identificador interno do contato. A URL preserva esse contexto sem depender
+de nomes ou telefones semelhantes.
 
 ## Estados sem integrações externas
 

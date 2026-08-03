@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 
 import { ApiError, api } from '../api/client.js';
 import { EmptyState, ErrorState, LoadingState } from '../components/Feedback.js';
@@ -156,8 +157,11 @@ export function ContactsPage() {
           <div className="contact-grid">
             {contacts.map((contact) => (
               <article className="contact-card" key={contact.id}>
-                <div className="contact-avatar">{contact.displayName.slice(0, 1).toUpperCase()}</div>
-                <div><h3>{contact.displayName}</h3><a href={`tel:${contact.phoneNumber}`}>{contact.phoneNumber}</a></div>
+                <Link className="contact-open" to={`/conversas?period=all&contactId=${contact.id}`} aria-label={`Abrir conversa com ${contact.displayName}`}>
+                  <span className="contact-avatar">{contact.displayName.slice(0, 1).toUpperCase()}</span>
+                  <span><strong>{contact.displayName}</strong><small>Abrir conversa</small></span>
+                </Link>
+                <a className="contact-phone" href={`tel:${contact.phoneNumber}`}>{contact.phoneNumber}</a>
                 <div className="tag-list">{contact.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
                 <small>{formatDate(contact.lastInteractionAt)}</small>
                 <div className="card-actions">

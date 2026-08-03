@@ -17,11 +17,11 @@ está pronto, mas a integração externa permanece deliberadamente desligada.
 | Pipeline, Kanban e dados comerciais | Pronto | Filtros, drag/select de etapa, concorrência otimista e fechamento com motivo |
 | Próxima ação e histórico de conclusão | Pronto | Edição, filtros de prazo, conclusão auditável e histórico imutável |
 | Dashboard comercial | Pronto | Agregações PostgreSQL, acompanhamentos, entrada, valor ganho, ticket médio e conversão em 30/90/365 dias |
-| Home e central de controle | Pronto | Prioridades diárias, central de pendências, atalhos e painel agregado em rotas separadas |
+| Home e central de controle | Pronto | Prioridades diárias, central de pendências e indicadores clicáveis com filtros contextuais em rotas separadas |
 | Piloto guiado | Pronto | Seis jornadas navegáveis, progresso local sem mutação comercial e roteiro operacional |
 | Conversas, filtros, classificação e histórico | Pronto | Tabela clicável, paginação, detalhe cronológico por pessoa, mídias, follow-up rápido e navegação contextual |
 | Agenda de próximas ações | Pronto | Filtros, resumo, classificação, edição rápida e conclusão auditável |
-| Arquivos por contato | Pronto | Mídias privadas, filtros persistidos, retenção visível, renovação de acesso e navegação contextual |
+| Arquivos por contato | Pronto | Mídias privadas, filtros persistidos, grade/lista responsivas, transcrição de áudio, retenção visível, renovação de acesso e navegação contextual |
 | Atualização em tempo real | Pronto | Eventos sanitizados por workspace e reconciliação REST |
 | Sugestões sem ação autônoma | Pronto; integração real em diagnóstico controlado | Saída estrita, edição, aceite/recusa explícitos, falhas sanitizadas, retry manual e auditoria |
 | Transcrição OpenAI | Ativa; homologação ponta a ponta pendente | Chave externa, `gpt-4o-mini-transcribe`, corte temporal, diagnóstico sanitizado e retry administrativo explícito |

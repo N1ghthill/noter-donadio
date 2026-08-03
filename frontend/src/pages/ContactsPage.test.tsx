@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 
 import { ContactsPage } from './ContactsPage.js';
 import { RealtimeProvider } from '../realtime/RealtimeContext.js';
@@ -43,8 +44,11 @@ describe('contatos', () => {
     vi.stubGlobal('confirm', confirmMock);
     vi.stubGlobal('fetch', fetchMock);
 
-    render(<RealtimeProvider><ContactsPage /></RealtimeProvider>);
+    render(<MemoryRouter><RealtimeProvider><ContactsPage /></RealtimeProvider></MemoryRouter>);
     expect(await screen.findByText('Contato fictício')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Abrir conversa com Contato fictício' })).toHaveAttribute(
+      'href', `/conversas?period=all&contactId=${contact.id}`,
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Excluir' }));
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
 

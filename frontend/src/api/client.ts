@@ -293,6 +293,7 @@ export const api = {
     startedTo?: string;
     stage?: NegotiationStage;
     aiStage?: NegotiationStage;
+    contactId?: string;
     search?: string;
     limit?: number;
     offset?: number;
@@ -302,6 +303,7 @@ export const api = {
     if (filters?.startedTo) params.set('startedTo', filters.startedTo);
     if (filters?.stage) params.set('stage', filters.stage);
     if (filters?.aiStage) params.set('aiStage', filters.aiStage);
+    if (filters?.contactId) params.set('contactId', filters.contactId);
     if (filters?.search) params.set('search', filters.search);
     if (filters?.limit !== undefined) params.set('limit', String(filters.limit));
     if (filters?.offset !== undefined) params.set('offset', String(filters.offset));
