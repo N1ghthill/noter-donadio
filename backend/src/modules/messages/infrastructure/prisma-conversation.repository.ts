@@ -91,11 +91,17 @@ export class PrismaConversationRepository implements ConversationRepository {
              analysis.sentiment::text AS "analysisSentiment",
              analysis.suggested_stage::text AS "analysisSuggestedStage",
              analysis.suggested_tags AS "analysisSuggestedTags",
+             analysis.conversation_context->>'interactionType' AS "analysisInteractionType",
+             CASE
+               WHEN analysis.conversation_context->>'needsHumanReview' IN ('true', 'false')
+                 THEN (analysis.conversation_context->>'needsHumanReview')::boolean
+               ELSE false
+             END AS "analysisNeedsHumanReview",
              analysis.created_at AS "analysisCreatedAt"
       FROM ranked
       LEFT JOIN LATERAL (
         SELECT ai.id, ai.state, ai.summary, ai.sentiment, ai.suggested_stage,
-               ai.suggested_tags, ai.created_at
+               ai.suggested_tags, ai.conversation_context, ai.created_at
         FROM ai_analyses AS ai
         WHERE ai.workspace_id = ${workspaceId}::uuid
           AND ai.negotiation_id = ranked.negotiation_id
@@ -123,6 +129,8 @@ export class PrismaConversationRepository implements ConversationRepository {
         sentiment: message.analysisSentiment,
         suggestedStage: message.analysisSuggestedStage,
         suggestedTags: message.analysisSuggestedTags ?? [],
+        interactionType: interactionType(message.analysisInteractionType),
+        needsHumanReview: message.analysisNeedsHumanReview ?? false,
         createdAt: message.analysisCreatedAt.toISOString(),
       } : null,
       lastMessage: {
@@ -155,5 +163,23 @@ interface ConversationRow {
   readonly analysisSentiment: 'positive' | 'neutral' | 'negative' | 'urgent' | null;
   readonly analysisSuggestedStage: NegotiationStage | null;
   readonly analysisSuggestedTags: string[] | null;
+  readonly analysisInteractionType: string | null;
+  readonly analysisNeedsHumanReview: boolean | null;
   readonly analysisCreatedAt: Date | null;
+}
+
+function interactionType(
+  value: string | null,
+): NonNullable<ConversationSummaryView['latestAnalysis']>['interactionType'] {
+  switch (value) {
+    case 'new_lead':
+    case 'new_case':
+    case 'continuation':
+    case 'follow_up_response':
+    case 'multiple_cases':
+    case 'unclear':
+      return value;
+    default:
+      return null;
+  }
 }

@@ -1,10 +1,16 @@
 import { Prisma, type PrismaClient } from '../../../generated/prisma/client.js';
 import type {
+  MessageAnalysisContext,
   MessageAnalysisClaim,
   MessageAnalysisRepository,
   MessageAnalysisResult,
   MessageAnalysisTarget,
 } from '../domain/message-analysis.js';
+
+const MAX_CONTEXT_NEGOTIATIONS = 5;
+const MAX_CONTEXT_MESSAGES = 10;
+const MAX_CONTEXT_TEXT_LENGTH = 1_000;
+const CLOSED_STAGES = ['closed_won', 'closed_lost'] as const;
 
 export class PrismaMessageAnalysisRepository implements MessageAnalysisRepository {
   public constructor(private readonly prisma: PrismaClient) {}
@@ -24,11 +30,14 @@ export class PrismaMessageAnalysisRepository implements MessageAnalysisRepositor
         where: { id: input.messageId, workspaceId: input.workspaceId },
         select: {
           id: true,
+          contactId: true,
           negotiationId: true,
           direction: true,
           messageType: true,
           content: true,
           createdAt: true,
+          occurredAt: true,
+          contact: { select: { source: true } },
           mediaAsset: {
             select: { transcriptionState: true, transcriptionText: true },
           },
@@ -44,6 +53,93 @@ export class PrismaMessageAnalysisRepository implements MessageAnalysisRepositor
       if (!text || (message.messageType === 'audio' && message.mediaAsset?.transcriptionState !== 'completed')) {
         return { status: 'busy' };
       }
+
+      const [activeNegotiationCount, candidateRows, priorMessageCount, recentRows] = await Promise.all([
+        transaction.negotiation.count({
+          where: {
+            workspaceId: input.workspaceId,
+            contactId: message.contactId,
+            stage: { notIn: [...CLOSED_STAGES] },
+          },
+        }),
+        transaction.negotiation.findMany({
+          where: {
+            workspaceId: input.workspaceId,
+            contactId: message.contactId,
+            stage: { notIn: [...CLOSED_STAGES] },
+          },
+          orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+          take: MAX_CONTEXT_NEGOTIATIONS,
+          select: {
+            id: true,
+            title: true,
+            stage: true,
+            productInterest: true,
+            lastSummary: true,
+            nextAction: true,
+          },
+        }),
+        transaction.message.count({
+          where: {
+            workspaceId: input.workspaceId,
+            contactId: message.contactId,
+            id: { not: message.id },
+            createdAt: { lte: message.createdAt },
+          },
+        }),
+        transaction.message.findMany({
+          where: {
+            workspaceId: input.workspaceId,
+            contactId: message.contactId,
+            id: { not: message.id },
+            occurredAt: { lte: message.occurredAt },
+          },
+          orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
+          take: MAX_CONTEXT_MESSAGES,
+          select: {
+            negotiationId: true,
+            direction: true,
+            messageType: true,
+            content: true,
+            mediaAsset: { select: { transcriptionState: true, transcriptionText: true } },
+          },
+        }),
+      ]);
+      const candidates = candidateRows.map((candidate, index) => ({
+        reference: `case_${index + 1}`,
+        negotiationId: candidate.id,
+        title: limited(candidate.title),
+        stage: candidate.stage,
+        productInterest: limited(candidate.productInterest),
+        lastSummary: limited(candidate.lastSummary),
+        nextAction: limited(candidate.nextAction),
+      }));
+      const referenceByNegotiationId = new Map(
+        candidates.map((candidate) => [candidate.negotiationId, candidate.reference] as const),
+      );
+      const context: MessageAnalysisContext = {
+        sender: message.direction === 'inbound' ? 'contact' : 'workspace_user',
+        contactRecognition: message.contact.source === 'whatsapp_auto' && priorMessageCount === 0
+          ? 'new'
+          : 'existing',
+        activeNegotiationCount,
+        candidatesTruncated: activeNegotiationCount > candidates.length,
+        provisionalCaseReference: referenceByNegotiationId.get(message.negotiationId) ?? null,
+        candidates,
+        recentMessages: recentRows.toReversed().flatMap((recent) => {
+          const recentText = recent.messageType === 'audio'
+            && recent.mediaAsset?.transcriptionState === 'completed'
+            ? recent.mediaAsset.transcriptionText
+            : recent.content;
+          return recentText?.trim() ? [{
+            direction: recent.direction,
+            text: recentText.trim().slice(0, MAX_CONTEXT_TEXT_LENGTH),
+            caseReference: recent.negotiationId
+              ? referenceByNegotiationId.get(recent.negotiationId) ?? null
+              : null,
+          }] : [];
+        }),
+      };
 
       const analysis = await transaction.aiAnalysis.upsert({
         where: {
@@ -94,6 +190,7 @@ export class PrismaMessageAnalysisRepository implements MessageAnalysisRepositor
           direction: message.direction,
           text,
           promptVersion: input.promptVersion,
+          context,
         },
       };
     });
@@ -127,6 +224,7 @@ export class PrismaMessageAnalysisRepository implements MessageAnalysisRepositor
           promptTokens: input.promptTokens,
           completionTokens: input.completionTokens,
           processingTimeMs: input.processingTimeMs,
+          conversationContext: input.conversationContext as unknown as Prisma.InputJsonObject,
           failureCode: null,
         },
       });
@@ -184,4 +282,8 @@ export class PrismaMessageAnalysisRepository implements MessageAnalysisRepositor
       });
     });
   }
+}
+
+function limited(value: string | null): string | null {
+  return value === null ? null : value.slice(0, MAX_CONTEXT_TEXT_LENGTH);
 }

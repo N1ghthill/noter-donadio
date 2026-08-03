@@ -18,6 +18,15 @@ import {
 import type { NegotiationDetail, ProductCapabilities } from '../types/api.js';
 import { useRealtime } from '../realtime/RealtimeContext.js';
 
+const INTERACTION_LABELS = {
+  new_lead: 'Novo lead',
+  new_case: 'Novo assunto comercial',
+  continuation: 'Continuação de negociação',
+  follow_up_response: 'Devolutiva de negociação',
+  multiple_cases: 'Vários assuntos na mesma mensagem',
+  unclear: 'Relação ainda incerta',
+} as const;
+
 export function NegotiationDetailPage() {
   const { revision } = useRealtime();
   const { id } = useParams();
@@ -277,6 +286,40 @@ export function NegotiationDetailPage() {
               <small>Análise {PROCESSING_LABELS[latestAnalysis.state]} · {latestAnalysis.modelUsed ?? latestAnalysis.promptVersion}</small>
               {latestAnalysis.state === 'failed' ? <p>Não foi possível analisar esta mensagem. O conteúdo original continua disponível.</p> : <>
                 <p>{latestAnalysis.summary ?? 'Resumo ainda não disponível.'}</p>
+                {latestAnalysis.conversationContext ? (
+                  <section className="conversation-context" aria-label="Contexto reconhecido pela IA">
+                    <div className="conversation-context-heading">
+                      <div>
+                        <small>Identidade confirmada pelo WhatsApp e CRM</small>
+                        <strong>{latestAnalysis.conversationContext.sender === 'contact'
+                          ? `${detail.contact.displayName} · ${latestAnalysis.conversationContext.contactRecognition === 'new' ? 'novo contato' : 'contato existente'}`
+                          : `Mensagem enviada por você · contato ${latestAnalysis.conversationContext.contactRecognition === 'new' ? 'novo' : 'existente'}`}</strong>
+                      </div>
+                      <span>{INTERACTION_LABELS[latestAnalysis.conversationContext.interactionType]}</span>
+                    </div>
+                    <p>
+                      {latestAnalysis.conversationContext.activeNegotiationCount === 0
+                        ? 'Nenhuma negociação ativa anterior foi localizada.'
+                        : `${latestAnalysis.conversationContext.activeNegotiationCount} negociação(ões) ativa(s) foram considerada(s) no contexto.`}
+                    </p>
+                    {latestAnalysis.conversationContext.cases.length ? (
+                      <ul className="context-case-list">
+                        {latestAnalysis.conversationContext.cases.map((item, index) => (
+                          <li key={`${item.relatedNegotiationId ?? 'new'}-${index}`}>
+                            <span>{INTERACTION_LABELS[item.relationship]}</span>
+                            <strong>{item.summary}</strong>
+                            {item.relatedNegotiationId ? (
+                              <Link to={`/pipeline/${item.relatedNegotiationId}`}>Abrir negociação relacionada</Link>
+                            ) : <small>Novo assunto sem vínculo confirmado</small>}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    {latestAnalysis.conversationContext.needsHumanReview ? (
+                      <p className="context-review">Confira o vínculo antes de aplicar sugestões comerciais.</p>
+                    ) : null}
+                  </section>
+                ) : null}
                 {latestAnalysis.sentiment ? <p><strong>Sentimento:</strong> {SENTIMENT_LABELS[latestAnalysis.sentiment]}</p> : null}
                 {latestAnalysis.entities && Object.values(latestAnalysis.entities).some(Boolean) ? (
                   <dl className="analysis-entities">

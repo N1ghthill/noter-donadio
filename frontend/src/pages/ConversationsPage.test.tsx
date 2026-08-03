@@ -183,6 +183,8 @@ const conversation = {
     sentiment: 'positive',
     suggestedStage: 'qualified',
     suggestedTags: ['proposta'],
+    interactionType: 'follow_up_response',
+    needsHumanReview: false,
     createdAt: '2026-07-21T12:01:00.000Z',
   },
   lastMessage: {

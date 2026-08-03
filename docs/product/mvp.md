@@ -20,6 +20,8 @@ disponíveis de modo privado.
 - histórico de mensagens, player de áudio, prévia de imagem e download de documento;
 - transcrição assíncrona;
 - extração de entidades, resumo, sentimento, objeções e próximas ações;
+- reconhecimento contextual de novo lead, novo caso, continuação, devolutiva e
+  múltiplos assuntos, sem confiar à IA a identidade técnica da pessoa;
 - sugestões de alteração sem aplicação automática;
 - atualização em tempo real com reconciliação por REST;
 - auditoria das ações manuais relevantes;
@@ -47,7 +49,8 @@ disponíveis de modo privado.
 2. O sistema a persiste uma única vez.
 3. Um contato e uma negociação são criados se necessário.
 4. A mensagem aparece imediatamente na interface como aguardando análise.
-5. A IA processa o contexto e publica sugestões.
+5. A IA processa contexto mínimo do contato e das negociações ativas, identifica
+   continuação, devolutiva ou vários assuntos e publica sugestões.
 6. O usuário aceita, ignora ou edita as sugestões.
 
 ### Receber áudio

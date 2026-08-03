@@ -1,10 +1,11 @@
-import type { MessageAnalyzer } from '../domain/message-analysis.js';
+import type { MessageAnalysisContext, MessageAnalyzer } from '../domain/message-analysis.js';
 
 export class FakeMessageAnalyzer implements MessageAnalyzer {
   public async analyze(_input: {
     text: string;
     direction: 'inbound' | 'outbound';
     promptVersion: string;
+    context: MessageAnalysisContext;
   }): Promise<unknown> {
     return {
       summary: 'Análise simulada da mensagem mais recente.',
@@ -16,6 +17,13 @@ export class FakeMessageAnalyzer implements MessageAnalyzer {
       suggestedTags: ['análise-simulada'],
       suggestedStage: null,
       confidence: 0.85,
+      routing: {
+        interactionType: 'unclear',
+        relatedCaseRefs: [],
+        cases: [],
+        routingConfidence: null,
+        needsHumanReview: true,
+      },
       model: 'fake-local-v1',
       promptTokens: 0,
       completionTokens: 0,

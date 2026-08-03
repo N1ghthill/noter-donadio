@@ -76,6 +76,7 @@ export interface NegotiationDetailView extends NegotiationView {
     readonly suggestedTags: readonly string[];
     readonly suggestedStage: NegotiationStage | null;
     readonly confidenceScore: string | null;
+    readonly conversationContext: ConversationContextView | null;
     readonly promptVersion: string;
     readonly modelUsed: string | null;
     readonly createdAt: string;
@@ -89,6 +90,21 @@ export interface NegotiationDetailView extends NegotiationView {
     readonly completedAt: string;
     readonly completedByDisplayName: string;
   }[];
+}
+
+export interface ConversationContextView {
+  readonly sender: 'contact' | 'workspace_user';
+  readonly contactRecognition: 'new' | 'existing';
+  readonly activeNegotiationCount: number;
+  readonly interactionType: 'new_lead' | 'new_case' | 'continuation' | 'follow_up_response' | 'multiple_cases' | 'unclear';
+  readonly relatedNegotiationIds: readonly string[];
+  readonly cases: readonly {
+    readonly summary: string;
+    readonly relationship: 'new_lead' | 'new_case' | 'continuation' | 'follow_up_response' | 'multiple_cases' | 'unclear';
+    readonly relatedNegotiationId: string | null;
+  }[];
+  readonly routingConfidence: number | null;
+  readonly needsHumanReview: boolean;
 }
 
 export interface AuditEventView {

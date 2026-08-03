@@ -25,6 +25,8 @@ export interface ConversationSummaryView {
     readonly sentiment: 'positive' | 'neutral' | 'negative' | 'urgent' | null;
     readonly suggestedStage: NegotiationStage | null;
     readonly suggestedTags: readonly string[];
+    readonly interactionType: 'new_lead' | 'new_case' | 'continuation' | 'follow_up_response' | 'multiple_cases' | 'unclear' | null;
+    readonly needsHumanReview: boolean;
     readonly createdAt: string;
   } | null;
   readonly lastMessage: {

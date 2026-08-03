@@ -76,7 +76,8 @@ export class PrismaWorkspaceExportRepository implements WorkspaceExportRepositor
           id: true, messageId: true, negotiationId: true, analysisType: true, state: true,
           summary: true, entities: true, sentiment: true, sentimentConfidence: true,
           objections: true, nextActions: true, suggestedTags: true, suggestedStage: true,
-          confidenceScore: true, promptVersion: true, promptTokens: true, completionTokens: true,
+          confidenceScore: true, conversationContext: true, promptVersion: true,
+          promptTokens: true, completionTokens: true,
           modelUsed: true, processingTimeMs: true, failureCode: true, createdAt: true, updatedAt: true,
         } }),
         transaction.analysisDecision.findMany({ where, orderBy: { createdAt: 'asc' }, select: {

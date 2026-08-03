@@ -48,6 +48,15 @@ describe('detalhe da negociação', () => {
         objections: [], nextActions: ['Agendar demonstração'], suggestedTags: ['demonstração'],
         suggestedStage: 'proposal_sent', confidenceScore: '0.91', promptVersion: 'demo-v1',
         modelUsed: 'demo-local', createdAt: '2026-07-20T18:31:00.000Z', decision: null,
+        conversationContext: {
+          sender: 'contact', contactRecognition: 'existing', activeNegotiationCount: 2,
+          interactionType: 'multiple_cases', relatedNegotiationIds: ['neg-1'],
+          cases: [{
+            summary: 'Devolutiva da proposta e pedido de uma nova demonstração.',
+            relationship: 'follow_up_response', relatedNegotiationId: 'neg-1',
+          }],
+          routingConfidence: 0.84, needsHumanReview: true,
+        },
       }],
       auditTrail: [{
         id: 'audit-1', action: 'negotiation_stage_changed', actorDisplayName: 'Admin fictício',
@@ -72,6 +81,10 @@ describe('detalhe da negociação', () => {
     expect(screen.getByText('Transcrição · concluída')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Carregar áudio' })).toBeInTheDocument();
     expect(screen.getByText('Agendar demonstração')).toBeInTheDocument();
+    expect(screen.getByText('Vários assuntos na mesma mensagem')).toBeInTheDocument();
+    expect(screen.getByText('Contato fictício · contato existente')).toBeInTheDocument();
+    expect(screen.getByText('Devolutiva da proposta e pedido de uma nova demonstração.')).toBeInTheDocument();
+    expect(screen.getByText('Confira o vínculo antes de aplicar sugestões comerciais.')).toBeInTheDocument();
     expect(screen.getByText('Retornar ao contato')).toBeInTheDocument();
     expect(screen.getByText(/Prazo: 20 de ago/)).toBeInTheDocument();
     expect(screen.getByText('Enviar apresentação anterior')).toBeInTheDocument();

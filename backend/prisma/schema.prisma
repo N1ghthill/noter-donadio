@@ -394,6 +394,7 @@ model AiAnalysis {
   suggestedTags       String[]          @default([]) @map("suggested_tags")
   suggestedStage      NegotiationStage? @map("suggested_stage")
   confidenceScore     Decimal?          @map("confidence_score") @db.Decimal(5, 4)
+  conversationContext Json?             @map("conversation_context")
   promptVersion       String            @map("prompt_version") @db.VarChar(100)
   promptTokens        Int?              @map("prompt_tokens")
   completionTokens    Int?              @map("completion_tokens")

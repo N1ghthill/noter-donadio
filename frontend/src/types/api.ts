@@ -100,6 +100,20 @@ export interface NegotiationDetail extends Negotiation {
     suggestedTags: string[];
     suggestedStage: NegotiationStage | null;
     confidenceScore: string | null;
+    conversationContext: {
+      sender: 'contact' | 'workspace_user';
+      contactRecognition: 'new' | 'existing';
+      activeNegotiationCount: number;
+      interactionType: 'new_lead' | 'new_case' | 'continuation' | 'follow_up_response' | 'multiple_cases' | 'unclear';
+      relatedNegotiationIds: string[];
+      cases: Array<{
+        summary: string;
+        relationship: 'new_lead' | 'new_case' | 'continuation' | 'follow_up_response' | 'multiple_cases' | 'unclear';
+        relatedNegotiationId: string | null;
+      }>;
+      routingConfidence: number | null;
+      needsHumanReview: boolean;
+    } | null;
     promptVersion: string;
     modelUsed: string | null;
     createdAt: string;
@@ -212,6 +226,8 @@ export interface ConversationSummary {
     sentiment: 'positive' | 'neutral' | 'negative' | 'urgent' | null;
     suggestedStage: NegotiationStage | null;
     suggestedTags: string[];
+    interactionType: 'new_lead' | 'new_case' | 'continuation' | 'follow_up_response' | 'multiple_cases' | 'unclear' | null;
+    needsHumanReview: boolean;
     createdAt: string;
   } | null;
   lastMessage: {

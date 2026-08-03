@@ -4,10 +4,56 @@ import { NEGOTIATION_STAGES, type NegotiationStage } from '@noter/contracts';
 import { classifyExternalProcessingFailure } from '../../../shared/domain/external-processing-failure.js';
 
 const LEASE_DURATION_MS = 5 * 60 * 1_000;
-const PROMPT_VERSION = 'message-extraction-v1';
+const PROMPT_VERSION = 'message-context-v2';
 const ANALYSIS_TYPE = 'message_extraction';
 const SENTIMENTS = ['positive', 'neutral', 'negative', 'urgent'] as const;
+export const INTERACTION_TYPES = [
+  'new_lead',
+  'new_case',
+  'continuation',
+  'follow_up_response',
+  'multiple_cases',
+  'unclear',
+] as const;
 type AnalysisSentiment = (typeof SENTIMENTS)[number];
+type InteractionType = (typeof INTERACTION_TYPES)[number];
+
+export interface MessageAnalysisContext {
+  readonly sender: 'contact' | 'workspace_user';
+  readonly contactRecognition: 'new' | 'existing';
+  readonly activeNegotiationCount: number;
+  readonly candidatesTruncated: boolean;
+  readonly provisionalCaseReference: string | null;
+  readonly candidates: readonly {
+    readonly reference: string;
+    readonly negotiationId: string;
+    readonly title: string | null;
+    readonly stage: NegotiationStage;
+    readonly productInterest: string | null;
+    readonly lastSummary: string | null;
+    readonly nextAction: string | null;
+  }[];
+  readonly recentMessages: readonly {
+    readonly direction: 'inbound' | 'outbound';
+    readonly text: string;
+    readonly caseReference: string | null;
+  }[];
+}
+
+export interface ConversationContextResult {
+  readonly sender: 'contact' | 'workspace_user';
+  readonly contactRecognition: 'new' | 'existing';
+  readonly activeNegotiationCount: number;
+  readonly interactionType: InteractionType;
+  readonly relatedNegotiationIds: readonly string[];
+  readonly cases: readonly {
+    readonly summary: string;
+    readonly relationship: InteractionType;
+    readonly relatedNegotiationId: string | null;
+  }[];
+  readonly routingConfidence: number | null;
+  readonly needsHumanReview: boolean;
+}
 
 export interface MessageAnalysisTarget {
   readonly analysisId: string;
@@ -18,6 +64,7 @@ export interface MessageAnalysisTarget {
   readonly direction: 'inbound' | 'outbound';
   readonly text: string;
   readonly promptVersion: string;
+  readonly context: MessageAnalysisContext;
 }
 
 export interface MessageAnalysisResult {
@@ -37,6 +84,7 @@ export interface MessageAnalysisResult {
   readonly model: string;
   readonly promptTokens: number | null;
   readonly completionTokens: number | null;
+  readonly conversationContext: ConversationContextResult;
 }
 
 export type MessageAnalysisClaim =
@@ -65,6 +113,7 @@ export interface MessageAnalyzer {
     text: string;
     direction: 'inbound' | 'outbound';
     promptVersion: string;
+    context: MessageAnalysisContext;
   }): Promise<unknown>;
 }
 
@@ -98,10 +147,11 @@ export class MessageAnalysisService {
         text: claim.target.text,
         direction: claim.target.direction,
         promptVersion: claim.target.promptVersion,
+        context: claim.target.context,
       });
       let result: MessageAnalysisResult;
       try {
-        result = parseMessageAnalysisResult(rawResult);
+        result = parseMessageAnalysisResult(rawResult, claim.target.context);
       } catch {
         throw new InvalidAnalysisOutputError();
       }
@@ -136,14 +186,46 @@ class InvalidAnalysisOutputError extends Error {
   }
 }
 
-export function parseMessageAnalysisResult(value: unknown): MessageAnalysisResult {
+export function parseMessageAnalysisResult(
+  value: unknown,
+  context: MessageAnalysisContext,
+): MessageAnalysisResult {
   const result = record(value, 'analysis');
   exactKeys(result, [
     'summary', 'entities', 'sentiment', 'sentimentConfidence', 'objections', 'nextActions',
-    'suggestedTags', 'suggestedStage', 'confidence', 'model', 'promptTokens', 'completionTokens',
+    'suggestedTags', 'suggestedStage', 'confidence', 'routing', 'model', 'promptTokens',
+    'completionTokens',
   ]);
   const entities = record(result.entities, 'entities');
   exactKeys(entities, ['product', 'amount', 'deadline']);
+  const routing = record(result.routing, 'routing');
+  exactKeys(routing, [
+    'interactionType', 'relatedCaseRefs', 'cases', 'routingConfidence', 'needsHumanReview',
+  ]);
+  const candidateByReference = new Map(
+    context.candidates.map((candidate) => [candidate.reference, candidate] as const),
+  );
+  const relatedCaseRefs = uniqueStringArray(routing.relatedCaseRefs, 5, 20);
+  const relatedNegotiationIds = relatedCaseRefs.map((reference) => {
+    const candidate = candidateByReference.get(reference);
+    if (!candidate) throw new Error('invalid_case_reference');
+    return candidate.negotiationId;
+  });
+  if (!Array.isArray(routing.cases) || routing.cases.length > 5) {
+    throw new Error('invalid_analysis_cases');
+  }
+  const cases = routing.cases.map((value) => {
+    const item = record(value, 'case');
+    exactKeys(item, ['summary', 'relationship', 'relatedCaseRef']);
+    const relatedCaseRef = nullableString(item.relatedCaseRef, 20);
+    const candidate = relatedCaseRef === null ? null : candidateByReference.get(relatedCaseRef);
+    if (relatedCaseRef !== null && !candidate) throw new Error('invalid_case_reference');
+    return {
+      summary: requiredString(item.summary, 500),
+      relationship: requiredEnum(item.relationship, INTERACTION_TYPES),
+      relatedNegotiationId: candidate?.negotiationId ?? null,
+    };
+  });
   return {
     summary: nullableString(result.summary, 10_000),
     entities: {
@@ -161,6 +243,18 @@ export function parseMessageAnalysisResult(value: unknown): MessageAnalysisResul
     model: requiredString(result.model, 100),
     promptTokens: nullableNonnegativeInteger(result.promptTokens),
     completionTokens: nullableNonnegativeInteger(result.completionTokens),
+    conversationContext: {
+      sender: context.sender,
+      contactRecognition: context.contactRecognition,
+      activeNegotiationCount: context.activeNegotiationCount,
+      interactionType: requiredEnum(routing.interactionType, INTERACTION_TYPES),
+      relatedNegotiationIds,
+      cases,
+      routingConfidence: nullableConfidence(routing.routingConfidence),
+      needsHumanReview: requiredBoolean(routing.needsHumanReview)
+        || context.candidatesTruncated
+        || context.activeNegotiationCount > 1,
+    },
   };
 }
 
@@ -195,6 +289,12 @@ function stringArray(value: unknown, maxItems: number, maxLength: number): strin
   return value.map((item) => requiredString(item, maxLength));
 }
 
+function uniqueStringArray(value: unknown, maxItems: number, maxLength: number): string[] {
+  const items = stringArray(value, maxItems, maxLength);
+  if (new Set(items).size !== items.length) throw new Error('duplicate_analysis_array_item');
+  return items;
+}
+
 function nullableConfidence(value: unknown): number | null {
   if (value === null) return null;
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > 1) {
@@ -215,4 +315,14 @@ function nullableEnum<const T extends readonly string[]>(value: unknown, values:
   if (value === null) return null;
   if (typeof value !== 'string' || !values.includes(value)) throw new Error('invalid_analysis_enum');
   return value as T[number];
+}
+
+function requiredEnum<const T extends readonly string[]>(value: unknown, values: T): T[number] {
+  if (typeof value !== 'string' || !values.includes(value)) throw new Error('invalid_analysis_enum');
+  return value as T[number];
+}
+
+function requiredBoolean(value: unknown): boolean {
+  if (typeof value !== 'boolean') throw new Error('invalid_analysis_boolean');
+  return value;
 }

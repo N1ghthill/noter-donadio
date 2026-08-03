@@ -14,6 +14,7 @@ import {
   type AnalysisDecisionView,
   type AuditEventView,
   type ContactView,
+  type ConversationContextView,
   type CrmRepository,
   type DashboardView,
   type NegotiationDetailView,
@@ -580,6 +581,7 @@ export class PrismaCrmRepository implements CrmRepository {
         suggestedTags: analysis.suggestedTags,
         suggestedStage: analysis.suggestedStage,
         confidenceScore: analysis.confidenceScore?.toString() ?? null,
+        conversationContext: toConversationContext(analysis.conversationContext),
         promptVersion: analysis.promptVersion,
         modelUsed: analysis.modelUsed,
         createdAt: analysis.createdAt.toISOString(),
@@ -1250,4 +1252,51 @@ function toAnalysisEntities(value: unknown): {
   const entities = value as Record<string, unknown>;
   const field = (name: string) => typeof entities[name] === 'string' ? entities[name] : null;
   return { product: field('product'), amount: field('amount'), deadline: field('deadline') };
+}
+
+const INTERACTION_TYPES = new Set([
+  'new_lead', 'new_case', 'continuation', 'follow_up_response', 'multiple_cases', 'unclear',
+]);
+
+function toConversationContext(value: unknown): ConversationContextView | null {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return null;
+  const context = value as Record<string, unknown>;
+  if (
+    (context.sender !== 'contact' && context.sender !== 'workspace_user')
+    || (context.contactRecognition !== 'new' && context.contactRecognition !== 'existing')
+    || typeof context.activeNegotiationCount !== 'number'
+    || !Number.isInteger(context.activeNegotiationCount)
+    || typeof context.interactionType !== 'string'
+    || !INTERACTION_TYPES.has(context.interactionType)
+    || !Array.isArray(context.relatedNegotiationIds)
+    || !context.relatedNegotiationIds.every((id) => typeof id === 'string')
+    || !Array.isArray(context.cases)
+    || (context.routingConfidence !== null && typeof context.routingConfidence !== 'number')
+    || typeof context.needsHumanReview !== 'boolean'
+  ) return null;
+  const cases = context.cases.flatMap((value) => {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) return [];
+    const item = value as Record<string, unknown>;
+    if (
+      typeof item.summary !== 'string'
+      || typeof item.relationship !== 'string'
+      || !INTERACTION_TYPES.has(item.relationship)
+      || (item.relatedNegotiationId !== null && typeof item.relatedNegotiationId !== 'string')
+    ) return [];
+    return [{
+      summary: item.summary,
+      relationship: item.relationship as ConversationContextView['interactionType'],
+      relatedNegotiationId: item.relatedNegotiationId as string | null,
+    }];
+  });
+  return {
+    sender: context.sender,
+    contactRecognition: context.contactRecognition,
+    activeNegotiationCount: context.activeNegotiationCount,
+    interactionType: context.interactionType as 'new_lead' | 'new_case' | 'continuation' | 'follow_up_response' | 'multiple_cases' | 'unclear',
+    relatedNegotiationIds: context.relatedNegotiationIds as string[],
+    cases,
+    routingConfidence: context.routingConfidence as number | null,
+    needsHumanReview: context.needsHumanReview,
+  };
 }

@@ -114,7 +114,11 @@ O job contém apenas IDs. O resultado do adapter é validado e permanece no `Med
 
 ## ADR-018 — Análise é versionada, estrita e apenas sugestiva
 
-Cada mensagem recebe no máximo uma análise por tipo e versão do prompt. O worker usa somente o texto da mensagem corrente ou sua transcrição concluída, adquire um lease persistido por tentativa e valida a resposta contra uma lista fechada de campos, enumerações e limites antes de gravá-la.
+Cada mensagem recebe no máximo uma análise por tipo e versão do prompt. A
+primeira versão usava somente o texto da mensagem corrente ou sua transcrição
+concluída; a ampliação mínima e limitada de contexto é definida pela ADR-075.
+O worker adquire um lease persistido por tentativa e valida a resposta contra
+uma lista fechada de campos, enumerações e limites antes de gravá-la.
 
 Jobs e eventos carregam apenas IDs e estado. Resultados permanecem no PostgreSQL e são reconciliados pela API autenticada. O worker de análise não altera contato, tags, valor ou etapa da negociação: toda aplicação de uma sugestão depende de confirmação explícita e auditável do usuário.
 
@@ -803,3 +807,31 @@ a um segundo destinatário sem uma decisão operacional visível. O endpoint
 Responses do Groq não aceita `store` nem `include`; esses parâmetros são
 omitidos apenas nessa composição, e a ausência de logprobs deixa confiança de
 transcrição nula em vez de inventar um valor.
+
+## ADR-075 — Identidade é determinística e o vínculo comercial é contextual e assistivo
+
+A pessoa da conversa é resolvida antes da IA por workspace, conta WhatsApp,
+JID canônico e telefone normalizado. O modelo nunca cria nem escolhe a
+identidade técnica do remetente. A análise registra se aquele contato já
+existia e diferencia mensagem recebida do contato de mensagem enviada pelo
+usuário do workspace.
+
+Para reconhecer continuação, devolutiva, novo assunto ou vários casos, o worker
+consulta no PostgreSQL no máximo cinco negociações ativas e dez mensagens
+anteriores do mesmo contato. O provedor recebe referências efêmeras `case_N`,
+nunca UUIDs, telefone ou JID. Campos comerciais confirmados, resumos e textos
+são truncados individualmente; candidatos além do limite tornam a revisão
+humana obrigatória.
+
+A restrição parcial que permitia somente uma negociação ativa por contato é
+removida. Uma pessoa pode possuir casos comerciais simultâneos e independentes;
+o vínculo inicial da mensagem é provisório quando houver mais de um candidato,
+e a análise deixa essa ambiguidade visível em vez de escolher silenciosamente
+um caso como verdade comercial.
+
+O output versionado `message-context-v2` classifica `new_lead`, `new_case`,
+`continuation`, `follow_up_response`, `multiple_cases` ou `unclear`, valida toda
+referência contra os candidatos consultados e persiste o contexto junto à
+análise. A associação inicial da mensagem continua transacional e nenhuma
+negociação é criada, movida, mesclada ou reatribuída pela resposta do modelo.
+Quando houver ambiguidade, a interface a apresenta para conferência explícita.

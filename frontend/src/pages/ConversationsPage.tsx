@@ -8,6 +8,15 @@ import { MediaPreview } from '../components/MediaPreview.js';
 import { QuickFollowUpEditor } from '../components/QuickFollowUpEditor.js';
 import { formatDate, formatDateOnly, PROCESSING_LABELS, STAGE_LABELS } from '../lib/format.js';
 import { useRealtime } from '../realtime/RealtimeContext.js';
+
+const INTERACTION_LABELS = {
+  new_lead: 'Novo lead',
+  new_case: 'Novo assunto',
+  continuation: 'Continuação',
+  follow_up_response: 'Devolutiva',
+  multiple_cases: 'Vários assuntos',
+  unclear: 'Revisar vínculo',
+} as const;
 import type {
   ConversationSummary,
   NegotiationDetail,
@@ -248,9 +257,11 @@ export function ConversationsPage() {
                 <time dateTime={item.lastMessage.occurredAt}>{formatDate(item.lastMessage.occurredAt)}</time>
                 <span>{item.messageCount}</span>
                 <span className={`stage-badge stage-${item.stage}`}>{STAGE_LABELS[item.stage]}</span>
-                <span>{item.latestAnalysis?.suggestedStage
-                  ? STAGE_LABELS[item.latestAnalysis.suggestedStage]
-                  : 'Não classificada'}</span>
+                <span>{item.latestAnalysis?.interactionType
+                  ? <>{INTERACTION_LABELS[item.latestAnalysis.interactionType]}{item.latestAnalysis.needsHumanReview ? <small>Conferir vínculo</small> : null}</>
+                  : item.latestAnalysis?.suggestedStage
+                    ? STAGE_LABELS[item.latestAnalysis.suggestedStage]
+                    : 'Não classificada'}</span>
                 <span className="summary-cell">{item.latestAnalysis?.summary ?? 'Sem resumo produzido pela IA.'}</span>
               </button>
             ))}

@@ -18,7 +18,24 @@ const TARGET: MessageAnalysisTarget = {
   attemptId: 'bcf87290-5230-4db5-84bb-3facdca61368',
   direction: 'inbound',
   text: 'Mensagem inteiramente fictícia.',
-  promptVersion: 'message-extraction-v1',
+  promptVersion: 'message-context-v2',
+  context: {
+    sender: 'contact',
+    contactRecognition: 'existing',
+    activeNegotiationCount: 1,
+    candidatesTruncated: false,
+    provisionalCaseReference: 'case_1',
+    candidates: [{
+      reference: 'case_1',
+      negotiationId: 'db71084e-5829-4a90-8346-5832998294ea',
+      title: 'Caso fictício',
+      stage: 'qualified',
+      productInterest: null,
+      lastSummary: null,
+      nextAction: null,
+    }],
+    recentMessages: [],
+  },
 };
 
 const VALID_RESULT = {
@@ -31,6 +48,17 @@ const VALID_RESULT = {
   suggestedTags: ['análise-simulada'],
   suggestedStage: null,
   confidence: 0.85,
+  routing: {
+    interactionType: 'follow_up_response',
+    relatedCaseRefs: ['case_1'],
+    cases: [{
+      summary: 'Devolutiva do caso fictício.',
+      relationship: 'follow_up_response',
+      relatedCaseRef: 'case_1',
+    }],
+    routingConfidence: 0.92,
+    needsHumanReview: false,
+  },
   model: 'fake-local-v1',
   promptTokens: 0,
   completionTokens: 0,
@@ -50,7 +78,12 @@ test('conclui análise válida sem aplicar sugestões ao CRM', async () => {
 
   assert.deepEqual(result, { status: 'completed' });
   assert.equal(completed?.suggestedStage, null);
-  assert.equal(completed?.promptVersion, 'message-extraction-v1');
+  assert.equal(completed?.promptVersion, 'message-context-v2');
+  assert.deepEqual(
+    completed?.conversationContext.relatedNegotiationIds,
+    ['db71084e-5829-4a90-8346-5832998294ea'],
+  );
+  assert.equal(completed?.conversationContext.contactRecognition, 'existing');
 });
 
 test('reentrega concluída não chama o adapter', async () => {
@@ -110,11 +143,15 @@ test('saída com campo extra é recusada e falha com código sanitizado', async 
   assert.equal(failureCode, 'ANALYSIS_OUTPUT_INVALID');
 });
 
-test('parser recusa confiança, etapa e entidades fora do contrato', () => {
-  assert.throws(() => parseMessageAnalysisResult({ ...VALID_RESULT, confidence: 2 }));
-  assert.throws(() => parseMessageAnalysisResult({ ...VALID_RESULT, suggestedStage: 'invented' }));
+test('parser recusa confiança, etapa, referência e entidades fora do contrato', () => {
+  assert.throws(() => parseMessageAnalysisResult({ ...VALID_RESULT, confidence: 2 }, TARGET.context));
+  assert.throws(() => parseMessageAnalysisResult({ ...VALID_RESULT, suggestedStage: 'invented' }, TARGET.context));
   assert.throws(() => parseMessageAnalysisResult({
     ...VALID_RESULT,
     entities: { ...VALID_RESULT.entities, secret: 'extra' },
-  }));
+  }, TARGET.context));
+  assert.throws(() => parseMessageAnalysisResult({
+    ...VALID_RESULT,
+    routing: { ...VALID_RESULT.routing, relatedCaseRefs: ['case_2'] },
+  }, TARGET.context));
 });

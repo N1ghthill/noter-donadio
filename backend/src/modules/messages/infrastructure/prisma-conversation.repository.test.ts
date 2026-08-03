@@ -112,6 +112,16 @@ test('lista conversas por início e expõe classificação mais recente sem apli
       sentiment: 'positive',
       suggestedStage: 'qualified',
       suggestedTags: ['proposta'],
+      conversationContext: {
+        sender: 'workspace_user',
+        contactRecognition: 'existing',
+        activeNegotiationCount: 1,
+        interactionType: 'follow_up_response',
+        relatedNegotiationIds: [negotiationId],
+        cases: [],
+        routingConfidence: 0.9,
+        needsHumanReview: false,
+      },
       promptVersion: 'test-v1',
     },
   });
@@ -133,6 +143,8 @@ test('lista conversas por início e expõe classificação mais recente sem apli
   assert.equal(result[0]?.lastMessage.id, lastMessageId);
   assert.equal(result[0]?.latestAnalysis?.summary, 'Contato solicitou proposta.');
   assert.equal(result[0]?.latestAnalysis?.suggestedStage, 'qualified');
+  assert.equal(result[0]?.latestAnalysis?.interactionType, 'follow_up_response');
+  assert.equal(result[0]?.latestAnalysis?.needsHumanReview, false);
   const persisted = await prisma.negotiation.findUniqueOrThrow({ where: { id: negotiationId } });
   assert.equal(persisted.stage, 'lead');
 });
