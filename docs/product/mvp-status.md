@@ -26,6 +26,7 @@ está pronto, mas a integração externa permanece deliberadamente desligada.
 | Sugestões sem ação autônoma | Pronto; integração real em diagnóstico controlado | Saída estrita, edição, aceite/recusa explícitos, falhas sanitizadas, retry manual e auditoria |
 | Transcrição OpenAI | Ativa; homologação ponta a ponta pendente | Chave externa, `gpt-4o-mini-transcribe`, corte temporal, diagnóstico sanitizado e retry administrativo explícito |
 | Análise OpenAI | Ativa; homologação ponta a ponta pendente | Responses API, Structured Outputs, `store: false`, corte temporal, diagnóstico sanitizado e retry administrativo explícito |
+| Groq alternativo | Preparado para ativação controlada | Seleção explícita, GPT-OSS 20B estruturado, Whisper Large V3 Turbo, corte próprio e sem fallback silencioso |
 | Retenção, exclusão de contato e exportação | Pronto para a fase | Worker de retenção, remoção de agregado e exportação administrativa |
 | Health checks e observabilidade local | Pronto | Readiness privado, métricas, Prometheus, Grafana e Alertmanager saudáveis |
 

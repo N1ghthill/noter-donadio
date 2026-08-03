@@ -788,3 +788,18 @@ grava auditoria. Cliques concorrentes não duplicam a solicitação.
 Eventos da outbox já publicados são dados técnicos transitórios e podem ser
 removidos após sete dias; estados pendentes, em processamento ou falhos não são
 afetados. Atualizações idênticas da conexão Baileys não criam nova notificação.
+
+## ADR-074 — Groq é alternativo explícito, não fallback silencioso
+
+Em 03/08/2026, o proprietário autorizou o Groq a receber somente novas
+mensagens e áudios posteriores a um novo corte temporal. Análise usa
+`openai/gpt-oss-20b` com Structured Outputs estrito; transcrição usa
+`whisper-large-v3-turbo`. Os dois preservam os mesmos limites, validação de
+saída, idempotência, persistência original e revisão humana dos adapters OpenAI.
+
+`AI_ADAPTER` e `TRANSCRIPTION_ADAPTER` selecionam um provedor por processo. Não
+há tentativa automática em outro provedor após falha, pois isso enviaria dados
+a um segundo destinatário sem uma decisão operacional visível. O endpoint
+Responses do Groq não aceita `store` nem `include`; esses parâmetros são
+omitidos apenas nessa composição, e a ausência de logprobs deixa confiança de
+transcrição nula em vez de inventar um valor.

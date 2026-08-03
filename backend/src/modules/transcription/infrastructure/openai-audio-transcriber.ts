@@ -30,7 +30,7 @@ interface OpenAITranscriptionsClient {
     model: string;
     language: string;
     response_format: 'json';
-    include: ['logprobs'];
+    include?: ['logprobs'];
   }): Promise<OpenAITranscriptionResponse>;
 }
 
@@ -39,6 +39,7 @@ export interface OpenAIAudioTranscriberOptions {
   readonly language: string;
   readonly persistedLanguage: string;
   readonly maxDurationSeconds: number;
+  readonly includeLogprobs?: boolean;
 }
 
 export class OpenAIAudioTranscriber implements AudioTranscriber {
@@ -65,7 +66,7 @@ export class OpenAIAudioTranscriber implements AudioTranscriber {
       model: this.options.model,
       language: this.options.language,
       response_format: 'json',
-      include: ['logprobs'],
+      ...(this.options.includeLogprobs ? { include: ['logprobs'] as ['logprobs'] } : {}),
     });
 
     return {

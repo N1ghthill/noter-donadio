@@ -118,6 +118,20 @@ permissão `600` e é injetada somente nos workers de análise e transcrição.
 O diagnóstico assistivo imprime somente contagens por estado e logs
 sanitizados, nunca mensagem, transcrição, áudio ou chave.
 
+Para selecionar Groq como provedor alternativo explícito, use:
+
+```bash
+sudo /opt/noter-donadio/scripts/configure-groq-vps.sh
+sudo /opt/noter-donadio/scripts/deploy-vps.sh
+sudo /opt/noter-donadio/scripts/status-vps.sh --diagnose-assistive
+```
+
+O configurador valida `openai/gpt-oss-20b` e
+`whisper-large-v3-turbo` somente pelo catálogo autenticado, define um novo corte
+UTC e preserva todo o histórico anterior sem enviá-lo ao Groq. A seleção não é
+fallback automático: somente o provider indicado em `AI_ADAPTER` e
+`TRANSCRIPTION_ADAPTER` recebe novas unidades elegíveis.
+
 Quando o sistema operacional indicar que um novo kernel exige reinicialização,
 execute o deploy com reinicialização condicionada ao health check:
 

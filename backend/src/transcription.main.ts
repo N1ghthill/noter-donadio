@@ -23,24 +23,41 @@ const connection = new Redis(environment.REDIS_URL, { maxRetriesPerRequest: null
 connection.on('error', (error) => {
   logger.error(safeErrorContext(error), 'Falha na conexão Redis do worker de transcrição');
 });
-const processingNotBefore = environment.TRANSCRIPTION_ADAPTER === 'openai'
+const processingNotBefore = environment.TRANSCRIPTION_ADAPTER !== 'fake'
   ? requiredCutoff(environment.ASSISTIVE_PROCESSING_NOT_BEFORE)
   : null;
 const transcriber = environment.TRANSCRIPTION_ADAPTER === 'fake'
   ? new FakeAudioTranscriber()
   : new OpenAIAudioTranscriber(
     new OpenAI({
-      apiKey: requiredSecret(environment.OPENAI_API_KEY),
-      timeout: environment.OPENAI_TIMEOUT_MS,
-      maxRetries: environment.OPENAI_MAX_RETRIES,
+      apiKey: requiredSecret(
+        environment.TRANSCRIPTION_ADAPTER === 'groq'
+          ? environment.GROQ_API_KEY
+          : environment.OPENAI_API_KEY,
+        environment.TRANSCRIPTION_ADAPTER === 'groq' ? 'GROQ_API_KEY' : 'OPENAI_API_KEY',
+      ),
+      ...(environment.TRANSCRIPTION_ADAPTER === 'groq'
+        ? { baseURL: 'https://api.groq.com/openai/v1' }
+        : {}),
+      timeout: environment.TRANSCRIPTION_ADAPTER === 'groq'
+        ? environment.GROQ_TIMEOUT_MS
+        : environment.OPENAI_TIMEOUT_MS,
+      maxRetries: environment.TRANSCRIPTION_ADAPTER === 'groq'
+        ? environment.GROQ_MAX_RETRIES
+        : environment.OPENAI_MAX_RETRIES,
       logLevel: 'error',
     }).audio.transcriptions,
     new LocalMediaStorage(environment.MEDIA_STORAGE_PATH, environment.MEDIA_MAX_BYTES),
     {
-      model: environment.OPENAI_TRANSCRIPTION_MODEL,
+      model: environment.TRANSCRIPTION_ADAPTER === 'groq'
+        ? environment.GROQ_TRANSCRIPTION_MODEL
+        : environment.OPENAI_TRANSCRIPTION_MODEL,
       language: 'pt',
       persistedLanguage: 'pt-BR',
-      maxDurationSeconds: environment.OPENAI_TRANSCRIPTION_MAX_DURATION_SECONDS,
+      maxDurationSeconds: environment.TRANSCRIPTION_ADAPTER === 'groq'
+        ? environment.GROQ_TRANSCRIPTION_MAX_DURATION_SECONDS
+        : environment.OPENAI_TRANSCRIPTION_MAX_DURATION_SECONDS,
+      includeLogprobs: environment.TRANSCRIPTION_ADAPTER === 'openai',
     },
   );
 const service = new AudioTranscriptionService(
@@ -77,8 +94,8 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => { void shutdown(); });
 }
 
-function requiredSecret(value: string | undefined): string {
-  if (!value) throw new Error('OPENAI_API_KEY é obrigatória para o adapter OpenAI');
+function requiredSecret(value: string | undefined, name: 'OPENAI_API_KEY' | 'GROQ_API_KEY'): string {
+  if (!value) throw new Error(`${name} é obrigatória para o adapter externo selecionado`);
   return value;
 }
 

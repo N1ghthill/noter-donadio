@@ -21,7 +21,7 @@ const EXTRACTION = {
 };
 
 test('usa saída estruturada sem armazenar a resposta no provedor', async () => {
-  let request: { store: false; input: string; instructions: string } | undefined;
+  let request: { store?: false; input: string; instructions: string } | undefined;
   const analyzer = new OpenAIMessageAnalyzer(
     {
       async parse(input) {
@@ -33,7 +33,7 @@ test('usa saída estruturada sem armazenar a resposta no provedor', async () => 
         };
       },
     },
-    { model: 'gpt-5.6-sol', maxOutputTokens: 1_000 },
+    { model: 'gpt-5.6-sol', maxOutputTokens: 1_000, sendStoreFalse: true },
   );
 
   const result = await analyzer.analyze({
@@ -53,6 +53,27 @@ test('usa saída estruturada sem armazenar a resposta no provedor', async () => 
     promptTokens: 100,
     completionTokens: 50,
   });
+});
+
+test('omite parâmetro incompatível ao usar um endpoint OpenAI-compatible', async () => {
+  let request: { store?: false } | undefined;
+  const analyzer = new OpenAIMessageAnalyzer(
+    {
+      async parse(input) {
+        request = input;
+        return { output_parsed: EXTRACTION, model: 'openai/gpt-oss-20b' };
+      },
+    },
+    { model: 'openai/gpt-oss-20b', maxOutputTokens: 1_000 },
+  );
+
+  await analyzer.analyze({
+    text: 'Quero conhecer o serviço fictício.',
+    direction: 'inbound',
+    promptVersion: 'message-extraction-v1',
+  });
+
+  assert.equal(request?.store, undefined);
 });
 
 test('isola tentativa sintética de injeção como conteúdo não confiável', async () => {

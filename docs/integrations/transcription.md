@@ -8,6 +8,12 @@ explicitamente habilitado pelo profile `assistive`, lê o arquivo do volume
 privado e usa a API de transcrição por arquivo. A configuração padrão usa
 `gpt-4o-mini-transcribe`, idioma `pt` e persiste a localidade `pt-BR`.
 
+O adapter `groq` usa o endpoint compatível de áudio do Groq com
+`whisper-large-v3-turbo` por padrão. Ele omite `include=logprobs`, que não é
+aceito pelo provedor, e persiste confiança nula quando essa métrica não estiver
+disponível. A seleção é explícita por `TRANSCRIPTION_ADAPTER`; não há fallback
+silencioso entre provedores.
+
 ```text
 mensagem de áudio + referência de mídia pending + outbox
   → fila media-download
@@ -54,6 +60,8 @@ Falhas persistem somente o código sanitizado `TRANSCRIPTION_PROCESSING_FAILED` 
 - quando `TRANSCRIPTION_ADAPTER=openai`,
   `ASSISTIVE_PROCESSING_NOT_BEFORE` é obrigatório e mensagens anteriores ao
   corte nunca chamam o provedor;
+- quando `TRANSCRIPTION_ADAPTER=groq`, a mesma regra de corte é obrigatória e a
+  chave `GROQ_API_KEY` permanece somente no ambiente do worker;
 - não existe diretório `auth_info_baileys` nem objeto integral da mensagem em
   Redis.
 

@@ -6,6 +6,11 @@ API com Structured Outputs e fica disponível somente no profile explícito
 `assistive`. O modelo padrão é `gpt-5.6-sol` e pode ser trocado por
 configuração.
 
+O adapter `groq` usa o endpoint OpenAI-compatible do Groq com Structured
+Outputs estrito. Como esse endpoint não aceita o parâmetro `store`, ele é
+omitido; o Groq informa `store: false` na resposta. Não existe fallback
+automático: `AI_ADAPTER` escolhe explicitamente um único destinatário.
+
 ## Fluxo
 
 1. Texto persistido produz `message.text.ingested`.
@@ -21,9 +26,13 @@ O worker é iniciado separadamente:
 npm run start:analysis -w @noter/backend
 ```
 
-Defina `AI_ADAPTER=fake` no desenvolvimento. Na VPS, `AI_ADAPTER=openai`
-também exige chave, capacidade de produto habilitada e
+Defina `AI_ADAPTER=fake` no desenvolvimento. Na VPS, `AI_ADAPTER=openai` ou
+`AI_ADAPTER=groq` também exige chave, capacidade de produto habilitada e
 `ASSISTIVE_PROCESSING_NOT_BEFORE`.
+
+Para Groq, use `GROQ_API_KEY`, `GROQ_ANALYSIS_MODEL` e os limites `GROQ_*`.
+O modelo padrão é `openai/gpt-oss-20b`, que suporta schema estrito. A janela
+temporal obrigatória impede que a troca de provedor processe backlog.
 
 ## Contrato e segurança
 
@@ -32,7 +41,8 @@ A versão atual do prompt é `message-extraction-v1`. Cada análise é única po
 A saída aceita apenas resumo, entidades (`product`, `amount`, `deadline`), sentimento, objeções, próximas ações, tags e etapa sugerida, além dos metadados do modelo. Campos extras, valores fora das enumerações e escores inválidos fazem o processamento falhar com um código sanitizado.
 
 O adapter envia apenas a mensagem corrente, delimita conteúdo não confiável no
-prompt, usa `store: false` e valida o Structured Output com Zod. A validação de
+prompt, desabilita armazenamento quando o protocolo do provedor oferece essa
+opção e valida o Structured Output com Zod. A validação de
 domínio independente continua sendo executada antes da persistência. Mensagens
 anteriores ao corte autorizado são concluídas na fila como ignoradas, sem
 chamada externa e sem criar análise.

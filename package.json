@@ -18,7 +18,7 @@
     "audit:production": "node scripts/audit-production.mjs",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "npm run typecheck -w @noter/contracts && npm run typecheck -w @noter/backend && npm run typecheck -w @noter/frontend",
-    "test:scripts": "bash scripts/tests/openai-access.test.sh",
+    "test:scripts": "bash scripts/tests/openai-access.test.sh && bash scripts/tests/groq-access.test.sh",
     "test": "npm run test:scripts && npm run test -w @noter/contracts && npm run test -w @noter/backend && npm run test -w @noter/frontend"
   },
   "devDependencies": {

@@ -40,13 +40,14 @@ interface OpenAIResponsesClient {
     input: string;
     text: { format: ReturnType<typeof zodTextFormat> };
     max_output_tokens: number;
-    store: false;
+    store?: false;
   }): Promise<OpenAIParsedResponse>;
 }
 
 export interface OpenAIMessageAnalyzerOptions {
   readonly model: string;
   readonly maxOutputTokens: number;
+  readonly sendStoreFalse?: boolean;
 }
 
 export class OpenAIMessageAnalyzer implements MessageAnalyzer {
@@ -76,7 +77,7 @@ export class OpenAIMessageAnalyzer implements MessageAnalyzer {
       ].join('\n'),
       text: { format: zodTextFormat(extractionSchema, 'message_extraction') },
       max_output_tokens: this.options.maxOutputTokens,
-      store: false,
+      ...(this.options.sendStoreFalse ? { store: false as const } : {}),
     });
     if (response.output_parsed === null) throw new MissingStructuredOutputError();
 

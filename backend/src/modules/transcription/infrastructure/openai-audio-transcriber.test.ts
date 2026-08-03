@@ -42,6 +42,7 @@ test('envia somente o arquivo necessário e normaliza metadados da transcrição
       language: 'pt',
       persistedLanguage: 'pt-BR',
       maxDurationSeconds: 300,
+      includeLogprobs: true,
     },
   );
 
@@ -53,6 +54,30 @@ test('envia somente o arquivo necessário e normaliza metadados da transcrição
   assert.equal(received?.language, 'pt');
   assert.equal(result.text, 'Transcrição fictícia.');
   assert.equal(result.confidence, 0.8);
+});
+
+test('omite logprobs para endpoint de transcrição OpenAI-compatible', async () => {
+  let received: { include?: ['logprobs'] } | undefined;
+  const transcriber = new OpenAIAudioTranscriber(
+    {
+      async create(input) {
+        received = input;
+        return { text: 'Transcrição alternativa fictícia.' };
+      },
+    },
+    storage,
+    {
+      model: 'whisper-large-v3-turbo',
+      language: 'pt',
+      persistedLanguage: 'pt-BR',
+      maxDurationSeconds: 300,
+    },
+  );
+
+  const result = await transcriber.transcribe(TARGET);
+
+  assert.equal(received?.include, undefined);
+  assert.equal(result.confidence, null);
 });
 
 test('recusa duração e formato fora da política antes de chamar o provedor', async () => {

@@ -62,6 +62,15 @@ test('habilita somente adapters implementados', () => {
     TRANSCRIPTION_ADAPTER: 'openai',
     AI_ADAPTER: 'openai',
   }).AI_ADAPTER, 'openai');
+  const groq = readEnvironment({
+    ...required,
+    TRANSCRIPTION_ADAPTER: 'groq',
+    AI_ADAPTER: 'groq',
+  });
+  assert.equal(groq.TRANSCRIPTION_ADAPTER, 'groq');
+  assert.equal(groq.AI_ADAPTER, 'groq');
+  assert.equal(groq.GROQ_TRANSCRIPTION_MODEL, 'whisper-large-v3-turbo');
+  assert.equal(groq.GROQ_ANALYSIS_MODEL, 'openai/gpt-oss-20b');
 });
 
 test('capacidades assistivas exigem ativação explícita', () => {

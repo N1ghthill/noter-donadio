@@ -22,21 +22,30 @@ const connection = new Redis(environment.REDIS_URL, { maxRetriesPerRequest: null
 connection.on('error', (error) => {
   logger.error(safeErrorContext(error), 'Falha na conexão Redis do worker de análise');
 });
-const processingNotBefore = environment.AI_ADAPTER === 'openai'
+const processingNotBefore = environment.AI_ADAPTER !== 'fake'
   ? requiredCutoff(environment.ASSISTIVE_PROCESSING_NOT_BEFORE)
   : null;
 const analyzer = environment.AI_ADAPTER === 'fake'
   ? new FakeMessageAnalyzer()
   : new OpenAIMessageAnalyzer(
     new OpenAI({
-      apiKey: requiredSecret(environment.OPENAI_API_KEY),
-      timeout: environment.OPENAI_TIMEOUT_MS,
-      maxRetries: environment.OPENAI_MAX_RETRIES,
+      apiKey: requiredSecret(
+        environment.AI_ADAPTER === 'groq' ? environment.GROQ_API_KEY : environment.OPENAI_API_KEY,
+        environment.AI_ADAPTER === 'groq' ? 'GROQ_API_KEY' : 'OPENAI_API_KEY',
+      ),
+      ...(environment.AI_ADAPTER === 'groq' ? { baseURL: 'https://api.groq.com/openai/v1' } : {}),
+      timeout: environment.AI_ADAPTER === 'groq' ? environment.GROQ_TIMEOUT_MS : environment.OPENAI_TIMEOUT_MS,
+      maxRetries: environment.AI_ADAPTER === 'groq' ? environment.GROQ_MAX_RETRIES : environment.OPENAI_MAX_RETRIES,
       logLevel: 'error',
     }).responses,
     {
-      model: environment.OPENAI_ANALYSIS_MODEL,
-      maxOutputTokens: environment.OPENAI_ANALYSIS_MAX_OUTPUT_TOKENS,
+      model: environment.AI_ADAPTER === 'groq'
+        ? environment.GROQ_ANALYSIS_MODEL
+        : environment.OPENAI_ANALYSIS_MODEL,
+      maxOutputTokens: environment.AI_ADAPTER === 'groq'
+        ? environment.GROQ_ANALYSIS_MAX_OUTPUT_TOKENS
+        : environment.OPENAI_ANALYSIS_MAX_OUTPUT_TOKENS,
+      sendStoreFalse: environment.AI_ADAPTER === 'openai',
     },
   );
 const service = new MessageAnalysisService(
@@ -73,8 +82,8 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => { void shutdown(); });
 }
 
-function requiredSecret(value: string | undefined): string {
-  if (!value) throw new Error('OPENAI_API_KEY é obrigatória para o adapter OpenAI');
+function requiredSecret(value: string | undefined, name: 'OPENAI_API_KEY' | 'GROQ_API_KEY'): string {
+  if (!value) throw new Error(`${name} é obrigatória para o adapter externo selecionado`);
   return value;
 }
 
