@@ -5,6 +5,12 @@ project_directory="${PROJECT_DIRECTORY:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.."
 compose_file="${COMPOSE_FILE:-compose.vps-demo.yaml}"
 cd "${project_directory}"
 
+exec 9>"${project_directory}/.reprocess-failed-audio.lock"
+if ! flock --nonblock 9; then
+  printf '%s\n' "Já existe um reprocessamento de áudio em execução." >&2
+  exit 1
+fi
+
 if test "${CONFIRM_REPROCESS_FAILED_AUDIO:-0}" != "1"; then
   printf '%s\n' "Defina CONFIRM_REPROCESS_FAILED_AUDIO=1 para autorizar o envio dos áudios antigos ao provedor." >&2
   exit 1
@@ -46,7 +52,7 @@ target_summary="$(psql_query --field-separator='|' --command="
   FROM media_assets
   INNER JOIN messages ON messages.id = media_assets.message_id
   WHERE messages.message_type = 'audio'
-    AND media_assets.transcription_state = 'failed'
+    AND media_assets.transcription_state IN ('pending', 'failed')
     AND media_assets.download_state = 'completed'
     AND media_assets.storage_key IS NOT NULL
     AND messages.negotiation_id IS NOT NULL;
@@ -67,7 +73,7 @@ auditable_count="$(psql_query --command="
   FROM media_assets
   INNER JOIN messages ON messages.id = media_assets.message_id
   WHERE messages.message_type = 'audio'
-    AND media_assets.transcription_state = 'failed'
+    AND media_assets.transcription_state IN ('pending', 'failed')
     AND media_assets.download_state = 'completed'
     AND media_assets.storage_key IS NOT NULL
     AND messages.negotiation_id IS NOT NULL
@@ -107,11 +113,13 @@ restore_cutoff() {
   if test "${restored}" = "1"; then return; fi
   restored=1
   set_env_value ASSISTIVE_PROCESSING_NOT_BEFORE "${original_cutoff}"
+  export ASSISTIVE_PROCESSING_NOT_BEFORE="${original_cutoff}"
   docker compose -f "${compose_file}" up -d --force-recreate backend analysis transcription >/dev/null
 }
 trap restore_cutoff EXIT
 
 set_env_value ASSISTIVE_PROCESSING_NOT_BEFORE "${temporary_cutoff}"
+export ASSISTIVE_PROCESSING_NOT_BEFORE="${temporary_cutoff}"
 docker compose -f "${compose_file}" up -d --force-recreate backend analysis transcription >/dev/null
 
 queued_count="$(psql_query --command="
@@ -131,7 +139,7 @@ queued_count="$(psql_query --command="
     FROM media_assets
     INNER JOIN messages ON messages.id = media_assets.message_id
     WHERE messages.message_type = 'audio'
-      AND media_assets.transcription_state = 'failed'
+      AND media_assets.transcription_state IN ('pending', 'failed')
       AND media_assets.download_state = 'completed'
       AND media_assets.storage_key IS NOT NULL
       AND messages.negotiation_id IS NOT NULL
