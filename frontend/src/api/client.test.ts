@@ -315,16 +315,16 @@ describe('cliente HTTP', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     await api.conversations({
-      startedFrom: '2026-07-29T00:00:00.000Z',
-      startedTo: '2026-07-30T00:00:00.000Z',
+      activityFrom: '2026-07-29T00:00:00.000Z',
+      activityTo: '2026-07-30T00:00:00.000Z',
       stage: 'lead',
       aiStage: 'qualified',
       search: 'Ana & Cia',
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/conversations?startedFrom=2026-07-29T00%3A00%3A00.000Z'
-        + '&startedTo=2026-07-30T00%3A00%3A00.000Z&stage=lead&aiStage=qualified'
+      '/api/conversations?activityFrom=2026-07-29T00%3A00%3A00.000Z'
+        + '&activityTo=2026-07-30T00%3A00%3A00.000Z&stage=lead&aiStage=qualified'
         + '&search=Ana+%26+Cia',
       expect.objectContaining({ credentials: 'include' }),
     );

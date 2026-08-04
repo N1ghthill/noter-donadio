@@ -597,9 +597,11 @@ paralela de tarefas no MVP: a tarefa ativa é `nextAction` e seu prazo pertence
 à negociação; a conclusão continua produzindo o histórico imutável já
 existente.
 
-Uma conversa é considerada iniciada no instante da primeira mensagem
-persistida da negociação. O navegador converte os limites do dia local para
-UTC, e o PostgreSQL aplica o intervalo semiaberto `[início, fim)`. A
+Uma conversa mantém como início a primeira mensagem persistida do histórico da
+pessoa. Os filtros de período consideram atividade: basta existir uma mensagem
+recebida ou enviada dentro do intervalo selecionado, ainda que a conversa tenha
+começado antes. O navegador converte os limites do dia local para UTC, e o
+PostgreSQL aplica o intervalo semiaberto `[início, fim)`. A
 classificação exibida é a sugestão de etapa da análise concluída mais recente.
 Ela permanece identificada como sugestão e nunca altera `stage` sem aceite
 explícito. O resumo também vem dessa análise; na ausência dela, a interface

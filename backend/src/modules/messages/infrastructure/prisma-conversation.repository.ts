@@ -15,11 +15,23 @@ export class PrismaConversationRepository implements ConversationRepository {
     filters: ConversationListFilters,
   ): Promise<ConversationSummaryView[]> {
     const conditions: Prisma.Sql[] = [Prisma.sql`ranked.row_number = 1`];
-    if (filters.startedFrom) {
-      conditions.push(Prisma.sql`ranked.first_message_at >= ${filters.startedFrom}`);
-    }
-    if (filters.startedTo) {
-      conditions.push(Prisma.sql`ranked.first_message_at < ${filters.startedTo}`);
+    if (filters.activityFrom || filters.activityTo) {
+      conditions.push(Prisma.sql`EXISTS (
+        SELECT 1
+        FROM messages AS activity_message
+        INNER JOIN contacts AS activity_contact
+          ON activity_contact.workspace_id = activity_message.workspace_id
+          AND activity_contact.id = activity_message.contact_id
+        WHERE activity_message.workspace_id = ${workspaceId}::uuid
+          AND activity_message.negotiation_id IS NOT NULL
+          AND activity_contact.phone_number = ranked.phone_number
+          ${filters.activityFrom
+            ? Prisma.sql`AND activity_message.occurred_at >= ${filters.activityFrom}`
+            : Prisma.empty}
+          ${filters.activityTo
+            ? Prisma.sql`AND activity_message.occurred_at < ${filters.activityTo}`
+            : Prisma.empty}
+      )`);
     }
     if (filters.stage) conditions.push(Prisma.sql`ranked.stage = ${filters.stage}::"NegotiationStage"`);
     if (filters.aiStage) {

@@ -289,8 +289,8 @@ export const api = {
   },
 
   async conversations(filters?: {
-    startedFrom?: string;
-    startedTo?: string;
+    activityFrom?: string;
+    activityTo?: string;
     stage?: NegotiationStage;
     aiStage?: NegotiationStage;
     contactId?: string;
@@ -299,8 +299,8 @@ export const api = {
     offset?: number;
   }) {
     const params = new URLSearchParams();
-    if (filters?.startedFrom) params.set('startedFrom', filters.startedFrom);
-    if (filters?.startedTo) params.set('startedTo', filters.startedTo);
+    if (filters?.activityFrom) params.set('activityFrom', filters.activityFrom);
+    if (filters?.activityTo) params.set('activityTo', filters.activityTo);
     if (filters?.stage) params.set('stage', filters.stage);
     if (filters?.aiStage) params.set('aiStage', filters.aiStage);
     if (filters?.contactId) params.set('contactId', filters.contactId);

@@ -47,7 +47,7 @@ test('lista conversas somente do workspace autenticado', async (context) => {
   const response = await app.inject({
     method: 'GET',
     url: '/api/conversations?limit=25&stage=qualified&aiStage=proposal_sent'
-      + '&startedFrom=2026-07-29T00%3A00%3A00.000Z&startedTo=2026-07-30T00%3A00%3A00.000Z'
+      + '&activityFrom=2026-07-29T00%3A00%3A00.000Z&activityTo=2026-07-30T00%3A00%3A00.000Z'
       + '&search=Contato&contactId=3a3db76b-c51a-4584-ab4b-6d3e70952e44',
     headers: { cookie: SESSION_COOKIE },
   });
@@ -59,15 +59,15 @@ test('lista conversas somente do workspace autenticado', async (context) => {
     stage: 'qualified',
     aiStage: 'proposal_sent',
     contactId: '3a3db76b-c51a-4584-ab4b-6d3e70952e44',
-    startedFrom: new Date('2026-07-29T00:00:00.000Z'),
-    startedTo: new Date('2026-07-30T00:00:00.000Z'),
+    activityFrom: new Date('2026-07-29T00:00:00.000Z'),
+    activityTo: new Date('2026-07-30T00:00:00.000Z'),
     search: 'Contato',
   });
 
   const invalid = await app.inject({
     method: 'GET',
-    url: '/api/conversations?startedFrom=2026-07-30T00%3A00%3A00.000Z'
-      + '&startedTo=2026-07-29T00%3A00%3A00.000Z',
+    url: '/api/conversations?activityFrom=2026-07-30T00%3A00%3A00.000Z'
+      + '&activityTo=2026-07-29T00%3A00%3A00.000Z',
     headers: { cookie: SESSION_COOKIE },
   });
   assert.equal(invalid.statusCode, 400);

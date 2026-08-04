@@ -214,7 +214,7 @@ export function ConversationsPage() {
       </aside> : null}
 
       <section className="panel filter-panel conversation-filters">
-        <label>Início da conversa
+        <label>Atividade da conversa
           <select value={period} onChange={(event) => setPeriod(event.target.value as ConversationPeriod)}>
             <option value="today">Hoje</option>
             <option value="7d">Últimos 7 dias</option>
@@ -241,7 +241,7 @@ export function ConversationsPage() {
       </section>
 
       <section className="panel notion-panel">
-        <div className="panel-heading"><div><p className="eyebrow">Base de conversas</p><h2>Conversas iniciadas</h2></div><span>{conversations.length} conversa(s)</span></div>
+        <div className="panel-heading"><div><p className="eyebrow">Base de conversas</p><h2>Conversas com atividade</h2></div><span>{conversations.length} conversa(s)</span></div>
         {conversations.length === 0 ? <p className="muted">Nenhuma conversa corresponde aos filtros.</p> : (
           <div className="notion-table conversations-table">
             <div className="notion-row notion-header"><span>Contato</span><span>Iniciada</span><span>Última atividade</span><span>Mensagens</span><span>Etapa atual</span><span>Classificação IA</span><span>Resumo do que aconteceu</span></div>
@@ -401,8 +401,8 @@ function stageFrom(value: string | null): NegotiationStage | '' {
 }
 
 function conversationRange(period: ConversationPeriod): {
-  startedFrom?: string;
-  startedTo?: string;
+  activityFrom?: string;
+  activityTo?: string;
 } {
   if (period === 'all') return {};
   const to = new Date();
@@ -411,9 +411,9 @@ function conversationRange(period: ConversationPeriod): {
     from.setHours(0, 0, 0, 0);
     const tomorrow = new Date(from);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    return { startedFrom: from.toISOString(), startedTo: tomorrow.toISOString() };
+    return { activityFrom: from.toISOString(), activityTo: tomorrow.toISOString() };
   }
   const from = new Date(to);
   from.setDate(from.getDate() - (period === '7d' ? 7 : 30));
-  return { startedFrom: from.toISOString(), startedTo: to.toISOString() };
+  return { activityFrom: from.toISOString(), activityTo: to.toISOString() };
 }

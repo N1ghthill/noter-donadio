@@ -29,21 +29,21 @@ export function registerConversationRoutes(
     const query = z.object({
       limit: z.coerce.number().int().min(1).max(100).default(50),
       offset: z.coerce.number().int().min(0).max(100_000).default(0),
-      startedFrom: z.iso.datetime({ offset: true }).optional(),
-      startedTo: z.iso.datetime({ offset: true }).optional(),
+      activityFrom: z.iso.datetime({ offset: true }).optional(),
+      activityTo: z.iso.datetime({ offset: true }).optional(),
       stage: stageSchema.optional(),
       aiStage: stageSchema.optional(),
       contactId: z.uuid().optional(),
       search: z.string().trim().min(1).max(255).optional(),
     }).strict().refine((value) => (
-      !value.startedFrom || !value.startedTo || value.startedFrom < value.startedTo
+      !value.activityFrom || !value.activityTo || value.activityFrom < value.activityTo
     )).safeParse(request.query);
     if (!query.success) return reply.code(400).send({ error: 'invalid_request' });
     const conversations = await options.repository.list(workspaceId, {
         limit: query.data.limit + 1,
         offset: query.data.offset,
-        ...(query.data.startedFrom ? { startedFrom: new Date(query.data.startedFrom) } : {}),
-        ...(query.data.startedTo ? { startedTo: new Date(query.data.startedTo) } : {}),
+        ...(query.data.activityFrom ? { activityFrom: new Date(query.data.activityFrom) } : {}),
+        ...(query.data.activityTo ? { activityTo: new Date(query.data.activityTo) } : {}),
         ...(query.data.stage ? { stage: query.data.stage } : {}),
         ...(query.data.aiStage ? { aiStage: query.data.aiStage } : {}),
         ...(query.data.contactId ? { contactId: query.data.contactId } : {}),

@@ -21,7 +21,7 @@ export function HomePage() {
     try {
       const [dashboardData, conversationData] = await Promise.all([
         api.dashboard(),
-        api.conversations({ startedFrom: range.from, startedTo: range.to }),
+        api.conversations({ activityFrom: range.from, activityTo: range.to }),
       ]);
       setDashboard(dashboardData);
       setConversations(conversationData.data);
@@ -48,7 +48,7 @@ export function HomePage() {
       </header>
 
       <section className="home-priorities" aria-label="Prioridades de hoje">
-        <Link to="/conversas?period=today"><span>Conversas iniciadas hoje</span><strong>{conversations.length}</strong><small>Abrir tabela e filtros</small></Link>
+        <Link to="/conversas?period=today"><span>Conversas com atividade hoje</span><strong>{conversations.length}</strong><small>Abrir tabela e filtros</small></Link>
         <Link to="/agenda?followUp=today"><span>Tarefas para hoje</span><strong>{dashboard.todayFollowUpsCount}</strong><small>Ver agenda de follow-ups</small></Link>
         <Link to="/agenda?followUp=overdue" className={dashboard.overdueFollowUpsCount ? 'warning' : ''}><span>Tarefas vencidas</span><strong>{dashboard.overdueFollowUpsCount}</strong><small>Priorizar pendências</small></Link>
         <Link to="/controle"><span>Negociações ativas</span><strong>{dashboard.activeNegotiationsCount}</strong><small>Abrir tela de controle</small></Link>
@@ -69,7 +69,7 @@ export function HomePage() {
 
       <section className="panel">
         <div className="panel-heading"><div><p className="eyebrow">Hoje</p><h2>Conversas recentes</h2></div><Link className="card-link" to="/conversas?period=today">Ver todas</Link></div>
-        {conversations.length === 0 ? <p className="muted">Nenhuma conversa foi iniciada hoje.</p> : (
+        {conversations.length === 0 ? <p className="muted">Nenhuma conversa teve atividade hoje.</p> : (
           <div className="compact-table">
             {conversations.slice(0, 5).map((conversation) => (
               <Link key={conversation.negotiationId} to={`/conversas?selected=${conversation.negotiationId}`}>

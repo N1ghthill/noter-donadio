@@ -5,7 +5,7 @@ import test from 'node:test';
 import { createPrismaClient } from '../../../config/database.js';
 import { PrismaConversationRepository } from './prisma-conversation.repository.js';
 
-test('lista conversas por início e expõe classificação mais recente sem aplicar a sugestão', async (context) => {
+test('lista conversas por atividade e preserva o início histórico sem aplicar sugestão', async (context) => {
   const databaseUrl = process.env.DATABASE_URL;
   assert.ok(databaseUrl, 'DATABASE_URL é obrigatória para o teste de integração');
   const prisma = createPrismaClient(databaseUrl);
@@ -76,7 +76,7 @@ test('lista conversas por início e expõe classificação mais recente sem apli
         direction: 'inbound',
         messageType: 'text',
         content: 'Primeira mensagem sintética.',
-        occurredAt: new Date('2026-07-29T10:00:00.000Z'),
+        occurredAt: new Date('2026-07-28T10:00:00.000Z'),
       },
       {
         id: lastMessageId,
@@ -129,8 +129,8 @@ test('lista conversas por início e expõe classificação mais recente sem apli
   const result = await new PrismaConversationRepository(prisma).list(workspaceId, {
     limit: 20,
     offset: 0,
-    startedFrom: new Date('2026-07-29T00:00:00.000Z'),
-    startedTo: new Date('2026-07-30T00:00:00.000Z'),
+    activityFrom: new Date('2026-07-29T00:00:00.000Z'),
+    activityTo: new Date('2026-07-30T00:00:00.000Z'),
     stage: 'lead',
     aiStage: 'qualified',
     contactId,
@@ -139,7 +139,7 @@ test('lista conversas por início e expõe classificação mais recente sem apli
 
   assert.equal(result.length, 1);
   assert.equal(result[0]?.messageCount, 3);
-  assert.equal(result[0]?.firstMessageAt, '2026-07-29T10:00:00.000Z');
+  assert.equal(result[0]?.firstMessageAt, '2026-07-28T10:00:00.000Z');
   assert.equal(result[0]?.lastMessage.id, lastMessageId);
   assert.equal(result[0]?.latestAnalysis?.summary, 'Contato solicitou proposta.');
   assert.equal(result[0]?.latestAnalysis?.suggestedStage, 'qualified');
@@ -147,4 +147,12 @@ test('lista conversas por início e expõe classificação mais recente sem apli
   assert.equal(result[0]?.latestAnalysis?.needsHumanReview, false);
   const persisted = await prisma.negotiation.findUniqueOrThrow({ where: { id: negotiationId } });
   assert.equal(persisted.stage, 'lead');
+
+  const withoutActivity = await new PrismaConversationRepository(prisma).list(workspaceId, {
+    limit: 20,
+    offset: 0,
+    activityFrom: new Date('2026-07-30T00:00:00.000Z'),
+    activityTo: new Date('2026-07-31T00:00:00.000Z'),
+  });
+  assert.deepEqual(withoutActivity, []);
 });

@@ -36,7 +36,7 @@ Nenhum token, telefone ou conteúdo deve aparecer em logs ou exemplos versionado
 - `PATCH /api/negotiations/:id/stage`: mudança manual com `expectedVersion`; etapas finais exigem `closeReason`;
 - `POST /api/negotiations/:id/next-action/complete`: arquiva a próxima ação e limpa o acompanhamento atual com controle de versão;
 - `POST /api/negotiations/:id/analyses/:analysisId/decision`: aceita uma seleção editável de etapa, tags, valor, produto, previsões e próxima ação ou ignora a sugestão, com UUID idempotente e `expectedVersion`;
-- `GET /api/conversations`: lista conversas paginadas, usando a mensagem mais recente de cada negociação; aceita `startedFrom`, `startedTo`, `stage`, `aiStage`, `search`, `limit` e `offset`;
+- `GET /api/conversations`: lista conversas paginadas, usando a mensagem mais recente de cada pessoa; aceita `activityFrom`, `activityTo`, `stage`, `aiStage`, `search`, `limit` e `offset`;
 - `GET /api/files`: lista mídias privadas acessíveis; aceita `contactId`,
   `search`, `fileType`, `direction`, `occurredFrom`, `occurredTo`, `limit` e `offset`, sem
   expor a chave física de armazenamento;
@@ -83,9 +83,10 @@ negociações criados, valor ganho e ticket médio ganho dentro do período. A t
 de ganho considera somente negociações fechadas dentro do período escolhido;
 sem fechamentos, a taxa e o ticket médio retornam `null`.
 
-Os filtros `startedFrom` e `startedTo` usam ISO 8601 UTC e formam um intervalo
-semiaberto. O início da conversa é a primeira mensagem persistida da
-negociação. `aiStage` e os campos assistivos retornados usam somente a análise
+Os filtros `activityFrom` e `activityTo` usam ISO 8601 UTC e formam um intervalo
+semiaberto. A conversa é incluída quando possui ao menos uma mensagem recebida
+ou enviada no período, enquanto `firstMessageAt` preserva o início histórico.
+`aiStage` e os campos assistivos retornados usam somente a análise
 concluída mais recente e não aplicam a sugestão ao estágio confirmado.
 
 O catálogo de arquivos retorna metadados de mídias não removidas e ainda dentro

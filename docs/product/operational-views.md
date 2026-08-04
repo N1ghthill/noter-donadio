@@ -36,7 +36,7 @@ ser impresso e reiniciado mediante confirmação.
 
 A rota `/conversas` oferece uma tabela operacional clicável, com filtros de:
 
-- período de início: hoje, 7 dias, 30 dias ou todo o histórico;
+- período de atividade: hoje, 7 dias, 30 dias ou todo o histórico;
 - etapa atual confirmada;
 - classificação sugerida pela IA;
 - contato ou título da negociação.
@@ -44,8 +44,9 @@ A rota `/conversas` oferece uma tabela operacional clicável, com filtros de:
 Cada linha representa uma pessoa pelo telefone normalizado, mesmo quando o
 Baileys já registrou JID telefônico e LID distintos ou existem várias
 negociações para o contato. “Iniciada” significa a primeira mensagem persistida
-desse histórico conversacional. O intervalo de hoje respeita o dia local do
-navegador e é enviado à API como limites UTC. Ao selecionar uma linha, todas as
+desse histórico conversacional, mas o filtro considera qualquer mensagem dentro
+do período selecionado. O intervalo de hoje respeita o dia local do navegador e
+é enviado à API como limites UTC. Ao selecionar uma linha, todas as
 mensagens e mídias da pessoa são reconciliadas pela API REST; o atalho comercial
 continua apontando para a negociação da atividade mais recente.
 Os filtros e a conversa selecionada permanecem na URL, permitindo voltar ao
