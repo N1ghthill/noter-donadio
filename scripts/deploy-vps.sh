@@ -75,18 +75,34 @@ compose_file="${COMPOSE_FILE:-compose.vps-demo.yaml}"
 
 cd "${project_directory}"
 
+load_env_file() {
+  local line key value
+  while IFS= read -r line || test -n "${line}"; do
+    line="${line%$'\r'}"
+    if test -z "${line}" || [[ "${line}" =~ ^[[:space:]]*# ]]; then
+      continue
+    fi
+    if [[ "${line}" != *=* ]]; then
+      printf '%s\n' 'Linha inválida encontrada no .env.' >&2
+      exit 1
+    fi
+    key="${line%%=*}"
+    value="${line#*=}"
+    if [[ ! "${key}" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+      printf '%s\n' 'Chave inválida encontrada no .env.' >&2
+      exit 1
+    fi
+    if [[ "${value}" == "'"*"'" && "${#value}" -ge 2 ]]; then
+      value="${value:1:${#value}-2}"
+    elif [[ "${value}" == '"'*'"' && "${#value}" -ge 2 ]]; then
+      value="${value:1:${#value}-2}"
+    fi
+    export "${key}=${value}"
+  done < .env
+}
+
 if test -f .env; then
-  set -a
-  if test "${finalize_workspace}" = "1"; then
-    # Permite reparar uma identidade antiga gravada sem aspas, sem ignorar os
-    # demais valores protegidos do ambiente.
-    # shellcheck disable=SC1090
-    source <(sed '/^ADMIN_WORKSPACE_NAME=/d; /^ADMIN_DISPLAY_NAME=/d' .env)
-  else
-    # shellcheck disable=SC1091
-    source .env
-  fi
-  set +a
+  load_env_file
 fi
 
 health_url="${HEALTH_URL:-${PUBLIC_ORIGIN:-http://127.0.0.1/}}"
@@ -166,10 +182,7 @@ if test "${enable_notifications}" = "1"; then
   set_env_value NOTIFICATION_NOT_BEFORE "${notification_not_before}"
   set_env_value COMPOSE_PROFILES "$(add_compose_profile notifications)"
   unset bark_webhook_url notification_not_before
-  set -a
-  # shellcheck disable=SC1091
-  source .env
-  set +a
+  load_env_file
 fi
 
 if test "${enable_baileys}" = "1"; then
@@ -193,10 +206,7 @@ if test "${enable_baileys}" = "1"; then
   set_env_value BAILEYS_ACCOUNT_ID "${baileys_account_id}"
   set_env_value BAILEYS_ENCRYPTION_KEY "${baileys_encryption_key}"
   set_env_value BAILEYS_ENCRYPTION_KEY_VERSION "${BAILEYS_ENCRYPTION_KEY_VERSION:-1}"
-  set -a
-  # shellcheck disable=SC1091
-  source .env
-  set +a
+  load_env_file
 fi
 
 git rev-parse --is-inside-work-tree >/dev/null
