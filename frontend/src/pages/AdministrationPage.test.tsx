@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { AdministrationPage } from './AdministrationPage.js';
@@ -32,11 +33,13 @@ describe('administração', () => {
     vi.stubGlobal('fetch', fetchMock);
     vi.stubGlobal('confirm', vi.fn().mockReturnValue(true));
 
-    render(<AdministrationPage />);
+    renderAdministration();
     expect(await screen.findByText('Outra sessão')).toBeInTheDocument();
-    expect(screen.getByText('WhatsApp conectado')).toBeInTheDocument();
-    expect(screen.getByText('Notificações ativadas')).toBeInTheDocument();
-    expect(screen.getByText('Respostas automáticas desativadas')).toBeInTheDocument();
+    expect(screen.getByText('Tudo funcionando')).toBeInTheDocument();
+    expect(screen.getByText('Conectado e pronto para receber mensagens.')).toBeInTheDocument();
+    expect(screen.getByText('Transcrição e análise estão ativas.')).toBeInTheDocument();
+    expect(screen.getByText('Alertas ativos e sem falhas.')).toBeInTheDocument();
+    expect(screen.getByText(/Respostas automáticas continuam desativadas/)).toBeInTheDocument();
     expect(screen.getByText('Workspace exportado')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Encerrar sessão' }));
 
@@ -63,7 +66,7 @@ describe('administração', () => {
     vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
 
-    render(<AdministrationPage />);
+    renderAdministration();
     fireEvent.click(await screen.findByRole('button', { name: 'Exportar dados do workspace' }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
@@ -99,7 +102,7 @@ describe('administração', () => {
     const confirm = vi.fn().mockReturnValue(true);
     vi.stubGlobal('confirm', confirm);
 
-    render(<AdministrationPage />);
+    renderAdministration();
     fireEvent.click(await screen.findByRole('button', { name: 'Tentar novamente' }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
@@ -110,7 +113,16 @@ describe('administração', () => {
   });
 });
 
+function renderAdministration() {
+  return render(<MemoryRouter><AdministrationPage /></MemoryRouter>);
+}
+
 function operationalResponse(path: string): Response | undefined {
+  if (path === '/api/capabilities') return new Response(JSON.stringify({
+    demoSimulationEnabled: false,
+    audioTranscriptionEnabled: true,
+    messageAnalysisEnabled: true,
+  }), { status: 200 });
   if (path === '/api/notifications/status') return new Response(JSON.stringify({
     enabled: true,
     channel: 'bark',

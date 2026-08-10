@@ -52,7 +52,7 @@ describe('configuração simulada do WhatsApp', () => {
     expect(screen.queryByRole('button', { name: /configuração|QR/i })).not.toBeInTheDocument();
   });
 
-  it('prepara troca de número sem apagar dados do CRM e somente após confirmação', async () => {
+  it('orienta a recuperação sem apagar dados do CRM e somente após confirmação', async () => {
     const oldConnection = {
       accountId: '2f31a180-6127-48cd-82da-7b324e49a31d',
       phoneNumber: '5571000000001',
@@ -70,15 +70,18 @@ describe('configuração simulada do WhatsApp', () => {
     vi.stubGlobal('confirm', confirmMock);
 
     render(<RealtimeProvider><WhatsappSetupPage /></RealtimeProvider>);
-    const replace = await screen.findByRole('button', { name: 'Preparar troca de número' });
+    const recover = await screen.findByRole('button', { name: 'Liberar novo QR com segurança' });
+    expect(screen.getByRole('heading', { name: 'Recuperação do WhatsApp' })).toBeInTheDocument();
+    expect(screen.getByText(/preserva todo o histórico do CRM/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Iniciar configuração' })).not.toBeInTheDocument();
 
-    fireEvent.click(replace);
+    fireEvent.click(recover);
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    fireEvent.click(replace);
+    fireEvent.click(recover);
 
-    expect(await screen.findByRole('status')).toHaveTextContent(/Gere o QR somente quando/);
-    expect(screen.getByRole('button', { name: 'Iniciar configuração' })).toBeInTheDocument();
+    expect(await screen.findByRole('status')).toHaveTextContent(/Credenciais antigas removidas/);
+    expect(screen.queryByRole('button', { name: 'Iniciar configuração' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Gerar QR de recuperação' })).toBeInTheDocument();
     await waitFor(() => expect(fetchMock).toHaveBeenLastCalledWith(
       '/api/whatsapp/session',
       expect.objectContaining({
@@ -86,7 +89,7 @@ describe('configuração simulada do WhatsApp', () => {
         body: JSON.stringify({ confirmation: oldConnection.accountId }),
       }),
     ));
-    expect(confirmMock).toHaveBeenLastCalledWith(expect.stringContaining('mensagens e áudios permanecerão'));
+    expect(confirmMock).toHaveBeenLastCalledWith(expect.stringContaining('mensagens e arquivos permanecerão'));
   });
 });
 

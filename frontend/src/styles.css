@@ -89,11 +89,21 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible {
 .session-list strong, .session-list small { display: block; }
 .session-list small { margin-top: .3rem; color: #78817c; }
 .privacy-summary ul { display: grid; gap: .65rem; padding-left: 1.25rem; line-height: 1.5; }
-.operational-status-list article { align-items: flex-start; }
 .status-pill { flex: 0 0 auto; padding: .35rem .65rem; border-radius: 999px; font-size: .72rem; font-weight: 800; }
 .status-pill.success { color: #285236; background: #e4f1e7; }
 .status-pill.warning { color: #8a4b25; background: #fff0dd; }
 .status-pill.neutral { color: #506057; background: #edf0ed; }
+.health-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; }
+.health-grid article { display: grid; align-content: start; min-height: 12rem; padding: 1rem; border: 1px solid #dfe5df; border-radius: .8rem; background: #f9fbf8; }
+.health-grid article.attention { border-color: #ecd2ae; background: #fffaf2; }
+.health-card-heading { display: flex; align-items: center; gap: .6rem; color: #23382c; }
+.health-card-heading > span { display: grid; place-items: center; width: 1.6rem; height: 1.6rem; border-radius: 50%; color: #31543b; background: #dff0d4; font-weight: 900; }
+.health-grid article.attention .health-card-heading > span { color: #884f28; background: #f7dfbd; }
+.health-grid p { margin: .8rem 0 .35rem; color: #526159; line-height: 1.45; }
+.health-grid small { color: #7a847e; line-height: 1.4; }
+.health-grid a { align-self: end; justify-self: start; margin-top: 1rem; color: #41634f; font-size: .78rem; font-weight: 800; text-decoration: none; }
+.health-grid a:hover { text-decoration: underline; }
+.health-safety-note { margin: 1rem 0 0; padding-top: 1rem; border-top: 1px solid #e8ebe8; color: #707c75; font-size: .78rem; line-height: 1.5; }
 .pilot-progress { display: grid; gap: 1rem; }
 .pilot-progress h2, .pilot-safety h2 { margin: 0; color: #17261f; font-family: Georgia, serif; font-weight: 500; }
 .progress-track { width: 100%; height: .75rem; overflow: hidden; border: 0; border-radius: 1rem; background: #e6eae6; appearance: none; }
@@ -385,6 +395,19 @@ label { display: grid; gap: .4rem; color: #4c5b53; font-size: .8rem; font-weight
 .connection-placeholder > span { color: #718078; font-size: 4rem; }
 .demo-notice { padding: 1rem 1.2rem; border: 1px solid #dfd6b8; border-radius: .8rem; color: #675e43; background: #f7f1da; }
 .demo-notice p { margin: .3rem 0 0; line-height: 1.5; }
+.whatsapp-recovery { display: grid; gap: 1rem; }
+.whatsapp-recovery .panel-heading { margin-bottom: 0; }
+.recovery-callout { margin: 0; padding: .9rem 1rem; border-radius: .7rem; line-height: 1.5; }
+.recovery-callout.success { color: #36543e; background: #edf6e7; }
+.recovery-callout.warning { color: #754927; background: #fff3e2; }
+.recovery-callout.neutral { color: #526159; background: #f0f3f0; }
+.recovery-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; padding: 0; margin: 0; list-style: none; }
+.recovery-steps li { display: flex; gap: .7rem; padding: .9rem; border: 1px solid #e3e7e3; border-radius: .75rem; }
+.recovery-steps li > span { display: grid; flex: 0 0 auto; place-items: center; width: 1.6rem; height: 1.6rem; border-radius: 50%; color: #fff; background: #355945; font-size: .72rem; font-weight: 900; }
+.recovery-steps strong { color: #293d32; font-size: .85rem; }
+.recovery-steps p { margin: .35rem 0 0; color: #738078; font-size: .76rem; line-height: 1.45; }
+.recovery-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem; }
+.recovery-actions small { color: #77827c; }
 
 .feedback, .empty-state { display: flex; justify-content: center; align-items: center; gap: .7rem; min-height: 8rem; padding: 1rem; color: #69736d; text-align: center; }
 .feedback.error { flex-direction: column; color: #8a4e49; }
@@ -429,6 +452,7 @@ label { display: grid; gap: .4rem; color: #4c5b53; font-size: .8rem; font-weight
   .report-grid { grid-template-columns: repeat(2, 1fr); }
   .pilot-checklist { grid-template-columns: repeat(2, 1fr); }
   .metric-grid { grid-template-columns: 1fr; }
+  .health-grid, .recovery-steps { grid-template-columns: 1fr; }
   .home-priorities, .function-grid { grid-template-columns: 1fr; }
   .compact-table a { grid-template-columns: 1fr; }
   .compact-table small { text-align: left; }

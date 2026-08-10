@@ -109,6 +109,22 @@ Na listagem de contatos, selecionar o nome abre a caixa de conversas filtrada
 pelo identificador interno do contato. A URL preserva esse contexto sem depender
 de nomes ou telefones semelhantes.
 
+## Saúde e recuperação
+
+A Administração resume a operação em três sinais voltados ao cliente:
+WhatsApp, inteligência artificial e notificações. O estado geral só aparece
+como saudável quando a sessão está conectada, transcrição e análise estão
+ativas sem falha aguardando revisão e o canal de alertas está habilitado sem
+entrega falha. O painel usa consultas autenticadas já existentes e não expõe
+tokens, conteúdo de conversas ou detalhes da infraestrutura.
+
+A rota `/whatsapp` mantém o QR oculto enquanto a sessão está saudável e oferece
+um plano de recuperação orientado. A remoção da autenticação anterior só fica
+disponível para uma conta desconectada, exige confirmação explícita e preserva
+contatos, negociações, mensagens e arquivos. Depois da liberação, o novo QR deve
+ser lido somente no telefone oficial da empresa. O servidor continua recusando
+o reset quando detecta uma sessão conectada.
+
 ## Estados sem integrações externas
 
 As telas continuam funcionais com WhatsApp desconectado. Novas conversas só

@@ -20,10 +20,15 @@ export function WhatsappSetupPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [notice, setNotice] = useState<string>();
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
 
   const load = useCallback(async () => {
     setError(undefined);
-    try { setConnection(await api.whatsappConnection()); }
+    try {
+      const result = await api.whatsappConnection();
+      setConnection(result);
+      if (result.adapter === 'baileys' && result.status !== 'connected') setRecoveryOpen(true);
+    }
     catch { setError('Não foi possível consultar a conexão do WhatsApp.'); }
   }, []);
 
@@ -45,10 +50,10 @@ export function WhatsappSetupPage() {
     finally { setBusy(false); }
   }
 
-  async function prepareReplacement() {
+  async function prepareRecovery() {
     if (!connection?.accountId) return;
     const confirmed = window.confirm(
-      'Preparar a conexão para um novo número? As credenciais do WhatsApp anterior serão removidas. Contatos, negociações, mensagens e áudios permanecerão no CRM.',
+      'Gerar uma nova conexão para este workspace? Somente as credenciais antigas do WhatsApp serão removidas. Contatos, negociações, mensagens e arquivos permanecerão no CRM. Leia o novo QR no telefone oficial da empresa.',
     );
     if (!confirmed) return;
     setBusy(true);
@@ -56,13 +61,13 @@ export function WhatsappSetupPage() {
     setNotice(undefined);
     try {
       setConnection(await api.resetWhatsappAuthentication(connection.accountId));
-      setNotice('Autenticação anterior removida. Gere o QR somente quando o novo número estiver disponível.');
+      setNotice('Credenciais antigas removidas com segurança. Agora gere o QR e leia-o no telefone oficial da empresa.');
     } catch (caught: unknown) {
       if (caught instanceof ApiError && caught.code === 'still_connected') {
-        setError('A sessão ainda está conectada. Desvincule o aparelho no WhatsApp antes de substituí-la.');
+        setError('A sessão ainda está conectada. Não é necessário gerar outro QR. Atualize o estado antes de tentar novamente.');
         await load();
       } else {
-        setError('Não foi possível preparar a troca de número.');
+        setError('Não foi possível preparar a recuperação da conexão.');
       }
     } finally {
       setBusy(false);
@@ -103,19 +108,25 @@ export function WhatsappSetupPage() {
             <div><dt>Número</dt><dd>{connection.phoneNumber ?? 'Ainda não vinculado'}</dd></div>
             <div><dt>Atualizado</dt><dd>{connection.updatedAt ? new Date(connection.updatedAt).toLocaleString('pt-BR') : 'Sem atividade'}</dd></div>
           </dl>
-          {connection.adapter === 'baileys' && connection.status !== 'connected'
-            && connection.accountId && connection.phoneNumber ? (
+          {connection.adapter === 'baileys' && connection.status !== 'connected' ? (
             <>
-              <button className="button secondary" type="button" disabled={busy} onClick={() => void prepareReplacement()}>
-                {busy ? 'Preparando…' : 'Preparar troca de número'}
-              </button>
-              <small>Remova a autenticação anterior antes de gerar um QR para outro número.</small>
+              <a className="button primary" href="#whatsapp-recovery" onClick={() => setRecoveryOpen(true)}>
+                {connection.accountId && connection.phoneNumber ? 'Recuperar conexão' : 'Continuar recuperação'}
+              </a>
+              <small>Use a recuperação somente quando a sessão estiver desconectada.</small>
             </>
           ) : connection.status !== 'connected' ? (
             <button className="button primary" type="button" disabled={busy} onClick={() => void startSetup()}>
               {busy ? 'Processando…' : connection.qrCode ? 'Gerar outro QR' : 'Iniciar configuração'}
             </button>
-          ) : <small>A sessão está ativa. Um novo QR só será necessário se ela for desconectada.</small>}
+          ) : <>
+            <small>A sessão está ativa. Um novo QR só será necessário se ela for desconectada.</small>
+            {connection.adapter === 'baileys' ? (
+              <button className="button secondary" type="button" onClick={() => setRecoveryOpen((value) => !value)}>
+                {recoveryOpen ? 'Ocultar recuperação' : 'Ver plano de recuperação'}
+              </button>
+            ) : null}
+          </>}
         </article>
 
         <article className="panel qr-card">
@@ -142,6 +153,41 @@ export function WhatsappSetupPage() {
           )}
         </article>
       </section>
+
+      {connection.adapter === 'baileys' && recoveryOpen ? (
+        <section className="panel whatsapp-recovery" id="whatsapp-recovery" aria-labelledby="whatsapp-recovery-title">
+          <div className="panel-heading"><div><p className="eyebrow">Plano de contingência</p>
+            <h2 id="whatsapp-recovery-title">Recuperação do WhatsApp</h2></div>
+            <span className={`status-pill ${connection.status === 'connected' ? 'success' : 'warning'}`}>
+              {connection.status === 'connected' ? 'Não requer ação' : 'Siga os passos'}
+            </span></div>
+          {connection.status === 'connected' ? (
+            <p className="recovery-callout success"><strong>A conexão está saudável.</strong> Não remova aparelhos conectados e não gere outro QR enquanto este estado permanecer ativo.</p>
+          ) : (
+            <p className="recovery-callout warning"><strong>A conexão precisa ser recuperada.</strong> O procedimento abaixo preserva todo o histórico do CRM.</p>
+          )}
+          <ol className="recovery-steps">
+            <li><span>1</span><div><strong>Confirme o telefone correto</strong><p>Tenha em mãos o aparelho oficial da empresa com o WhatsApp funcionando.</p></div></li>
+            <li><span>2</span><div><strong>Libere uma nova autenticação</strong><p>Esta etapa apaga somente as credenciais antigas da conexão, nunca contatos ou conversas do CRM.</p></div></li>
+            <li><span>3</span><div><strong>Leia o QR Code</strong><p>No telefone, abra WhatsApp → Aparelhos conectados → Conectar um aparelho e leia o código desta tela.</p></div></li>
+          </ol>
+          {connection.status !== 'connected' && connection.accountId && connection.phoneNumber ? (
+            <div className="recovery-actions">
+              <button className="button secondary" type="button" disabled={busy} onClick={() => void prepareRecovery()}>
+                {busy ? 'Liberando…' : 'Liberar novo QR com segurança'}
+              </button>
+              <small>Esta ação fica bloqueada se o servidor detectar que a sessão ainda está conectada.</small>
+            </div>
+          ) : connection.status !== 'connected' && !connection.qrCode ? (
+            <div className="recovery-actions">
+              <button className="button primary" type="button" disabled={busy} onClick={() => void startSetup()}>
+                {busy ? 'Gerando…' : 'Gerar QR de recuperação'}
+              </button>
+              <small>Leia o código somente no telefone oficial da empresa.</small>
+            </div>
+          ) : connection.qrCode ? <p className="recovery-callout neutral">QR pronto. Conclua o passo 3 antes do horário de expiração indicado acima.</p> : null}
+        </section>
+      ) : null}
 
       {connection.adapter === 'fake' ? (
         <aside className="demo-notice"><strong>Modo de demonstração</strong><p>Nenhuma conta real é conectada e nenhuma mensagem é enviada. O QR existe somente na memória da API.</p></aside>

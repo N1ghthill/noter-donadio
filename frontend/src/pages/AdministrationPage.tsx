@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { api, ApiError } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.js';
@@ -6,6 +7,7 @@ import { ErrorState, LoadingState } from '../components/Feedback.js';
 import { AUDIT_ACTION_LABELS, AUDIT_FIELD_LABELS, formatDateTime } from '../lib/format.js';
 import type {
   NotificationStatus,
+  ProductCapabilities,
   ProcessingFailure,
   SessionInfo,
   WhatsappConnection,
@@ -19,6 +21,7 @@ export function AdministrationPage() {
   const [processingFailures, setProcessingFailures] = useState<ProcessingFailure[]>();
   const [notificationStatus, setNotificationStatus] = useState<NotificationStatus>();
   const [whatsappConnection, setWhatsappConnection] = useState<WhatsappConnection>();
+  const [capabilities, setCapabilities] = useState<ProductCapabilities>();
   const [error, setError] = useState(false);
   const [busyId, setBusyId] = useState<string>();
   const [exportBusy, setExportBusy] = useState(false);
@@ -27,16 +30,18 @@ export function AdministrationPage() {
   const load = useCallback(async () => {
     setError(false);
     try {
-      const [sessionResponse, auditResponse, failureResponse, notificationResponse, whatsappResponse]
+      const [sessionResponse, auditResponse, failureResponse, notificationResponse, whatsappResponse,
+        capabilitiesResponse]
         = await Promise.all([
           api.sessions(), api.auditEvents(), api.processingFailures(), api.notificationStatus(),
-          api.whatsappConnection(),
+          api.whatsappConnection(), api.capabilities(),
       ]);
       setSessions(sessionResponse.data);
       setAuditEvents(auditResponse.data);
       setProcessingFailures(failureResponse.data);
       setNotificationStatus(notificationResponse);
       setWhatsappConnection(whatsappResponse);
+      setCapabilities(capabilitiesResponse);
     } catch { setError(true); }
   }, []);
   useEffect(() => { void load(); }, [load]);
@@ -87,35 +92,50 @@ export function AdministrationPage() {
     }
   };
 
-  if (error && (!sessions || !auditEvents || !processingFailures || !notificationStatus || !whatsappConnection)) return <ErrorState message="Não foi possível carregar a administração." retry={() => void load()} />;
-  if (!sessions || !auditEvents || !processingFailures || !notificationStatus || !whatsappConnection) return <LoadingState label="Carregando administração…" />;
+  if (error && (!sessions || !auditEvents || !processingFailures || !notificationStatus || !whatsappConnection || !capabilities)) return <ErrorState message="Não foi possível carregar a administração." retry={() => void load()} />;
+  if (!sessions || !auditEvents || !processingFailures || !notificationStatus || !whatsappConnection || !capabilities) return <LoadingState label="Carregando administração…" />;
+
+  const whatsappHealthy = whatsappConnection.status === 'connected';
+  const aiEnabled = capabilities.audioTranscriptionEnabled && capabilities.messageAnalysisEnabled;
+  const aiHealthy = aiEnabled && processingFailures.length === 0;
+  const notificationsHealthy = notificationStatus.enabled && notificationStatus.deliveries.failed === 0;
+  const operationHealthy = whatsappHealthy && aiHealthy && notificationsHealthy;
 
   return <div className="page-stack">
     <header className="page-header"><div><p className="eyebrow">Conta e privacidade</p><h1>Administração</h1></div>
       <p>Controle acessos ativos e consulte as proteções disponíveis para os dados do workspace.</p>
     </header>
-    <section className="panel">
-      <div className="panel-heading"><div><p className="eyebrow">Operação do atendimento</p><h2>Integrações e automações</h2></div>
-        <small>Dados técnicos, sem conteúdo das conversas</small></div>
-      <div className="session-list operational-status-list">
-        <article><div><strong>WhatsApp {whatsappConnection.status === 'connected' ? 'conectado' : 'requer atenção'}</strong>
-          <small>{whatsappConnection.status === 'connected'
-            ? 'Novas mensagens podem ser recebidas e organizadas no CRM.'
-            : `Estado atual: ${whatsappStatusLabel(whatsappConnection.status)}.`}</small></div>
-          <span className={`status-pill ${whatsappConnection.status === 'connected' ? 'success' : 'warning'}`}>
-            {whatsappConnection.status === 'connected' ? 'Ativo' : 'Revisar'}
-          </span></article>
-        <article><div><strong>Notificações {notificationStatus.enabled ? 'ativadas' : 'desativadas'}</strong>
+    <section className="panel health-overview">
+      <div className="panel-heading"><div><p className="eyebrow">Operação do atendimento</p><h2>Saúde do sistema</h2></div>
+        <span className={`status-pill ${operationHealthy ? 'success' : 'warning'}`} role="status">
+          {operationHealthy ? 'Tudo funcionando' : 'Atenção necessária'}
+        </span></div>
+      <div className="health-grid">
+        <article className={whatsappHealthy ? 'healthy' : 'attention'}>
+          <div className="health-card-heading"><span aria-hidden="true">{whatsappHealthy ? '✓' : '!'}</span>
+            <strong>WhatsApp</strong></div>
+          <p>{whatsappHealthy ? 'Conectado e pronto para receber mensagens.'
+            : `Estado atual: ${whatsappStatusLabel(whatsappConnection.status)}.`}</p>
+          <small>Última atualização: {whatsappConnection.updatedAt ? formatDateTime(whatsappConnection.updatedAt) : 'não registrada'}.</small>
+          <Link to="/whatsapp">{whatsappHealthy ? 'Ver conexão' : 'Recuperar conexão'}</Link>
+        </article>
+        <article className={aiHealthy ? 'healthy' : 'attention'}>
+          <div className="health-card-heading"><span aria-hidden="true">{aiHealthy ? '✓' : '!'}</span>
+            <strong>Inteligência artificial</strong></div>
+          <p>{!aiEnabled ? 'Transcrição ou análise está desativada.' : processingFailures.length === 0
+            ? 'Transcrição e análise estão ativas.' : `${processingFailures.length} falha(s) aguardando revisão.`}</p>
+          <small>A IA apenas organiza e sugere; nunca responde automaticamente.</small>
+          {processingFailures.length > 0 ? <a href="#processing-failures">Revisar falhas</a> : null}
+        </article>
+        <article className={notificationsHealthy ? 'healthy' : 'attention'}>
+          <div className="health-card-heading"><span aria-hidden="true">{notificationsHealthy ? '✓' : '!'}</span>
+            <strong>Notificações</strong></div>
+          <p>{!notificationStatus.enabled ? 'Canal de alertas desativado.' : notificationStatus.deliveries.failed === 0
+            ? 'Alertas ativos e sem falhas.' : `${notificationStatus.deliveries.failed} entrega(s) com falha.`}</p>
           <small>Última entrega: {notificationStatus.lastDeliveredAt ? formatDateTime(notificationStatus.lastDeliveredAt) : 'nenhuma registrada'}.</small>
-          <small>{notificationStatus.deliveries.completed} entregue(s) · {notificationStatus.deliveries.failed} falha(s) · {notificationStatus.deliveries.pending + notificationStatus.deliveries.processing} em andamento.</small></div>
-          <span className={`status-pill ${notificationStatus.enabled && notificationStatus.deliveries.failed === 0 ? 'success' : 'warning'}`}>
-            {notificationStatus.enabled && notificationStatus.deliveries.failed === 0 ? 'Operando' : 'Revisar'}
-          </span></article>
-        <article><div><strong>Respostas automáticas desativadas</strong>
-          <small>A IA organiza e sugere. Somente uma pessoa pode responder ou aplicar alterações comerciais.</small>
-          <small>Última mensagem recebida: {notificationStatus.lastInboundMessageAt ? formatDateTime(notificationStatus.lastInboundMessageAt) : 'nenhuma registrada'}.</small></div>
-          <span className="status-pill neutral">Assistivo</span></article>
+        </article>
       </div>
+      <p className="health-safety-note">Respostas automáticas continuam desativadas. Última mensagem recebida: {notificationStatus.lastInboundMessageAt ? formatDateTime(notificationStatus.lastInboundMessageAt) : 'nenhuma registrada'}.</p>
     </section>
     <section className="panel">
       <div className="panel-heading"><div><p className="eyebrow">Segurança</p><h2>Sessões ativas</h2></div><small>{sessions.length} ativa(s)</small></div>
@@ -127,7 +147,7 @@ export function AdministrationPage() {
         </button>
       </article>)}</div>
     </section>
-    <section className="panel">
+    <section className="panel" id="processing-failures">
       <div className="panel-heading"><div><p className="eyebrow">Processamento assistivo</p><h2>Falhas que exigem revisão</h2></div>
         <small>{processingFailures.length} registro(s)</small></div>
       <p className="muted">Nenhuma mensagem é reenviada ao provedor automaticamente. A nova tentativa exige sua confirmação.</p>
