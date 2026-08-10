@@ -182,11 +182,13 @@ autenticação Baileys, use a opção explícita:
 sudo /opt/noter-donadio/scripts/deploy-vps.sh --enable-baileys --reset-workspace-data
 ```
 
-O deploy cria e valida primeiro o snapshot local obrigatório, interrompe os
-processos que poderiam ingerir ou processar eventos durante a operação, remove
+O deploy interrompe primeiro os processos que poderiam receber ou alterar dados,
+cria o snapshot local obrigatório e restaura o dump em PostgreSQL 16 isolado
+antes de permitir a exclusão. Em seguida, remove
 contatos, negociações, mensagens, mídias, análises, follow-ups e eventos
-operacionais do workspace configurado, esvazia as filas Redis e volta a subir
-os serviços. Usuários, sessões, conta do WhatsApp, chaves Baileys e eventos de
+operacionais e notificações do workspace configurado, esvazia as filas Redis e
+volta a subir os serviços. Se uma etapa intermediária falhar, tenta reativar os
+serviços preservados. Usuários, sessões, conta do WhatsApp, chaves Baileys e eventos de
 auditoria de autenticação/exportação são preservados. `SKIP_BACKUP=1` é
 recusado junto dessa opção.
 

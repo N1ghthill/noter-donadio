@@ -53,11 +53,13 @@ SELECT
   (SELECT count(*) FROM contacts WHERE workspace_id = :'workspace_id'::uuid) AS contacts,
   (SELECT count(*) FROM negotiations WHERE workspace_id = :'workspace_id'::uuid) AS negotiations,
   (SELECT count(*) FROM messages WHERE workspace_id = :'workspace_id'::uuid) AS messages,
-  (SELECT count(*) FROM media_assets WHERE workspace_id = :'workspace_id'::uuid) AS media_assets;
+  (SELECT count(*) FROM media_assets WHERE workspace_id = :'workspace_id'::uuid) AS media_assets,
+  (SELECT count(*) FROM notification_deliveries WHERE workspace_id = :'workspace_id'::uuid) AS notifications;
 
 DELETE FROM analysis_decisions WHERE workspace_id = :'workspace_id'::uuid;
 DELETE FROM ai_analyses WHERE workspace_id = :'workspace_id'::uuid;
 DELETE FROM negotiation_follow_up_history WHERE workspace_id = :'workspace_id'::uuid;
+DELETE FROM notification_deliveries WHERE workspace_id = :'workspace_id'::uuid;
 DELETE FROM media_assets WHERE workspace_id = :'workspace_id'::uuid;
 DELETE FROM messages WHERE workspace_id = :'workspace_id'::uuid;
   DELETE FROM audit_events
@@ -85,14 +87,17 @@ SELECT concat_ws('|',
   (SELECT count(*) FROM messages WHERE workspace_id = workspace.id),
   (SELECT count(*) FROM media_assets WHERE workspace_id = workspace.id),
   (SELECT count(*) FROM ai_analyses WHERE workspace_id = workspace.id),
-  (SELECT count(*) FROM outbox_events WHERE workspace_id = workspace.id)
+  (SELECT count(*) FROM outbox_events WHERE workspace_id = workspace.id),
+  (SELECT count(*) FROM notification_deliveries WHERE workspace_id = workspace.id),
+  (SELECT count(*) FROM analysis_decisions WHERE workspace_id = workspace.id),
+  (SELECT count(*) FROM negotiation_follow_up_history WHERE workspace_id = workspace.id)
 )
 FROM workspaces AS workspace
 WHERE workspace.id = :'workspace_id'::uuid;
 SQL
 )"
 
-if test "${remaining}" != "0|0|0|0|0|0"; then
+if test "${remaining}" != "0|0|0|0|0|0|0|0|0"; then
   printf 'Reset incompleto para o workspace solicitado: %s\n' "${remaining}" >&2
   exit 1
 fi

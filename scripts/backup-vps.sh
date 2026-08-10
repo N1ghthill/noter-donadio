@@ -55,5 +55,10 @@ chmod 600 "${snapshot_directory}/media-${timestamp}.tar.gz"
   chmod 600 SHA256SUMS
 )
 
+if test -n "${BACKUP_RESULT_FILE:-}"; then
+  printf '%s\n' "${snapshot_directory}" > "${BACKUP_RESULT_FILE}"
+  chmod 600 "${BACKUP_RESULT_FILE}"
+fi
+
 printf '%s\n' "Snapshot local criado e validável em ${snapshot_directory}"
 printf '%s\n' "Copie-o para armazenamento off-host antes de considerá-lo recuperação de desastre."

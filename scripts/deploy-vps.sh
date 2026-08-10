@@ -170,19 +170,53 @@ fi
 
 docker compose "${compose_arguments[@]}" config --quiet
 
+backup_result_file=""
+reset_services_quiesced=0
+cleanup_reset_deploy() {
+  if test -n "${backup_result_file}"; then
+    rm -f -- "${backup_result_file}"
+  fi
+  if test "${reset_services_quiesced}" = "1"; then
+    docker compose "${compose_arguments[@]}" up -d --remove-orphans >/dev/null 2>&1 || true
+  fi
+}
 if test "${SKIP_BACKUP:-0}" != "1"; then
-  COMPOSE_FILE="${compose_file}" scripts/backup-vps.sh
+  if test "${reset_workspace_data}" = "1"; then
+    backup_result_file="$(mktemp)"
+    trap cleanup_reset_deploy EXIT
+    reset_services_quiesced=1
+    docker compose "${compose_arguments[@]}" --profile demo --profile assistive --profile baileys --profile notifications \
+      stop backend outbox realtime baileys media-download analysis transcription notification
+  fi
+  COMPOSE_FILE="${compose_file}" \
+  BACKUP_RESULT_FILE="${backup_result_file}" \
+    scripts/backup-vps.sh
 elif test "${reset_workspace_data}" = "1"; then
   printf '%s\n' "O reset de dados exige o snapshot automático; remova SKIP_BACKUP=1." >&2
   exit 1
 fi
 
 if test "${reset_workspace_data}" = "1"; then
-  docker compose "${compose_arguments[@]}" --profile demo --profile assistive --profile baileys \
-    stop backend outbox realtime baileys media-download retention analysis transcription
+  snapshot_directory="$(<"${backup_result_file}")"
+  if [[ ! "${snapshot_directory}" =~ ^/var/backups/noter-donadio/[0-9]{8}T[0-9]{6}Z$ ]]; then
+    printf '%s\n' "Reset recusado: o caminho do snapshot não corresponde ao diretório protegido." >&2
+    exit 1
+  fi
+  shopt -s nullglob
+  snapshot_dumps=("${snapshot_directory}"/noter-*.dump)
+  shopt -u nullglob
+  if test "${#snapshot_dumps[@]}" -ne 1; then
+    printf '%s\n' "Reset recusado: esperado exatamente um dump no snapshot." >&2
+    exit 1
+  fi
+  scripts/verify-postgres-backup.sh "${snapshot_dumps[0]}"
+
+  docker compose "${compose_arguments[@]}" stop retention
   CONFIRM_RESET_WORKSPACE_DATA=1 \
   COMPOSE_FILE="${compose_file}" \
     scripts/reset-workspace-data.sh
+  rm -f -- "${backup_result_file}"
+  backup_result_file=""
 fi
 
 docker compose "${compose_arguments[@]}" build backend frontend
@@ -237,6 +271,8 @@ for _attempt in $(seq 1 60); do
 done
 
 curl --fail --silent --show-error "${health_url}" >/dev/null
+reset_services_quiesced=0
+trap - EXIT
 docker compose "${compose_arguments[@]}" ps
 git rev-parse HEAD > .deployed-commit
 chmod 600 .deployed-commit
