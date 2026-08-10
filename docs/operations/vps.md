@@ -194,6 +194,20 @@ recusado junto dessa opção.
 
 A opção não reinicia a VPS quando `/var/run/reboot-required` estiver ausente.
 
+Para converter o workspace preservado em sua identidade definitiva, use a
+operação explícita com valores não secretos nos argumentos. Ela mantém o UUID e
+a autenticação Baileys, altera slug, nome e administrador em transação, gera uma
+senha temporária e revoga sessões anteriores:
+
+```bash
+sudo /opt/noter-donadio/scripts/deploy-vps.sh \
+  --finalize-workspace \
+  --target-workspace-slug=slug-definitivo \
+  '--target-workspace-name=Nome definitivo' \
+  --target-admin-email=admin@example.com \
+  '--target-admin-display-name=Administrador'
+```
+
 O `.env` remoto permanece fora do Git, com permissão `600`. Segredos não devem aparecer em comandos versionados, tickets ou logs. Para este perfil, mantenha:
 
 ```dotenv

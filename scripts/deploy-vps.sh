@@ -8,6 +8,11 @@ enable_notifications=0
 reset_admin_password=0
 reset_workspace_data=0
 reprocess_failed_audio=0
+finalize_workspace=0
+target_workspace_slug=""
+target_workspace_name=""
+target_admin_email=""
+target_admin_display_name=""
 
 for argument in "$@"; do
   case "${argument}" in
@@ -32,12 +37,38 @@ for argument in "$@"; do
     --reprocess-failed-audio)
       reprocess_failed_audio=1
       ;;
+    --finalize-workspace)
+      finalize_workspace=1
+      ;;
+    --target-workspace-slug=*)
+      target_workspace_slug="${argument#*=}"
+      ;;
+    --target-workspace-name=*)
+      target_workspace_name="${argument#*=}"
+      ;;
+    --target-admin-email=*)
+      target_admin_email="${argument#*=}"
+      ;;
+    --target-admin-display-name=*)
+      target_admin_display_name="${argument#*=}"
+      ;;
     *)
       printf 'Argumento desconhecido: %s\n' "${argument}" >&2
       exit 2
       ;;
   esac
 done
+
+if test "${finalize_workspace}" = "1"; then
+  if test -z "${target_workspace_slug}" || test -z "${target_workspace_name}" \
+    || test -z "${target_admin_email}" || test -z "${target_admin_display_name}"; then
+    printf '%s\n' 'A finalização exige slug, nome, e-mail e nome do administrador.' >&2
+    exit 2
+  fi
+elif test -n "${target_workspace_slug}${target_workspace_name}${target_admin_email}${target_admin_display_name}"; then
+  printf '%s\n' 'Parâmetros definitivos exigem --finalize-workspace.' >&2
+  exit 2
+fi
 
 project_directory="${PROJECT_DIRECTORY:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 compose_file="${COMPOSE_FILE:-compose.vps-demo.yaml}"
@@ -292,6 +323,32 @@ if test "${reset_admin_password}" = "1"; then
   printf 'Workspace: %s\nE-mail: %s\nSenha temporária: %s\n' \
     "${RESET_ADMIN_WORKSPACE}" "${RESET_ADMIN_EMAIL}" "${RESET_ADMIN_PASSWORD}"
   unset RESET_ADMIN_PASSWORD
+fi
+
+if test "${finalize_workspace}" = "1"; then
+  FINALIZE_SOURCE_WORKSPACE="${ADMIN_WORKSPACE_SLUG:-demo-cliente}"
+  FINALIZE_TARGET_WORKSPACE="${target_workspace_slug}"
+  FINALIZE_WORKSPACE_NAME="${target_workspace_name}"
+  FINALIZE_ADMIN_EMAIL="${target_admin_email}"
+  FINALIZE_ADMIN_DISPLAY_NAME="${target_admin_display_name}"
+  FINALIZE_ADMIN_PASSWORD="$(openssl rand -base64 24)"
+  export FINALIZE_SOURCE_WORKSPACE FINALIZE_TARGET_WORKSPACE FINALIZE_WORKSPACE_NAME
+  export FINALIZE_ADMIN_EMAIL FINALIZE_ADMIN_DISPLAY_NAME FINALIZE_ADMIN_PASSWORD
+  docker compose "${compose_arguments[@]}" run --rm --no-deps \
+    -e FINALIZE_SOURCE_WORKSPACE \
+    -e FINALIZE_TARGET_WORKSPACE \
+    -e FINALIZE_WORKSPACE_NAME \
+    -e FINALIZE_ADMIN_EMAIL \
+    -e FINALIZE_ADMIN_DISPLAY_NAME \
+    -e FINALIZE_ADMIN_PASSWORD \
+    backend node dist/finalize-workspace.js
+  set_env_value ADMIN_WORKSPACE_SLUG "${FINALIZE_TARGET_WORKSPACE}"
+  set_env_value ADMIN_WORKSPACE_NAME "${FINALIZE_WORKSPACE_NAME}"
+  set_env_value ADMIN_EMAIL "${FINALIZE_ADMIN_EMAIL}"
+  set_env_value ADMIN_DISPLAY_NAME "${FINALIZE_ADMIN_DISPLAY_NAME}"
+  printf 'Workspace: %s\nE-mail: %s\nSenha temporária: %s\n' \
+    "${FINALIZE_TARGET_WORKSPACE}" "${FINALIZE_ADMIN_EMAIL}" "${FINALIZE_ADMIN_PASSWORD}"
+  unset FINALIZE_ADMIN_PASSWORD
 fi
 
 if test "${reprocess_failed_audio}" = "1"; then

@@ -18,6 +18,7 @@
     "start:baileys": "node dist/baileys.main.js",
     "bootstrap:admin": "node dist/bootstrap-admin.js",
     "reset:admin-password": "node dist/reset-admin-password.js",
+    "finalize:workspace": "node dist/finalize-workspace.js",
     "seed:demo": "node dist/seed-demo.js",
     "pretypecheck": "npm run build -w @noter/contracts",
     "typecheck": "npm run prisma:generate && tsc -p tsconfig.json --noEmit",
