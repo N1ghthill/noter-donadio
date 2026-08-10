@@ -23,7 +23,7 @@ está pronto, mas a integração externa permanece deliberadamente desligada.
 | Agenda de próximas ações | Pronto | Filtros, resumo, classificação, edição rápida e conclusão auditável |
 | Arquivos por contato | Pronto | Mídias privadas, filtros persistidos, grade/lista responsivas, transcrição de áudio, retenção visível, renovação de acesso e navegação contextual |
 | Atualização em tempo real | Pronto | Eventos sanitizados por workspace e reconciliação REST |
-| Notificações Bark do atendimento | Publicado e homologado; refinamento pronto | Mensagem real confirmou recebimento e análise, sem falhas; próxima versão consolida avisos, diferencia prioridades e acrescenta visão autenticada na Administração |
+| Notificações Bark do atendimento | Publicado e homologado | Mensagem real confirmou recebimento e análise, sem falhas; versão atual consolida avisos, diferencia prioridades e acrescenta visão autenticada na Administração |
 | Sugestões sem ação autônoma | Pronto; integração real em diagnóstico controlado | Saída estrita, contexto limitado da pessoa e de negociações ativas, classificação de novo lead/assunto/continuação/devolutiva/múltiplos assuntos, revisão de vínculo, edição, aceite/recusa explícitos, falhas sanitizadas, retry manual e auditoria |
 | Transcrição OpenAI | Disponível; não selecionada | Adapter preservado, `gpt-4o-mini-transcribe`, corte temporal, diagnóstico sanitizado e retry administrativo explícito |
 | Análise OpenAI | Disponível; não selecionada | Responses API, Structured Outputs, `store: false`, corte temporal, diagnóstico sanitizado e retry administrativo explícito |
@@ -57,9 +57,14 @@ ainda aguarda uma nova rodada com áudio real.
 Em 10/08/2026, as notificações Bark foram publicadas com corte temporal e uma
 mensagem real posterior ao corte confirmou a entrega dos marcos de recebimento e
 análise, sem estado pendente ou falho. O cliente confirmou o recebimento no
-dispositivo. O app mantém respostas automáticas desativadas. A revisão local
-validada para a próxima publicação torna esse limite visível e acrescenta apenas
-estado operacional agregado na Administração.
+dispositivo. O app mantém respostas automáticas desativadas. A versão publicada
+torna esse limite visível e acrescenta apenas estado operacional agregado na
+Administração.
+Após a aprovação do projeto em 10/08/2026, o workspace foi zerado pelo
+procedimento operacional protegido. O snapshot anterior foi validado por checksum
+e restaurado em PostgreSQL 16 isolado antes da exclusão. Contatos, negociações,
+mensagens, mídias, análises, notificações e filas começaram vazios; identidade do
+workspace, usuários e autenticação Baileys foram preservados.
 As falhas antigas permanecem registradas, sem jobs pendentes ou em processamento,
 e não serão repetidas automaticamente. A administração oferece retry somente
 após confirmação explícita. As mídias originais permanecem consultáveis mesmo
