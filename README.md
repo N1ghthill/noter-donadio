@@ -67,6 +67,7 @@ O setup local e o conector Baileys estão em [`docs/integrations/whatsapp.md`](d
 O worker idempotente e os adapters de áudio estão em [`docs/integrations/transcription.md`](docs/integrations/transcription.md).
 O armazenamento privado local, acesso assinado, player e retenção estão em [`docs/integrations/media.md`](docs/integrations/media.md).
 O worker de análise assistiva, seu contrato estrito e seus limites estão em [`docs/integrations/analysis.md`](docs/integrations/analysis.md).
+As notificações genéricas e opt-in para novas mensagens via Bark estão em [`docs/integrations/notifications.md`](docs/integrations/notifications.md).
 O empacotamento em containers, secrets, migrations, backup e limites de produção estão em [`docs/operations/production.md`](docs/operations/production.md).
 O perfil local de Prometheus, Alertmanager e Grafana, seus alertas e runbooks estão em [`docs/operations/observability.md`](docs/operations/observability.md).
 O perfil transitório para aplicação, PostgreSQL, Redis e workers em uma única VPS está em [`docs/operations/vps.md`](docs/operations/vps.md).

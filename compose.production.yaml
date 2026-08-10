@@ -30,9 +30,11 @@ x-backend: &backend
     MEDIA_DOWNLOAD_ADAPTER: disabled
     TRANSCRIPTION_ADAPTER: disabled
     AI_ADAPTER: disabled
+    NOTIFICATION_ADAPTER: ${NOTIFICATION_ADAPTER:-disabled}
     TRANSCRIPTION_FEATURE_ENABLED: ${TRANSCRIPTION_FEATURE_ENABLED:-false}
     AI_ANALYSIS_FEATURE_ENABLED: ${AI_ANALYSIS_FEATURE_ENABLED:-false}
     ASSISTIVE_PROCESSING_NOT_BEFORE: ${ASSISTIVE_PROCESSING_NOT_BEFORE:-}
+    NOTIFICATION_NOT_BEFORE: ${NOTIFICATION_NOT_BEFORE:-}
   depends_on:
     migrate:
       condition: service_completed_successfully
@@ -112,6 +114,18 @@ services:
   realtime:
     <<: *backend
     command: ["node", "dist/realtime.main.js"]
+
+  notification:
+    <<: *backend
+    profiles: ["notifications"]
+    command: ["node", "dist/notification.main.js"]
+    environment:
+      <<: *backend-environment
+      NOTIFICATION_ADAPTER: ${NOTIFICATION_ADAPTER:-disabled}
+      BARK_WEBHOOK_URL: ${BARK_WEBHOOK_URL:-}
+      BARK_NOTIFICATION_OPEN_URL: ${BARK_NOTIFICATION_OPEN_URL:-https://leadcontrol.online/conversas}
+      BARK_TIMEOUT_MS: ${BARK_TIMEOUT_MS:-10000}
+      NOTIFICATION_NOT_BEFORE: ${NOTIFICATION_NOT_BEFORE:-}
 
   transcription:
     <<: *backend

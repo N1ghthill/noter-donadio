@@ -10,7 +10,12 @@ import { createAppLogger, safeErrorContext } from './config/logger.js';
 const environment = readEnvironment();
 const logger = createAppLogger('outbox-dispatcher');
 const prisma = createPrismaClient(environment.DATABASE_URL);
-const publisher = new BullMqEventPublisher(environment.REDIS_URL, logger);
+const publisher = new BullMqEventPublisher(
+  environment.REDIS_URL,
+  logger,
+  undefined,
+  environment.NOTIFICATION_ADAPTER !== 'disabled',
+);
 const dispatcher = new OutboxDispatcher(new PrismaOutboxRepository(prisma), publisher);
 const abortController = new AbortController();
 

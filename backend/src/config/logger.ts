@@ -9,6 +9,8 @@ const REDACTED_PATHS = [
   'phoneNumber',
   'qr',
   'transcription',
+  'webhookUrl',
+  'barkWebhookUrl',
 ] as const;
 
 export function createAppLogger(service: string): Logger {

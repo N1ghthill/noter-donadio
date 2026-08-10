@@ -32,11 +32,13 @@ test('coleta contagens persistidas e filas isoladas sem dados de negócio', asyn
   assert.equal(snapshot.queues['ai-processing'].waiting, 1);
   assert.equal(snapshot.queues['media-download'].waiting, 0);
   assert.equal(snapshot.queues['audio-transcription'].waiting, 0);
+  assert.equal(snapshot.queues['inbound-notifications'].waiting, 0);
   assert.equal(Number.isInteger(snapshot.mediaDeletionTasks), true);
   assert.equal(Object.keys(snapshot.outbox).length, 4);
   assert.equal(Object.keys(snapshot.mediaDownloads).length, 4);
   assert.equal(Object.keys(snapshot.transcriptions).length, 4);
   assert.equal(Object.keys(snapshot.analyses).length, 4);
+  assert.equal(Object.keys(snapshot.notifications).length, 4);
 });
 
 test('fecha com segurança antes de a conexão Redis terminar de abrir', async () => {
@@ -53,7 +55,7 @@ test('não envelhece backlog de capacidades deliberadamente desligadas', async (
     prisma,
     environment.REDIS_URL,
     `metrics-disabled-test-${randomUUID()}`,
-    { transcriptionEnabled: false, analysisEnabled: false },
+    { transcriptionEnabled: false, analysisEnabled: false, notificationEnabled: false },
   );
   context.after(async () => collector.close());
 
@@ -61,6 +63,8 @@ test('não envelhece backlog de capacidades deliberadamente desligadas', async (
 
   assert.equal(snapshot.pipelinesEnabled.transcription, false);
   assert.equal(snapshot.pipelinesEnabled.analysis, false);
+  assert.equal(snapshot.pipelinesEnabled.notification, false);
   assert.equal(snapshot.oldestPendingTranscriptionAgeSeconds, 0);
   assert.equal(snapshot.oldestPendingAnalysisAgeSeconds, 0);
+  assert.equal(snapshot.oldestPendingNotificationAgeSeconds, 0);
 });

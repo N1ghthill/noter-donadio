@@ -14,6 +14,10 @@ import { FakeMessageAnalyzer } from './modules/analysis/infrastructure/fake-mess
 import { PrismaMessageAnalysisRepository } from './modules/analysis/infrastructure/prisma-message-analysis.repository.js';
 import { MessageIngestionService } from './modules/messages/domain/message-ingestion.js';
 import { PrismaMessageIngestionRepository } from './modules/messages/infrastructure/prisma-message-ingestion.repository.js';
+import { InboundMessageNotificationService } from './modules/notifications/domain/inbound-message-notification.js';
+import type { NotificationVariant } from './modules/notifications/domain/inbound-message-notification.js';
+import { parseInboundMessageNotificationJob } from './modules/notifications/infrastructure/notification-job.js';
+import { PrismaInboundMessageNotificationRepository } from './modules/notifications/infrastructure/prisma-inbound-message-notification.repository.js';
 import { OutboxDispatcher } from './modules/outbox/domain/outbox-dispatcher.js';
 import { BullMqEventPublisher } from './modules/outbox/infrastructure/bullmq-event.publisher.js';
 import { PrismaOutboxRepository } from './modules/outbox/infrastructure/prisma-outbox.repository.js';
@@ -35,8 +39,10 @@ test('pipeline integrado processa texto de HTTP até análise e notificação em
   const prisma = createPrismaClient(databaseUrl);
   const analysisConnection = redisConnection(redisUrl);
   const realtimeConnection = redisConnection(redisUrl);
-  const publisher = new BullMqEventPublisher(redisUrl, undefined, queuePrefix);
+  const notificationConnection = redisConnection(redisUrl);
+  const publisher = new BullMqEventPublisher(redisUrl, undefined, queuePrefix, true);
   const events: RealtimeEvent[] = [];
+  const notificationVariants: NotificationVariant[] = [];
   const analysisService = new MessageAnalysisService(
     new PrismaMessageAnalysisRepository(prisma),
     new FakeMessageAnalyzer(),
@@ -57,6 +63,24 @@ test('pipeline integrado processa texto de HTTP até análise e notificação em
     },
     { connection: realtimeConnection, prefix: queuePrefix },
   );
+  const notificationService = new InboundMessageNotificationService(
+    new PrismaInboundMessageNotificationRepository(prisma),
+    { notify: async (variant) => { notificationVariants.push(variant); } },
+    new Date('2026-01-01T00:00:00Z'),
+  );
+  const notificationWorker = new Worker(
+    'inbound-notifications',
+    async (job) => {
+      const payload = parseInboundMessageNotificationJob(job.name, job.data);
+      const result = await notificationService.execute(
+        payload.workspaceId,
+        payload.messageId,
+        payload.milestone,
+      );
+      if (result.status === 'busy') throw new Error('notification_lease_busy');
+    },
+    { connection: notificationConnection, prefix: queuePrefix },
+  );
   const ingestionService = new MessageIngestionService(
     new PrismaMessageIngestionRepository(prisma),
   );
@@ -67,9 +91,13 @@ test('pipeline integrado processa texto de HTTP até análise e notificação em
 
   context.after(async () => {
     await app.close();
-    await Promise.all([analysisWorker.close(), realtimeWorker.close()]);
+    await Promise.all([analysisWorker.close(), realtimeWorker.close(), notificationWorker.close()]);
     await publisher.close();
-    await Promise.all([analysisConnection.quit(), realtimeConnection.quit()]);
+    await Promise.all([
+      analysisConnection.quit(),
+      realtimeConnection.quit(),
+      notificationConnection.quit(),
+    ]);
     await prisma.workspace.deleteMany({ where: { id: workspaceId } });
     await prisma.$disconnect();
   });
@@ -88,7 +116,11 @@ test('pipeline integrado processa texto de HTTP até análise e notificação em
       },
     },
   });
-  await Promise.all([analysisWorker.waitUntilReady(), realtimeWorker.waitUntilReady()]);
+  await Promise.all([
+    analysisWorker.waitUntilReady(),
+    realtimeWorker.waitUntilReady(),
+    notificationWorker.waitUntilReady(),
+  ]);
 
   const request = {
     method: 'POST' as const,
@@ -126,13 +158,23 @@ test('pipeline integrado processa texto de HTTP até análise e notificação em
     where: { workspaceId, messageId, state: 'completed' },
     select: { id: true },
   }));
+  await waitFor(async () => prisma.notificationDelivery.findFirst({
+    where: { workspaceId, messageId, kind: 'message_received', state: 'completed' },
+    select: { id: true },
+  }));
   const secondDispatch = await dispatcher.dispatchBatch(10);
   assert.deepEqual(secondDispatch, { claimed: 1, published: 1, failed: 0 });
+
+  await waitFor(async () => prisma.notificationDelivery.findFirst({
+    where: { workspaceId, messageId, kind: 'analysis_completed', state: 'completed' },
+    select: { id: true },
+  }));
 
   await waitFor(async () => events.some((event) => event.type === 'analysis.changed'));
   assert.ok(events.some((event) => event.type === 'message.persisted'));
   assert.ok(events.some((event) => event.type === 'analysis.changed'));
   assert.equal(await prisma.message.count({ where: { workspaceId, externalMessageId } }), 1);
+  assert.deepEqual(notificationVariants, ['message_received', 'analysis_ready']);
   assert.equal(await prisma.outboxEvent.count({
     where: { workspaceId, status: { not: 'published' } },
   }), 0);

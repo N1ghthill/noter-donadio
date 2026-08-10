@@ -32,6 +32,7 @@ test('adapters externos permanecem desligados por padrão', () => {
   const environment = readEnvironment(required);
   assert.equal(environment.WHATSAPP_ADAPTER, 'disabled');
   assert.equal(environment.MEDIA_DOWNLOAD_ADAPTER, 'disabled');
+  assert.equal(environment.NOTIFICATION_ADAPTER, 'disabled');
   assert.equal(environment.TRANSCRIPTION_FEATURE_ENABLED, false);
   assert.equal(environment.AI_ANALYSIS_FEATURE_ENABLED, false);
   assert.equal(environment.MEDIA_ORPHAN_GRACE_HOURS, 24);
@@ -71,6 +72,11 @@ test('habilita somente adapters implementados', () => {
   assert.equal(groq.AI_ADAPTER, 'groq');
   assert.equal(groq.GROQ_TRANSCRIPTION_MODEL, 'whisper-large-v3-turbo');
   assert.equal(groq.GROQ_ANALYSIS_MODEL, 'openai/gpt-oss-20b');
+  assert.equal(readEnvironment({
+    ...required,
+    NOTIFICATION_ADAPTER: 'bark',
+    BARK_WEBHOOK_URL: 'https://api.day.app/device-key',
+  }).NOTIFICATION_ADAPTER, 'bark');
 });
 
 test('capacidades assistivas exigem ativação explícita', () => {
@@ -99,4 +105,17 @@ test('valida limites e instante de corte do processamento externo', () => {
     ...required,
     ASSISTIVE_PROCESSING_NOT_BEFORE: 'ontem',
   }));
+});
+
+test('valida configuração temporal e URLs da notificação', () => {
+  const environment = readEnvironment({
+    ...required,
+    NOTIFICATION_NOT_BEFORE: '2026-08-10T12:00:00-03:00',
+    BARK_WEBHOOK_URL: 'https://api.day.app/device-key',
+    BARK_TIMEOUT_MS: '5000',
+  });
+  assert.equal(environment.NOTIFICATION_NOT_BEFORE, '2026-08-10T12:00:00-03:00');
+  assert.equal(environment.BARK_TIMEOUT_MS, 5_000);
+  assert.throws(() => readEnvironment({ ...required, NOTIFICATION_NOT_BEFORE: 'agora' }));
+  assert.throws(() => readEnvironment({ ...required, BARK_WEBHOOK_URL: 'não-é-url' }));
 });

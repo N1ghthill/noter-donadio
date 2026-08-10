@@ -22,7 +22,8 @@ export class PrismaBullMqOperationalMetricsCollector implements OperationalMetri
     private readonly capabilities: {
       readonly transcriptionEnabled: boolean;
       readonly analysisEnabled: boolean;
-    } = { transcriptionEnabled: true, analysisEnabled: true },
+      readonly notificationEnabled: boolean;
+    } = { transcriptionEnabled: true, analysisEnabled: true, notificationEnabled: true },
   ) {
     this.connection = new Redis(redisUrl, {
       enableOfflineQueue: false,
@@ -36,14 +37,15 @@ export class PrismaBullMqOperationalMetricsCollector implements OperationalMetri
       'media-download': new Queue('media-download', options),
       'audio-transcription': new Queue('audio-transcription', options),
       'realtime-events': new Queue('realtime-events', options),
+      'inbound-notifications': new Queue('inbound-notifications', options),
     };
   }
 
   public async collect(): Promise<OperationalMetricsSnapshot> {
     const now = new Date();
-    const [outboxGroups, mediaDownloadGroups, transcriptionGroups, analysisGroups,
+    const [outboxGroups, mediaDownloadGroups, transcriptionGroups, analysisGroups, notificationGroups,
       mediaDeletionTasks, oldestOutbox, oldestMediaDownload, oldestTranscription,
-      oldestAnalysis, ...queueCounts] = await Promise.all([
+      oldestAnalysis, oldestNotification, ...queueCounts] = await Promise.all([
       this.prisma.outboxEvent.groupBy({ by: ['status'], _count: { _all: true } }),
       this.prisma.mediaAsset.groupBy({ by: ['downloadState'], _count: { _all: true } }),
       this.prisma.mediaAsset.groupBy({
@@ -52,6 +54,7 @@ export class PrismaBullMqOperationalMetricsCollector implements OperationalMetri
         _count: { _all: true },
       }),
       this.prisma.aiAnalysis.groupBy({ by: ['state'], _count: { _all: true } }),
+      this.prisma.notificationDelivery.groupBy({ by: ['state'], _count: { _all: true } }),
       this.prisma.mediaDeletionTask.count(),
       this.prisma.outboxEvent.findFirst({
         where: { status: { in: ['pending', 'processing'] } },
@@ -73,6 +76,10 @@ export class PrismaBullMqOperationalMetricsCollector implements OperationalMetri
         where: { state: { in: ['pending', 'processing'] } },
         orderBy: { createdAt: 'asc' }, select: { createdAt: true },
       }),
+      this.prisma.notificationDelivery.findFirst({
+        where: { state: { in: ['pending', 'processing'] } },
+        orderBy: { createdAt: 'asc' }, select: { createdAt: true },
+      }),
       ...QUEUE_NAMES.map((name) => this.queues[name].getJobCounts(...QUEUE_STATES)),
     ]);
 
@@ -81,11 +88,13 @@ export class PrismaBullMqOperationalMetricsCollector implements OperationalMetri
         media_download: true,
         transcription: this.capabilities.transcriptionEnabled,
         analysis: this.capabilities.analysisEnabled,
+        notification: this.capabilities.notificationEnabled,
       },
       outbox: countGroups(OUTBOX_STATUSES, outboxGroups.map((group) => [group.status, group._count._all])),
       mediaDownloads: countGroups(PROCESSING_STATES, mediaDownloadGroups.map((group) => [group.downloadState, group._count._all])),
       transcriptions: countGroups(PROCESSING_STATES, transcriptionGroups.map((group) => [group.transcriptionState, group._count._all])),
       analyses: countGroups(PROCESSING_STATES, analysisGroups.map((group) => [group.state, group._count._all])),
+      notifications: countGroups(PROCESSING_STATES, notificationGroups.map((group) => [group.state, group._count._all])),
       mediaDeletionTasks,
       oldestPendingOutboxAgeSeconds: ageSeconds(oldestOutbox?.createdAt, now),
       oldestPendingMediaDownloadAgeSeconds: ageSeconds(oldestMediaDownload?.createdAt, now),
@@ -94,6 +103,9 @@ export class PrismaBullMqOperationalMetricsCollector implements OperationalMetri
         : 0,
       oldestPendingAnalysisAgeSeconds: this.capabilities.analysisEnabled
         ? ageSeconds(oldestAnalysis?.createdAt, now)
+        : 0,
+      oldestPendingNotificationAgeSeconds: this.capabilities.notificationEnabled
+        ? ageSeconds(oldestNotification?.createdAt, now)
         : 0,
       queues: Object.fromEntries(QUEUE_NAMES.map((name, index) => [
         name,

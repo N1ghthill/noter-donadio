@@ -5,6 +5,7 @@ diagnose_baileys=0
 diagnose_media=0
 diagnose_assistive=0
 diagnose_outbox=0
+diagnose_notifications=0
 for argument in "$@"; do
   case "${argument}" in
     --diagnose-baileys)
@@ -18,6 +19,9 @@ for argument in "$@"; do
       ;;
     --diagnose-outbox)
       diagnose_outbox=1
+      ;;
+    --diagnose-notifications)
+      diagnose_notifications=1
       ;;
     *)
       printf 'Argumento desconhecido: %s\n' "${argument}" >&2
@@ -165,4 +169,24 @@ if test "${diagnose_outbox}" = "1"; then
         FROM outbox_events;
       "
   docker compose "${compose_arguments[@]}" logs --tail 100 --no-color outbox
+fi
+
+if test "${diagnose_notifications}" = "1"; then
+  docker compose -f "${compose_file}" exec -T postgres \
+    psql --username="${DB_USER}" --dbname="${DB_NAME:-noter_donadio}" \
+      --no-align --tuples-only --field-separator='|' \
+      --command="
+        SELECT format(
+          'Notificações %s: pending=%s processing=%s completed=%s failed=%s',
+          kind,
+          COUNT(*) FILTER (WHERE state = 'pending'),
+          COUNT(*) FILTER (WHERE state = 'processing'),
+          COUNT(*) FILTER (WHERE state = 'completed'),
+          COUNT(*) FILTER (WHERE state = 'failed')
+        )
+        FROM notification_deliveries
+        GROUP BY kind
+        ORDER BY kind;
+      "
+  docker compose "${compose_arguments[@]}" logs --tail 100 --no-color notification
 fi

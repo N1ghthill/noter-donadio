@@ -94,21 +94,29 @@ test('métricas operacionais exigem token e usam formato Prometheus sem cache', 
     metricsCollector: {
       async collect() {
         return {
-          pipelinesEnabled: { media_download: true, transcription: false, analysis: false },
+          pipelinesEnabled: {
+            media_download: true,
+            transcription: false,
+            analysis: false,
+            notification: false,
+          },
           outbox: { pending: 1, processing: 0, published: 2, failed: 0 },
           mediaDownloads: { pending: 0, processing: 0, completed: 1, failed: 0 },
           transcriptions: { pending: 0, processing: 0, completed: 1, failed: 0 },
           analyses: { pending: 0, processing: 0, completed: 1, failed: 0 },
+          notifications: { pending: 0, processing: 0, completed: 0, failed: 0 },
           mediaDeletionTasks: 0,
           oldestPendingOutboxAgeSeconds: 5,
           oldestPendingMediaDownloadAgeSeconds: 0,
           oldestPendingTranscriptionAgeSeconds: 0,
           oldestPendingAnalysisAgeSeconds: 0,
+          oldestPendingNotificationAgeSeconds: 0,
           queues: {
             'ai-processing': { waiting: 0, active: 0, delayed: 0, failed: 0, paused: 0 },
             'media-download': { waiting: 0, active: 0, delayed: 0, failed: 0, paused: 0 },
             'audio-transcription': { waiting: 0, active: 0, delayed: 0, failed: 0, paused: 0 },
             'realtime-events': { waiting: 0, active: 0, delayed: 0, failed: 0, paused: 0 },
+            'inbound-notifications': { waiting: 0, active: 0, delayed: 0, failed: 0, paused: 0 },
           },
         };
       },

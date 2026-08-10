@@ -46,6 +46,7 @@ const metricsCollector = new PrismaBullMqOperationalMetricsCollector(
   {
     transcriptionEnabled: environment.TRANSCRIPTION_FEATURE_ENABLED,
     analysisEnabled: environment.AI_ANALYSIS_FEATURE_ENABLED,
+    notificationEnabled: environment.NOTIFICATION_ADAPTER !== 'disabled',
   },
 );
 const demoMessageService = environment.WHATSAPP_ADAPTER === 'fake'

@@ -74,6 +74,28 @@ groups:
           summary: Há tarefas de exclusão de mídia pendentes há pelo menos 15 minutos
           runbook: docs/operations/observability.md#exclusao-de-midia-pendente
 
+      - alert: NoterNotificationBacklog
+        expr: (noter_oldest_pending_age_seconds{pipeline="notification"} > 300)
+          and on(pipeline) (noter_pipeline_enabled == 1)
+        for: 5m
+        labels:
+          severity: warning
+          component: notification
+        annotations:
+          summary: Entrega de notificação aguarda há mais de 5 minutos
+          runbook: docs/operations/observability.md#notificacao-atrasada-ou-falha
+
+      - alert: NoterNotificationDeliveryFailed
+        expr: noter_notifications{state="failed"} > 0
+          and on() noter_pipeline_enabled{pipeline="notification"} == 1
+        for: 5m
+        labels:
+          severity: warning
+          component: notification
+        annotations:
+          summary: Há entrega Bark em estado failed
+          runbook: docs/operations/observability.md#notificacao-atrasada-ou-falha
+
       - alert: NoterQueueFailedJobs
         expr: noter_queue_jobs{state="failed"} > 0
         for: 5m

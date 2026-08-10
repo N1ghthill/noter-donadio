@@ -837,3 +837,28 @@ referência contra os candidatos consultados e persiste o contexto junto à
 análise. A associação inicial da mensagem continua transacional e nenhuma
 negociação é criada, movida, mesclada ou reatribuída pela resposta do modelo.
 Quando houver ambiguidade, a interface a apresenta para conferência explícita.
+
+## ADR-076 — Bark recebe somente um sinal genérico posterior à persistência
+
+Em 10/08/2026, o proprietário autorizou a integração Bark para acompanhar
+mensagens recebidas, análises concluídas, identificação de novo lead e falhas
+persistentes de análise ou transcrição. O provedor recebe apenas título, corpo e
+grupo estáticos, além do link da caixa de conversas. Nome, telefone, JID,
+conteúdo, transcrição, mídia, saída textual da IA e IDs internos não atravessam
+essa fronteira.
+
+O evento nasce somente depois da persistência da mensagem e segue por fila
+dedicada. Antes do envio, o worker consulta direção e instante no PostgreSQL e
+exige `NOTIFICATION_NOT_BEFORE`, evitando mensagens enviadas e backlog. A
+classificação `new_lead` é consultada somente depois de a análise validada estar
+persistida e seleciona uma cópia estática. Alertas de falha aguardam dez minutos
+e consultam novamente o estado, para não avisar sobre uma tentativa intermediária
+que já se recuperou. Uma entrega por mensagem/canal/marco possui lease e estado persistentes; retries
+concorrentes não repetem chamadas. A pequena janela entre sucesso HTTP e commit
+local mantém semântica de pelo menos uma vez, pois o Bark não participa da
+transação nem oferece chave idempotente equivalente.
+
+O adapter é opt-in por ambiente, o segredo permanece fora do repositório e erros
+são reduzidos a códigos seguros. Testes usam transporte falso e nunca acessam o
+webhook real. Ativar o provedor não autoriza deploy nem envio de teste real, que
+continuam exigindo decisão operacional explícita.

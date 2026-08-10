@@ -23,6 +23,7 @@ está pronto, mas a integração externa permanece deliberadamente desligada.
 | Agenda de próximas ações | Pronto | Filtros, resumo, classificação, edição rápida e conclusão auditável |
 | Arquivos por contato | Pronto | Mídias privadas, filtros persistidos, grade/lista responsivas, transcrição de áudio, retenção visível, renovação de acesso e navegação contextual |
 | Atualização em tempo real | Pronto | Eventos sanitizados por workspace e reconciliação REST |
+| Notificações Bark do atendimento | Preparado e homologado; não publicado | Aviso de recebimento, novo lead identificado, análise pronta e falha persistente; payload estático, deduplicação, corte temporal e teste real controlado |
 | Sugestões sem ação autônoma | Pronto; integração real em diagnóstico controlado | Saída estrita, contexto limitado da pessoa e de negociações ativas, classificação de novo lead/assunto/continuação/devolutiva/múltiplos assuntos, revisão de vínculo, edição, aceite/recusa explícitos, falhas sanitizadas, retry manual e auditoria |
 | Transcrição OpenAI | Disponível; não selecionada | Adapter preservado, `gpt-4o-mini-transcribe`, corte temporal, diagnóstico sanitizado e retry administrativo explícito |
 | Análise OpenAI | Disponível; não selecionada | Responses API, Structured Outputs, `store: false`, corte temporal, diagnóstico sanitizado e retry administrativo explícito |
@@ -63,7 +64,8 @@ se o provedor falhar.
 - usar a administração para repetir uma análise controlada, corrigir a causa
   sanitizada observada e homologar uma nova mensagem e um novo áudio;
 - aceitar formalmente o risco operacional e os termos aplicáveis ao Baileys;
-- escolher e configurar um destino externo para alertas, com política e responsável;
+- publicar o profile de notificações e homologar a trilha completa com uma nova
+  mensagem real posterior ao corte;
 - implementar backup criptografado fora da VPS quando a fase exigir recuperação
   contra perda integral do host;
 - executar avaliação formal de segurança e privacidade antes de ampliar o uso

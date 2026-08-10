@@ -46,8 +46,8 @@ curl --fail --silent 'http://127.0.0.1:9090/api/v1/query?query=up%7Bjob%3D%22not
 O alvo `noter-backend` deve aparecer como `UP`, o Prometheus deve mostrar o Alertmanager como ativo em **Status > Runtime & Build Information**, o dashboard **noter.donadio — Operação** deve existir na pasta **noter.donadio** e `/api/internal/metrics` deve continuar inacessível pelo proxy público. O Grafana provisiona Prometheus e Alertmanager como datasources não editáveis; alertas gerenciados pelo próprio Grafana não são encaminhados automaticamente.
 
 `noter_pipeline_enabled{pipeline=...}` diferencia backlog real de uma
-capacidade deliberadamente desligada. As regras de atraso de transcrição e
-análise só disparam quando o indicador vale `1`; desligar OpenAI não oculta as
+capacidade deliberadamente desligada. As regras de atraso de transcrição,
+análise e notificação só disparam quando o indicador vale `1`; desligar OpenAI não oculta as
 mensagens originais nem produz falso incidente.
 
 Valide configuração e regras sem iniciar a stack:
@@ -121,6 +121,20 @@ Antes de qualquer intervenção, registre horário, alerta e resultado. Use some
 3. Correlacione por ID interno da mensagem ou análise sem consultar conteúdo em logs.
 4. Antes de retry, confirme se a tentativa anterior expirou e se o worker preservará valores confirmados manualmente.
 5. Em falha de provedor, mantenha a mensagem original consultável e suspenda novas chamadas se houver risco de custo ou privacidade.
+
+### Notificação atrasada ou falha
+
+1. Confirme o profile `notifications`, `NOTIFICATION_ADAPTER=bark` e a saúde do
+   worker sem imprimir a URL secreta.
+2. Verifique `noter_notifications`, a idade do item pendente e a fila
+   `inbound-notifications`; jobs de atenção atrasados por dez minutos são
+   esperados e não representam backlog por si só.
+3. Correlacione apenas IDs internos e códigos sanitizados. Não copie resposta do
+   provedor, conteúdo, telefone ou chave para logs.
+4. Corrija conectividade ou credencial antes do retry. Não crie manualmente uma
+   segunda entrega, pois o estado persistente controla a deduplicação.
+5. Após a recuperação, use um aviso sintético e confirme estado `completed` no
+   PostgreSQL sem enviar mensagem ao WhatsApp.
 
 ### Exclusão de mídia pendente
 

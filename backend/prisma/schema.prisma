@@ -73,6 +73,17 @@ enum WhatsappConnectionStatus {
   timeout
 }
 
+enum NotificationChannel {
+  bark
+}
+
+enum NotificationKind {
+  message_received
+  analysis_completed
+  analysis_attention
+  transcription_attention
+}
+
 enum UserRole {
   admin
 }
@@ -123,6 +134,7 @@ model Workspace {
   auditEvents                AuditEvent[]
   mediaDeletionTasks         MediaDeletionTask[]
   negotiationFollowUpHistory NegotiationFollowUpHistory[]
+  notificationDeliveries     NotificationDelivery[]
 
   @@map("workspaces")
 }
@@ -314,6 +326,7 @@ model Message {
   negotiation       Negotiation?     @relation(fields: [workspaceId, negotiationId], references: [workspaceId, id], onDelete: Restrict)
   mediaAsset        MediaAsset?
   aiAnalyses        AiAnalysis[]
+  notificationDeliveries NotificationDelivery[]
 
   @@unique([whatsappAccountId, externalMessageId])
   @@unique([workspaceId, id])
@@ -321,6 +334,27 @@ model Message {
   @@index([contactId, occurredAt])
   @@index([negotiationId, occurredAt])
   @@map("messages")
+}
+
+model NotificationDelivery {
+  id          String              @id @default(uuid()) @db.Uuid
+  workspaceId String              @map("workspace_id") @db.Uuid
+  messageId   String              @map("message_id") @db.Uuid
+  channel     NotificationChannel
+  kind        NotificationKind       @default(message_received)
+  state       ProcessingState     @default(pending)
+  attemptId   String?             @map("attempt_id") @db.Uuid
+  startedAt   DateTime?           @map("started_at") @db.Timestamptz(6)
+  completedAt DateTime?           @map("completed_at") @db.Timestamptz(6)
+  failureCode String?             @map("failure_code") @db.VarChar(100)
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  workspace   Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  message     Message             @relation(fields: [workspaceId, messageId], references: [workspaceId, id], onDelete: Cascade)
+
+  @@unique([messageId, channel, kind])
+  @@index([workspaceId, state])
+  @@map("notification_deliveries")
 }
 
 model MediaAsset {

@@ -77,6 +77,7 @@ mídia:
 ```bash
 sudo /opt/noter-donadio/scripts/status-vps.sh --diagnose-baileys
 sudo /opt/noter-donadio/scripts/status-vps.sh --diagnose-media
+sudo /opt/noter-donadio/scripts/status-vps.sh --diagnose-notifications
 ```
 
 O status padrão informa somente se existe alguma conta Baileys conectada,
@@ -85,6 +86,18 @@ telefone, JID, QR ou credenciais.
 
 O diagnóstico de mídia retorna somente contagens agregadas de áudio, imagem e
 documento por estado de download e logs sanitizados do worker.
+
+Para ativar a trilha Bark autorizada, execute em terminal interativo:
+
+```bash
+sudo /opt/noter-donadio/scripts/deploy-vps.sh --enable-notifications
+sudo /opt/noter-donadio/scripts/status-vps.sh --diagnose-notifications
+```
+
+O deploy lê a URL-base sem eco, recusa título ou corpo no caminho, define o
+corte UTC imediatamente antes da publicação, preserva os profiles existentes e
+exige que o worker `notification` permaneça em execução. O diagnóstico mostra
+somente contagens por marco/estado e logs sanitizados.
 
 Na primeira ativação autorizada do conector Baileys, use:
 

@@ -100,3 +100,12 @@ lista análise e transcrição falhas sem conteúdo e permite nova tentativa ape
 para mensagens posteriores ao corte. O usuário precisa confirmar que o
 conteúdo será reenviado à OpenAI; a ação muda o estado e cria a outbox na mesma
 transação, além de registrar `processing_retry_requested` na auditoria.
+
+## Notificações Bark
+
+O adapter Bark está implementado e homologado com uma chamada real controlada.
+Ele acompanha persistência, conclusão da análise, classificação de novo lead e
+falhas persistentes sem transmitir conteúdo ou dados pessoais. A fila possui
+deduplicação persistente por mensagem e marco, corte temporal, atraso anti-ruído
+para falhas e métricas sanitizadas. A ativação contínua ainda depende de
+configuração e deploy explícitos do profile `notifications` na VPS.

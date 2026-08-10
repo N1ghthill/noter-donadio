@@ -4,6 +4,7 @@ set -euo pipefail
 reboot_if_required=0
 enable_baileys=0
 enable_groq=0
+enable_notifications=0
 reset_admin_password=0
 reset_workspace_data=0
 reprocess_failed_audio=0
@@ -18,6 +19,9 @@ for argument in "$@"; do
       ;;
     --enable-groq)
       enable_groq=1
+      ;;
+    --enable-notifications)
+      enable_notifications=1
       ;;
     --reset-admin-password)
       reset_admin_password=1
@@ -99,6 +103,33 @@ if test "${enable_groq}" = "1"; then
   set +a
 fi
 
+if test "${enable_notifications}" = "1"; then
+  if ! test -r /dev/tty; then
+    printf '%s\n' 'A ativação Bark exige um terminal interativo.' >&2
+    exit 1
+  fi
+  printf 'URL-base secreta do Bark: ' >/dev/tty
+  IFS= read -r -s bark_webhook_url </dev/tty
+  printf '\n' >/dev/tty
+  if [[ ! "${bark_webhook_url}" =~ ^https://api\.day\.app/[^/?#[:space:]]+$ ]]; then
+    unset bark_webhook_url
+    printf '%s\n' 'Use a URL-base HTTPS do Bark, sem título, corpo, query ou fragmento.' >&2
+    exit 1
+  fi
+  notification_not_before="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  set_env_value NOTIFICATION_ADAPTER bark
+  set_env_value BARK_WEBHOOK_URL "${bark_webhook_url}"
+  set_env_value BARK_NOTIFICATION_OPEN_URL "${PUBLIC_ORIGIN%/}/conversas"
+  set_env_value BARK_TIMEOUT_MS 10000
+  set_env_value NOTIFICATION_NOT_BEFORE "${notification_not_before}"
+  set_env_value COMPOSE_PROFILES "$(add_compose_profile notifications)"
+  unset bark_webhook_url notification_not_before
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
+fi
+
 if test "${enable_baileys}" = "1"; then
   binding="$(
     docker compose "${compose_arguments[@]}" exec -T postgres \
@@ -158,10 +189,14 @@ docker compose "${compose_arguments[@]}" build backend frontend
 docker compose "${compose_arguments[@]}" up -d --remove-orphans
 
 assistive_workers_enabled=0
+notification_worker_enabled=0
 IFS=',' read -r -a configured_profiles <<< "${COMPOSE_PROFILES:-}"
 for configured_profile in "${configured_profiles[@]}"; do
   if test "${configured_profile}" = "demo" || test "${configured_profile}" = "assistive"; then
     assistive_workers_enabled=1
+  fi
+  if test "${configured_profile}" = "notifications"; then
+    notification_worker_enabled=1
   fi
 done
 if test "${assistive_workers_enabled}" = "0"; then
@@ -178,6 +213,20 @@ else
       exit 1
     fi
   done
+fi
+
+if test "${notification_worker_enabled}" = "0"; then
+  docker compose "${compose_arguments[@]}" --profile notifications stop notification
+  docker compose "${compose_arguments[@]}" --profile notifications rm -f notification
+else
+  notification_container="$(
+    docker compose "${compose_arguments[@]}" ps --status running --quiet notification
+  )"
+  if test -z "${notification_container}"; then
+    printf '%s\n' 'O worker de notificações não permaneceu em execução; deploy cancelado.' >&2
+    docker compose "${compose_arguments[@]}" logs --tail 50 --no-color notification >&2
+    exit 1
+  fi
 fi
 
 for _attempt in $(seq 1 60); do

@@ -12,6 +12,7 @@
     "start:realtime": "node dist/realtime.main.js",
     "start:transcription": "node dist/transcription.main.js",
     "start:analysis": "node dist/analysis.main.js",
+    "start:notification": "node dist/notification.main.js",
     "start:retention": "node dist/media-retention.main.js",
     "start:media-download": "node dist/media-download.main.js",
     "start:baileys": "node dist/baileys.main.js",

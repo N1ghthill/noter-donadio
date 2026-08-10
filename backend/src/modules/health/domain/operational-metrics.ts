@@ -5,6 +5,7 @@ export const QUEUE_NAMES = [
   'media-download',
   'audio-transcription',
   'realtime-events',
+  'inbound-notifications',
 ] as const;
 export const QUEUE_STATES = ['waiting', 'active', 'delayed', 'failed', 'paused'] as const;
 
@@ -14,16 +15,21 @@ type QueueName = typeof QUEUE_NAMES[number];
 type QueueState = typeof QUEUE_STATES[number];
 
 export interface OperationalMetricsSnapshot {
-  readonly pipelinesEnabled: Readonly<Record<'media_download' | 'transcription' | 'analysis', boolean>>;
+  readonly pipelinesEnabled: Readonly<Record<
+    'media_download' | 'transcription' | 'analysis' | 'notification',
+    boolean
+  >>;
   readonly outbox: Readonly<Record<OutboxStatus, number>>;
   readonly mediaDownloads: Readonly<Record<ProcessingState, number>>;
   readonly transcriptions: Readonly<Record<ProcessingState, number>>;
   readonly analyses: Readonly<Record<ProcessingState, number>>;
+  readonly notifications: Readonly<Record<ProcessingState, number>>;
   readonly mediaDeletionTasks: number;
   readonly oldestPendingOutboxAgeSeconds: number;
   readonly oldestPendingMediaDownloadAgeSeconds: number;
   readonly oldestPendingTranscriptionAgeSeconds: number;
   readonly oldestPendingAnalysisAgeSeconds: number;
+  readonly oldestPendingNotificationAgeSeconds: number;
   readonly queues: Readonly<Record<QueueName, Readonly<Record<QueueState, number>>>>;
 }
 
@@ -45,6 +51,9 @@ export function renderPrometheusMetrics(snapshot: OperationalMetricsSnapshot): s
     '# HELP noter_analyses Number of AI analyses by processing state.',
     '# TYPE noter_analyses gauge',
     ...PROCESSING_STATES.map((state) => `noter_analyses{state="${state}"} ${snapshot.analyses[state]}`),
+    '# HELP noter_notifications Number of notification deliveries by processing state.',
+    '# TYPE noter_notifications gauge',
+    ...PROCESSING_STATES.map((state) => `noter_notifications{state="${state}"} ${snapshot.notifications[state]}`),
     '# HELP noter_media_deletion_tasks Number of durable media deletion tasks.',
     '# TYPE noter_media_deletion_tasks gauge',
     `noter_media_deletion_tasks ${snapshot.mediaDeletionTasks}`,
@@ -54,6 +63,7 @@ export function renderPrometheusMetrics(snapshot: OperationalMetricsSnapshot): s
     `noter_oldest_pending_age_seconds{pipeline="media_download"} ${formatNumber(snapshot.oldestPendingMediaDownloadAgeSeconds)}`,
     `noter_oldest_pending_age_seconds{pipeline="transcription"} ${formatNumber(snapshot.oldestPendingTranscriptionAgeSeconds)}`,
     `noter_oldest_pending_age_seconds{pipeline="analysis"} ${formatNumber(snapshot.oldestPendingAnalysisAgeSeconds)}`,
+    `noter_oldest_pending_age_seconds{pipeline="notification"} ${formatNumber(snapshot.oldestPendingNotificationAgeSeconds)}`,
     '# HELP noter_pipeline_enabled Whether processing is intentionally enabled for a pipeline.',
     '# TYPE noter_pipeline_enabled gauge',
     ...Object.entries(snapshot.pipelinesEnabled).map(([pipeline, enabled]) => (
