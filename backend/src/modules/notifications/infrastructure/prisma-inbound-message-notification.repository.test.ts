@@ -40,12 +40,14 @@ test('deduplica entrega e filtra direção e corte antes de criar estado', async
   const outboundMessageId = randomUUID();
   const oldMessageId = randomUUID();
   const failedAnalysisMessageId = randomUUID();
+  const analyzedBeforeReceiptMessageId = randomUUID();
   await prisma.message.createMany({
     data: [
       message(eligibleMessageId, 'eligible', 'inbound', '2026-08-10T15:01:00Z'),
       message(outboundMessageId, 'outbound', 'outbound', '2026-08-10T15:02:00Z'),
       message(oldMessageId, 'old', 'inbound', '2026-08-10T14:59:00Z'),
       message(failedAnalysisMessageId, 'failed-analysis', 'inbound', '2026-08-10T15:03:00Z'),
+      message(analyzedBeforeReceiptMessageId, 'analyzed-first', 'inbound', '2026-08-10T15:03:30Z'),
     ],
   });
 
@@ -100,7 +102,29 @@ test('deduplica entrega e filtra direção e corte antes de criar estado', async
   if (attentionClaim.status === 'claimed') {
     assert.equal(attentionClaim.target.variant, 'analysis_attention');
   }
-  assert.equal(await prisma.notificationDelivery.count({ where: { workspaceId } }), 3);
+  await prisma.aiAnalysis.create({
+    data: {
+      workspaceId,
+      messageId: analyzedBeforeReceiptMessageId,
+      negotiationId,
+      state: 'completed',
+      promptVersion: 'message-context-v2',
+      conversationContext: { interactionType: 'continuation' },
+    },
+  });
+  const analyzedFirstClaim = await repository.claim({
+    ...claimInput(analyzedBeforeReceiptMessageId),
+    milestone: 'analysis_completed',
+  });
+  assert.equal(analyzedFirstClaim.status, 'claimed');
+  if (analyzedFirstClaim.status === 'claimed') {
+    await repository.complete(analyzedFirstClaim.target, new Date('2026-08-10T15:06:00Z'));
+  }
+  assert.equal(
+    (await repository.claim(claimInput(analyzedBeforeReceiptMessageId))).status,
+    'ineligible',
+  );
+  assert.equal(await prisma.notificationDelivery.count({ where: { workspaceId } }), 4);
 
   function message(
     id: string,

@@ -3,30 +3,47 @@ import type {
   NotificationVariant,
 } from '../domain/inbound-message-notification.js';
 
-const NOTIFICATION_GROUP = 'Construção Financiada 360';
 const NOTIFICATION_COPY: Readonly<Record<NotificationVariant, {
   title: string;
   body: string;
+  group: string;
+  level: 'active' | 'passive' | 'timeSensitive';
+  audience: 'commercial' | 'operational';
 }>> = {
   message_received: {
-    title: 'Nova mensagem no WhatsApp',
-    body: 'Uma mensagem recebida foi organizada no CRM.',
+    title: 'Atendimento recebido',
+    body: 'A conversa foi salva no CRM e está sendo analisada. Nenhuma resposta foi enviada automaticamente.',
+    group: 'Construção Financiada 360 · Atendimentos',
+    level: 'passive',
+    audience: 'commercial',
   },
   new_lead_identified: {
-    title: 'Novo lead identificado pela IA',
-    body: 'A identificação e as sugestões estão prontas para sua revisão.',
+    title: 'Novo lead pronto para revisão',
+    body: 'A IA identificou uma nova oportunidade. Toque para revisar e responder.',
+    group: 'Construção Financiada 360 · Atendimentos',
+    level: 'timeSensitive',
+    audience: 'commercial',
   },
   analysis_ready: {
-    title: 'Análise da IA concluída',
-    body: 'O contexto e as sugestões do atendimento estão prontos para revisão.',
+    title: 'Conversa analisada',
+    body: 'O contexto e as sugestões estão disponíveis no CRM. Toque para revisar e responder.',
+    group: 'Construção Financiada 360 · Atendimentos',
+    level: 'active',
+    audience: 'commercial',
   },
   analysis_attention: {
     title: 'Análise precisa de atenção',
-    body: 'A etapa de IA não foi concluída. Abra o CRM para revisar.',
+    body: 'A análise não foi concluída após novas tentativas. Abra a Administração para revisar.',
+    group: 'Construção Financiada 360 · Sistema',
+    level: 'active',
+    audience: 'operational',
   },
   transcription_attention: {
     title: 'Áudio precisa de atenção',
-    body: 'A transcrição automática não foi concluída. Abra o CRM para revisar.',
+    body: 'A transcrição não foi concluída após novas tentativas. Abra a Administração para revisar.',
+    group: 'Construção Financiada 360 · Sistema',
+    level: 'active',
+    audience: 'operational',
   },
 };
 
@@ -41,21 +58,28 @@ export class BarkNotifier implements InboundMessageNotifier {
     private readonly openUrl: string,
     private readonly fetchImplementation: NotificationFetch = fetch,
     private readonly timeoutMs = 10_000,
+    private readonly operationalDestination?: {
+      readonly webhookUrl: string;
+      readonly openUrl: string;
+    },
   ) {}
 
   public async notify(variant: NotificationVariant): Promise<void> {
     const copy = NOTIFICATION_COPY[variant];
+    const destination = copy.audience === 'operational' && this.operationalDestination
+      ? this.operationalDestination
+      : { webhookUrl: this.webhookUrl, openUrl: this.openUrl };
     let response: Response;
     try {
-      response = await this.fetchImplementation(this.webhookUrl, {
+      response = await this.fetchImplementation(destination.webhookUrl, {
         method: 'POST',
         headers: { 'content-type': 'application/json; charset=utf-8' },
         body: JSON.stringify({
           title: copy.title,
           body: copy.body,
-          group: NOTIFICATION_GROUP,
-          level: 'active',
-          url: this.openUrl,
+          group: copy.group,
+          level: copy.level,
+          url: destination.openUrl,
         }),
         signal: AbortSignal.timeout(this.timeoutMs),
       });

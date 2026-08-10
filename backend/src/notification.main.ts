@@ -29,6 +29,12 @@ const service = new InboundMessageNotificationService(
     environment.BARK_NOTIFICATION_OPEN_URL,
     fetch,
     environment.BARK_TIMEOUT_MS,
+    environment.BARK_OPERATIONAL_WEBHOOK_URL
+      ? {
+          webhookUrl: environment.BARK_OPERATIONAL_WEBHOOK_URL,
+          openUrl: environment.BARK_OPERATIONAL_OPEN_URL,
+        }
+      : undefined,
   ),
   notBefore,
 );

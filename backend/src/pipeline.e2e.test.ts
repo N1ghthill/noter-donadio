@@ -158,10 +158,6 @@ test('pipeline integrado processa texto de HTTP até análise e notificação em
     where: { workspaceId, messageId, state: 'completed' },
     select: { id: true },
   }));
-  await waitFor(async () => prisma.notificationDelivery.findFirst({
-    where: { workspaceId, messageId, kind: 'message_received', state: 'completed' },
-    select: { id: true },
-  }));
   const secondDispatch = await dispatcher.dispatchBatch(10);
   assert.deepEqual(secondDispatch, { claimed: 1, published: 1, failed: 0 });
 
@@ -169,12 +165,19 @@ test('pipeline integrado processa texto de HTTP até análise e notificação em
     where: { workspaceId, messageId, kind: 'analysis_completed', state: 'completed' },
     select: { id: true },
   }));
+  assert.deepEqual(
+    await notificationService.execute(workspaceId, messageId, 'message_received'),
+    { status: 'skipped' },
+  );
 
   await waitFor(async () => events.some((event) => event.type === 'analysis.changed'));
   assert.ok(events.some((event) => event.type === 'message.persisted'));
   assert.ok(events.some((event) => event.type === 'analysis.changed'));
   assert.equal(await prisma.message.count({ where: { workspaceId, externalMessageId } }), 1);
-  assert.deepEqual(notificationVariants, ['message_received', 'analysis_ready']);
+  assert.deepEqual(notificationVariants, ['analysis_ready']);
+  assert.equal(await prisma.notificationDelivery.count({
+    where: { workspaceId, messageId, kind: 'message_received' },
+  }), 0);
   assert.equal(await prisma.outboxEvent.count({
     where: { workspaceId, status: { not: 'published' } },
   }), 0);

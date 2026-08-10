@@ -32,6 +32,8 @@ import {
 } from './modules/capabilities/http/capabilities.routes.js';
 import type { ProcessingFailureRepository } from './modules/operations/domain/processing-retry.js';
 import { registerProcessingRetryRoutes } from './modules/operations/http/processing-retry.routes.js';
+import type { NotificationStatusRepository } from './modules/notifications/domain/notification-status.js';
+import { registerNotificationStatusRoutes } from './modules/notifications/http/notification-status.routes.js';
 
 interface AppOptions {
   readonly trustProxy?: boolean;
@@ -55,6 +57,8 @@ interface AppOptions {
   readonly productCapabilities?: ProductCapabilities;
   readonly processingFailureRepository?: ProcessingFailureRepository;
   readonly processingNotBefore?: Date;
+  readonly notificationStatusRepository?: NotificationStatusRepository;
+  readonly notificationEnabled?: boolean;
 }
 
 export function buildApp(options: AppOptions = {}): FastifyInstance {
@@ -174,6 +178,14 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
       repository: options.processingFailureRepository,
       sessionAuthenticator,
       notBefore: options.processingNotBefore,
+    });
+  }
+
+  if (options.notificationStatusRepository && sessionAuthenticator) {
+    registerNotificationStatusRoutes(app, {
+      repository: options.notificationStatusRepository,
+      sessionAuthenticator,
+      enabled: options.notificationEnabled ?? false,
     });
   }
 

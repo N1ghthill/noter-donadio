@@ -90,7 +90,11 @@ export function notificationJobOptions(
     jobId: eventId,
     attempts: 12,
     backoff: { type: 'fixed', delay: 30_000 },
-    ...(requiresFinalState ? { delay: 10 * 60 * 1_000 } : {}),
+    ...(requiresFinalState
+      ? { delay: 10 * 60 * 1_000 }
+      : milestone === 'message_received'
+        ? { delay: 60 * 1_000 }
+        : {}),
     removeOnComplete: { age: 86_400, count: 10_000 },
     removeOnFail: { age: 604_800, count: 10_000 },
   };

@@ -99,6 +99,13 @@ corte UTC imediatamente antes da publicação, preserva os profiles existentes e
 exige que o worker `notification` permaneça em execução. O diagnóstico mostra
 somente contagens por marco/estado e logs sanitizados.
 
+Para separar os alertas técnicos do dispositivo do cliente, configure
+`BARK_OPERATIONAL_WEBHOOK_URL` diretamente no `.env` protegido da VPS e mantenha
+`BARK_OPERATIONAL_OPEN_URL` apontando para `/administracao`. Na ausência dessa
+segunda URL-base, os alertas técnicos continuam no destino principal para não
+ficarem invisíveis. Nunca registre a chave em documentação, logs ou comandos
+versionados.
+
 Na primeira ativação autorizada do conector Baileys, use:
 
 ```bash

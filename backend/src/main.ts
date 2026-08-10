@@ -26,6 +26,7 @@ import { PrismaWorkspaceExportRepository } from './modules/privacy/infrastructur
 import { PrismaAuditLogRepository } from './modules/privacy/infrastructure/prisma-audit-log.repository.js';
 import { DependencyReadinessProbe } from './modules/health/infrastructure/dependency-readiness.js';
 import { PrismaBullMqOperationalMetricsCollector } from './modules/health/infrastructure/operational-metrics.js';
+import { PrismaNotificationStatusRepository } from './modules/notifications/infrastructure/prisma-notification-status.repository.js';
 import { PrismaProcessingFailureRepository } from './modules/operations/infrastructure/prisma-processing-failure.repository.js';
 
 const environment = readEnvironment();
@@ -100,6 +101,8 @@ const app = buildApp({
     audioTranscriptionEnabled: environment.TRANSCRIPTION_FEATURE_ENABLED,
     messageAnalysisEnabled: environment.AI_ANALYSIS_FEATURE_ENABLED,
   },
+  notificationStatusRepository: new PrismaNotificationStatusRepository(prisma),
+  notificationEnabled: environment.NOTIFICATION_ADAPTER !== 'disabled',
   ...(demoMessageService ? { demoMessageService } : {}),
   ...(whatsappService ? { whatsappService } : {}),
 });

@@ -212,6 +212,20 @@ export interface ProductCapabilities {
   messageAnalysisEnabled: boolean;
 }
 
+export interface NotificationStatus {
+  enabled: boolean;
+  channel: 'bark' | null;
+  automaticWhatsappRepliesEnabled: false;
+  lastInboundMessageAt: string | null;
+  lastDeliveredAt: string | null;
+  deliveries: {
+    pending: number;
+    processing: number;
+    completed: number;
+    failed: number;
+  };
+}
+
 export interface ConversationSummary {
   negotiationId: string;
   contactId: string;

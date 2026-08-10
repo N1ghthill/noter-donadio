@@ -19,7 +19,12 @@ const environmentSchema = z.object({
   ASSISTIVE_PROCESSING_NOT_BEFORE: z.iso.datetime({ offset: true }).optional(),
   NOTIFICATION_NOT_BEFORE: z.iso.datetime({ offset: true }).optional(),
   BARK_WEBHOOK_URL: z.url().optional(),
-  BARK_NOTIFICATION_OPEN_URL: z.url().default('https://leadcontrol.online/conversas'),
+  BARK_NOTIFICATION_OPEN_URL: z.url().default('https://leadcontrol.online/conversas?period=today'),
+  BARK_OPERATIONAL_WEBHOOK_URL: z.preprocess(
+    (value) => value === '' ? undefined : value,
+    z.url().optional(),
+  ),
+  BARK_OPERATIONAL_OPEN_URL: z.url().default('https://leadcontrol.online/administracao'),
   BARK_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(30_000).default(10_000),
   OPENAI_API_KEY: z.string().min(20).optional(),
   OPENAI_TRANSCRIPTION_MODEL: z.string().trim().min(1).max(100).default('gpt-4o-mini-transcribe'),

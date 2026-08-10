@@ -14,6 +14,7 @@ import type {
   SessionInfo,
   WorkspaceAuditEvent,
   ProcessingFailure,
+  NotificationStatus,
   WhatsappConnection,
 } from '../types/api.js';
 
@@ -96,6 +97,10 @@ export const api = {
 
   async processingFailures(limit = 50) {
     return request<{ data: ProcessingFailure[] }>(`/api/processing-failures?limit=${limit}`);
+  },
+
+  async notificationStatus() {
+    return request<NotificationStatus>('/api/notifications/status');
   },
 
   async retryProcessing(failure: ProcessingFailure) {

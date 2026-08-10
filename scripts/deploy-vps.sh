@@ -119,7 +119,7 @@ if test "${enable_notifications}" = "1"; then
   notification_not_before="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   set_env_value NOTIFICATION_ADAPTER bark
   set_env_value BARK_WEBHOOK_URL "${bark_webhook_url}"
-  set_env_value BARK_NOTIFICATION_OPEN_URL "${PUBLIC_ORIGIN%/}/conversas"
+  set_env_value BARK_NOTIFICATION_OPEN_URL "${PUBLIC_ORIGIN%/}/conversas?period=today"
   set_env_value BARK_TIMEOUT_MS 10000
   set_env_value NOTIFICATION_NOT_BEFORE "${notification_not_before}"
   set_env_value COMPOSE_PROFILES "$(add_compose_profile notifications)"

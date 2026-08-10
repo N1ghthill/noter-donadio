@@ -1,6 +1,6 @@
 # Estado verificável do MVP
 
-Última auditoria: 03/08/2026.
+Última auditoria: 10/08/2026.
 
 Esta matriz compara o escopo executável com código, testes e runtime da VPS.
 `Pronto` significa implementado e validado. `Preparado` significa que o código
@@ -23,7 +23,7 @@ está pronto, mas a integração externa permanece deliberadamente desligada.
 | Agenda de próximas ações | Pronto | Filtros, resumo, classificação, edição rápida e conclusão auditável |
 | Arquivos por contato | Pronto | Mídias privadas, filtros persistidos, grade/lista responsivas, transcrição de áudio, retenção visível, renovação de acesso e navegação contextual |
 | Atualização em tempo real | Pronto | Eventos sanitizados por workspace e reconciliação REST |
-| Notificações Bark do atendimento | Preparado e homologado; não publicado | Aviso de recebimento, novo lead identificado, análise pronta e falha persistente; payload estático, deduplicação, corte temporal e teste real controlado |
+| Notificações Bark do atendimento | Publicado e homologado; refinamento pronto | Mensagem real confirmou recebimento e análise, sem falhas; próxima versão consolida avisos, diferencia prioridades e acrescenta visão autenticada na Administração |
 | Sugestões sem ação autônoma | Pronto; integração real em diagnóstico controlado | Saída estrita, contexto limitado da pessoa e de negociações ativas, classificação de novo lead/assunto/continuação/devolutiva/múltiplos assuntos, revisão de vínculo, edição, aceite/recusa explícitos, falhas sanitizadas, retry manual e auditoria |
 | Transcrição OpenAI | Disponível; não selecionada | Adapter preservado, `gpt-4o-mini-transcribe`, corte temporal, diagnóstico sanitizado e retry administrativo explícito |
 | Análise OpenAI | Disponível; não selecionada | Responses API, Structured Outputs, `store: false`, corte temporal, diagnóstico sanitizado e retry administrativo explícito |
@@ -36,7 +36,7 @@ está pronto, mas a integração externa permanece deliberadamente desligada.
 `https://leadcontrol.online` opera com PostgreSQL, Redis, aplicação, Caddy,
 processo Baileys, download de mídia, outbox, tempo real, retenção e
 observabilidade na mesma VPS. A aplicação e as dependências foram verificadas
-saudáveis em 03/08/2026. O cliente pareou por QR o número permanente e a sessão
+saudáveis em 10/08/2026. O cliente pareou por QR o número permanente e a sessão
 Baileys permanece conectada. Texto e mídias continuam sendo preservados e os
 downloads privados observados estão concluídos. O sistema não conecta, troca,
 desconecta nem envia mensagens por conta própria.
@@ -51,9 +51,15 @@ determinística por workspace/JID/telefone normalizado, enquanto a IA apenas
 sugere se a mensagem representa novo lead, novo assunto, continuação,
 devolutiva ou múltiplos assuntos e quais negociações podem estar relacionadas.
 Mais de uma negociação ativa por contato passou a ser aceita e vínculos
-ambíguos exigem revisão humana. A análise estruturada foi homologada com dados
-sintéticos; a classificação contextual e a transcrição aguardam uma nova rodada
-real posterior ao corte.
+ambíguos exigem revisão humana. A análise estruturada e a classificação
+contextual já processaram uma mensagem real posterior ao corte; a transcrição
+ainda aguarda uma nova rodada com áudio real.
+Em 10/08/2026, as notificações Bark foram publicadas com corte temporal e uma
+mensagem real posterior ao corte confirmou a entrega dos marcos de recebimento e
+análise, sem estado pendente ou falho. O cliente confirmou o recebimento no
+dispositivo. O app mantém respostas automáticas desativadas. A revisão local
+validada para a próxima publicação torna esse limite visível e acrescenta apenas
+estado operacional agregado na Administração.
 As falhas antigas permanecem registradas, sem jobs pendentes ou em processamento,
 e não serão repetidas automaticamente. A administração oferece retry somente
 após confirmação explícita. As mídias originais permanecem consultáveis mesmo
@@ -64,8 +70,8 @@ se o provedor falhar.
 - usar a administração para repetir uma análise controlada, corrigir a causa
   sanitizada observada e homologar uma nova mensagem e um novo áudio;
 - aceitar formalmente o risco operacional e os termos aplicáveis ao Baileys;
-- publicar o profile de notificações e homologar a trilha completa com uma nova
-  mensagem real posterior ao corte;
+- configurar um segundo destino Bark se o responsável técnico precisar receber
+  alertas operacionais separadamente do cliente;
 - implementar backup criptografado fora da VPS quando a fase exigir recuperação
   contra perda integral do host;
 - executar avaliação formal de segurança e privacidade antes de ampliar o uso

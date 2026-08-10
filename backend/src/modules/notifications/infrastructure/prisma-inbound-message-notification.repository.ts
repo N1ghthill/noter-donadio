@@ -144,7 +144,19 @@ async function notificationVariant(
   messageId: string,
   milestone: NotificationMilestone,
 ): Promise<NotificationVariant | 'busy' | 'ineligible'> {
-  if (milestone === 'message_received') return 'message_received';
+  if (milestone === 'message_received') {
+    const analyzedDelivery = await transaction.notificationDelivery.findUnique({
+      where: {
+        messageId_channel_kind: {
+          messageId,
+          channel: 'bark',
+          kind: 'analysis_completed',
+        },
+      },
+      select: { state: true },
+    });
+    return analyzedDelivery?.state === 'completed' ? 'ineligible' : 'message_received';
+  }
   if (milestone === 'transcription_attention') {
     const media = await transaction.mediaAsset.findFirst({
       where: { workspaceId, messageId },

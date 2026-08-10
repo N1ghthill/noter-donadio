@@ -8,14 +8,16 @@ padrão. Ela não envia respostas ao WhatsApp nem aplica sugestões da IA.
 
 O webhook recebe somente conteúdo estático, escolhido entre estes marcos:
 
-- `Nova mensagem no WhatsApp`, após persistência;
-- `Novo lead identificado pela IA`, quando a análise concluída classifica a
+- `Atendimento recebido`, após persistência e somente se a análise ainda não
+  tiver produzido um aviso mais útil dentro de um minuto;
+- `Novo lead pronto para revisão`, quando a análise concluída classifica a
   interação como `new_lead`;
-- `Análise da IA concluída`, para os demais contextos analisados;
+- `Conversa analisada`, para os demais contextos analisados;
 - `Análise precisa de atenção` ou `Áudio precisa de atenção`, quando a etapa
   continua falha depois da janela normal de retries;
-- grupo `Construção Financiada 360`;
-- link para `https://leadcontrol.online/conversas`.
+- grupos `Construção Financiada 360 · Atendimentos` e
+  `Construção Financiada 360 · Sistema`;
+- links para as conversas do dia ou para a Administração.
 
 Nome, telefone, JID, texto, transcrição, mídia e IDs internos não são enviados ao
 Bark. O job contém apenas `workspaceId`, `messageId` e o marco enumerado, usados
@@ -30,7 +32,9 @@ Use como `BARK_WEBHOOK_URL` apenas a URL-base do dispositivo:
 ```dotenv
 NOTIFICATION_ADAPTER=bark
 BARK_WEBHOOK_URL=https://api.day.app/CHAVE_DO_DISPOSITIVO
-BARK_NOTIFICATION_OPEN_URL=https://leadcontrol.online/conversas
+BARK_NOTIFICATION_OPEN_URL=https://leadcontrol.online/conversas?period=today
+BARK_OPERATIONAL_WEBHOOK_URL=
+BARK_OPERATIONAL_OPEN_URL=https://leadcontrol.online/administracao
 BARK_TIMEOUT_MS=10000
 NOTIFICATION_NOT_BEFORE=2026-08-10T15:00:00Z
 COMPOSE_PROFILES=baileys,notifications
@@ -43,6 +47,12 @@ ao corte, mensagens enviadas pelo operador e eventos desconhecidos são ignorado
 Falhas de análise e transcrição aguardam dez minutos antes da conferência. Se o
 retry já concluiu a etapa, o aviso de atenção é cancelado; se a etapa ainda está
 pendente, o job continua tentando sem gerar uma nova entrega concorrente.
+
+`BARK_OPERATIONAL_WEBHOOK_URL` é opcional. Quando configurado, alertas de falha
+vão para o dispositivo do responsável técnico; quando vazio, permanecem no
+destino principal para não tornar falhas invisíveis. A confirmação de recebimento
+é passiva, um novo lead é sensível ao tempo e os demais avisos são ativos. Alertas
+críticos não são usados.
 
 Depois de configurar, a publicação exige o procedimento operacional normal de
 deploy. Os testes automatizados usam um `fetch` falso e nunca chamam o serviço

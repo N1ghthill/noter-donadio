@@ -862,3 +862,23 @@ O adapter é opt-in por ambiente, o segredo permanece fora do repositório e err
 são reduzidos a códigos seguros. Testes usam transporte falso e nunca acessam o
 webhook real. Ativar o provedor não autoriza deploy nem envio de teste real, que
 continuam exigindo decisão operacional explícita.
+
+## ADR-077 — Avisos comerciais são consolidados e o estado é visível ao cliente
+
+Em 10/08/2026, a primeira mensagem real posterior à ativação produziu uma entrega
+de recebimento e outra de análise, ambas concluídas. Para preservar a confirmação
+sem duplicar avisos quando a IA responde rapidamente, `message_received` aguarda
+um minuto e é descartado se `analysis_completed` já foi entregue. Se a análise
+demorar ou a entrega falhar, a confirmação genérica continua sendo enviada.
+
+Os avisos comerciais usam grupo próprio e linguagem orientada à ação. A
+confirmação é passiva, novo lead é sensível ao tempo e nenhum evento usa alerta
+crítico. Falhas persistentes usam grupo operacional e podem ser direcionadas a
+uma segunda URL-base Bark; na ausência dela, voltam ao destinatário principal
+para não ficarem invisíveis.
+
+A Administração oferece um resumo autenticado por workspace com conexão do
+WhatsApp, último recebimento, última entrega e contagens por estado. O contrato
+declara explicitamente que respostas automáticas estão desativadas. Nenhum nome,
+telefone, conteúdo, transcrição, token ou ID de mensagem é retornado nesse resumo
+ou enviado ao Bark.

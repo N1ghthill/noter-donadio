@@ -4,13 +4,21 @@ import { api, ApiError } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { ErrorState, LoadingState } from '../components/Feedback.js';
 import { AUDIT_ACTION_LABELS, AUDIT_FIELD_LABELS, formatDateTime } from '../lib/format.js';
-import type { ProcessingFailure, SessionInfo, WorkspaceAuditEvent } from '../types/api.js';
+import type {
+  NotificationStatus,
+  ProcessingFailure,
+  SessionInfo,
+  WhatsappConnection,
+  WorkspaceAuditEvent,
+} from '../types/api.js';
 
 export function AdministrationPage() {
   const auth = useAuth();
   const [sessions, setSessions] = useState<SessionInfo[]>();
   const [auditEvents, setAuditEvents] = useState<WorkspaceAuditEvent[]>();
   const [processingFailures, setProcessingFailures] = useState<ProcessingFailure[]>();
+  const [notificationStatus, setNotificationStatus] = useState<NotificationStatus>();
+  const [whatsappConnection, setWhatsappConnection] = useState<WhatsappConnection>();
   const [error, setError] = useState(false);
   const [busyId, setBusyId] = useState<string>();
   const [exportBusy, setExportBusy] = useState(false);
@@ -19,12 +27,16 @@ export function AdministrationPage() {
   const load = useCallback(async () => {
     setError(false);
     try {
-      const [sessionResponse, auditResponse, failureResponse] = await Promise.all([
-        api.sessions(), api.auditEvents(), api.processingFailures(),
+      const [sessionResponse, auditResponse, failureResponse, notificationResponse, whatsappResponse]
+        = await Promise.all([
+          api.sessions(), api.auditEvents(), api.processingFailures(), api.notificationStatus(),
+          api.whatsappConnection(),
       ]);
       setSessions(sessionResponse.data);
       setAuditEvents(auditResponse.data);
       setProcessingFailures(failureResponse.data);
+      setNotificationStatus(notificationResponse);
+      setWhatsappConnection(whatsappResponse);
     } catch { setError(true); }
   }, []);
   useEffect(() => { void load(); }, [load]);
@@ -75,13 +87,36 @@ export function AdministrationPage() {
     }
   };
 
-  if (error && (!sessions || !auditEvents || !processingFailures)) return <ErrorState message="Não foi possível carregar a administração." retry={() => void load()} />;
-  if (!sessions || !auditEvents || !processingFailures) return <LoadingState label="Carregando administração…" />;
+  if (error && (!sessions || !auditEvents || !processingFailures || !notificationStatus || !whatsappConnection)) return <ErrorState message="Não foi possível carregar a administração." retry={() => void load()} />;
+  if (!sessions || !auditEvents || !processingFailures || !notificationStatus || !whatsappConnection) return <LoadingState label="Carregando administração…" />;
 
   return <div className="page-stack">
     <header className="page-header"><div><p className="eyebrow">Conta e privacidade</p><h1>Administração</h1></div>
       <p>Controle acessos ativos e consulte as proteções disponíveis para os dados do workspace.</p>
     </header>
+    <section className="panel">
+      <div className="panel-heading"><div><p className="eyebrow">Operação do atendimento</p><h2>Integrações e automações</h2></div>
+        <small>Dados técnicos, sem conteúdo das conversas</small></div>
+      <div className="session-list operational-status-list">
+        <article><div><strong>WhatsApp {whatsappConnection.status === 'connected' ? 'conectado' : 'requer atenção'}</strong>
+          <small>{whatsappConnection.status === 'connected'
+            ? 'Novas mensagens podem ser recebidas e organizadas no CRM.'
+            : `Estado atual: ${whatsappStatusLabel(whatsappConnection.status)}.`}</small></div>
+          <span className={`status-pill ${whatsappConnection.status === 'connected' ? 'success' : 'warning'}`}>
+            {whatsappConnection.status === 'connected' ? 'Ativo' : 'Revisar'}
+          </span></article>
+        <article><div><strong>Notificações {notificationStatus.enabled ? 'ativadas' : 'desativadas'}</strong>
+          <small>Última entrega: {notificationStatus.lastDeliveredAt ? formatDateTime(notificationStatus.lastDeliveredAt) : 'nenhuma registrada'}.</small>
+          <small>{notificationStatus.deliveries.completed} entregue(s) · {notificationStatus.deliveries.failed} falha(s) · {notificationStatus.deliveries.pending + notificationStatus.deliveries.processing} em andamento.</small></div>
+          <span className={`status-pill ${notificationStatus.enabled && notificationStatus.deliveries.failed === 0 ? 'success' : 'warning'}`}>
+            {notificationStatus.enabled && notificationStatus.deliveries.failed === 0 ? 'Operando' : 'Revisar'}
+          </span></article>
+        <article><div><strong>Respostas automáticas desativadas</strong>
+          <small>A IA organiza e sugere. Somente uma pessoa pode responder ou aplicar alterações comerciais.</small>
+          <small>Última mensagem recebida: {notificationStatus.lastInboundMessageAt ? formatDateTime(notificationStatus.lastInboundMessageAt) : 'nenhuma registrada'}.</small></div>
+          <span className="status-pill neutral">Assistivo</span></article>
+      </div>
+    </section>
     <section className="panel">
       <div className="panel-heading"><div><p className="eyebrow">Segurança</p><h2>Sessões ativas</h2></div><small>{sessions.length} ativa(s)</small></div>
       <div className="session-list">{sessions.map((session) => <article key={session.id}>
@@ -146,4 +181,12 @@ function processingFailureLabel(code: string): string {
   if (code.endsWith('OUTPUT_INVALID')) return 'Resposta fora do contrato esperado';
   if (code.endsWith('INPUT_INVALID')) return 'Mídia ou entrada não elegível';
   return 'Falha de processamento';
+}
+
+function whatsappStatusLabel(status: WhatsappConnection['status']): string {
+  if (status === 'disconnected') return 'desconectado';
+  if (status === 'qr_generated') return 'aguardando leitura do QR Code';
+  if (status === 'connecting') return 'conectando';
+  if (status === 'timeout') return 'tempo de conexão esgotado';
+  return 'conectado';
 }

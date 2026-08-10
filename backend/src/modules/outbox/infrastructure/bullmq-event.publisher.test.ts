@@ -46,6 +46,7 @@ test('notificação tolera lease abandonado sem transportar conteúdo', () => {
   assert.equal(options.jobId, 'event-notification');
   assert.equal(options.attempts, 12);
   assert.deepEqual(options.backoff, { type: 'fixed', delay: 30_000 });
+  assert.equal(options.delay, 60_000);
 });
 
 test('fila de notificação recebe somente IDs mínimos', () => {
@@ -81,4 +82,5 @@ test('mapeia somente marcos úteis e posterga alertas de falha', () => {
     null,
   );
   assert.equal(notificationJobOptions('failure', 'analysis_attention').delay, 600_000);
+  assert.equal(notificationJobOptions('analysis', 'analysis_completed').delay, undefined);
 });

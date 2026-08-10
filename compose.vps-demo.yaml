@@ -123,7 +123,9 @@ services:
       <<: *backend-environment
       NOTIFICATION_ADAPTER: ${NOTIFICATION_ADAPTER:-disabled}
       BARK_WEBHOOK_URL: ${BARK_WEBHOOK_URL:-}
-      BARK_NOTIFICATION_OPEN_URL: ${BARK_NOTIFICATION_OPEN_URL:-https://leadcontrol.online/conversas}
+      BARK_NOTIFICATION_OPEN_URL: ${BARK_NOTIFICATION_OPEN_URL:-https://leadcontrol.online/conversas?period=today}
+      BARK_OPERATIONAL_WEBHOOK_URL: ${BARK_OPERATIONAL_WEBHOOK_URL:-}
+      BARK_OPERATIONAL_OPEN_URL: ${BARK_OPERATIONAL_OPEN_URL:-https://leadcontrol.online/administracao}
       BARK_TIMEOUT_MS: ${BARK_TIMEOUT_MS:-10000}
       NOTIFICATION_NOT_BEFORE: ${NOTIFICATION_NOT_BEFORE:-}
 

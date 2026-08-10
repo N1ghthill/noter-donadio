@@ -350,4 +350,23 @@ describe('cliente HTTP', () => {
       expect.objectContaining({ credentials: 'include' }),
     );
   });
+
+  it('consulta o resumo protegido das notificações', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      enabled: true,
+      channel: 'bark',
+      automaticWhatsappRepliesEnabled: false,
+      lastInboundMessageAt: null,
+      lastDeliveredAt: null,
+      deliveries: { pending: 0, processing: 0, completed: 0, failed: 0 },
+    }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await api.notificationStatus();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/notifications/status',
+      expect.objectContaining({ credentials: 'include' }),
+    );
+  });
 });
