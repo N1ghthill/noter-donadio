@@ -77,8 +77,15 @@ cd "${project_directory}"
 
 if test -f .env; then
   set -a
-  # shellcheck disable=SC1091
-  source .env
+  if test "${finalize_workspace}" = "1"; then
+    # Permite reparar uma identidade antiga gravada sem aspas, sem ignorar os
+    # demais valores protegidos do ambiente.
+    # shellcheck disable=SC1090
+    source <(sed '/^ADMIN_WORKSPACE_NAME=/d; /^ADMIN_DISPLAY_NAME=/d' .env)
+  else
+    # shellcheck disable=SC1091
+    source .env
+  fi
   set +a
 fi
 
@@ -93,16 +100,20 @@ set_env_value() {
   local key="$1"
   local value="$2"
   local temporary
+  if [[ "${value}" == *$'\n'* || "${value}" == *"'"* ]]; then
+    printf 'Valor inseguro recusado para %s.\n' "${key}" >&2
+    exit 1
+  fi
   temporary="$(mktemp "${project_directory}/.env.tmp.XXXXXX")"
   awk -v key="${key}" -v value="${value}" '
     BEGIN { replaced = 0 }
     index($0, key "=") == 1 {
-      if (!replaced) print key "=" value
+      if (!replaced) print key "=\047" value "\047"
       replaced = 1
       next
     }
     { print }
-    END { if (!replaced) print key "=" value }
+    END { if (!replaced) print key "=\047" value "\047" }
   ' .env > "${temporary}"
   chmod 600 "${temporary}"
   mv "${temporary}" .env
