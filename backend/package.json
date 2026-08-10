@@ -26,24 +26,24 @@
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",
-    "@fastify/rate-limit": "^11.1.0",
+    "@fastify/rate-limit": "^11.2.0",
     "@noter/contracts": "*",
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
     "@socket.io/redis-adapter": "^8.3.0",
     "@socket.io/redis-emitter": "^5.1.0",
     "baileys": "7.0.0-rc13",
-    "bullmq": "^5.80.9",
-    "fastify": "^5.10.0",
+    "bullmq": "^5.81.3",
+    "fastify": "^5.11.2",
     "ioredis": "^5.11.1",
-    "openai": "^7.1.0",
+    "openai": "^7.4.0",
     "pg": "^8.16.0",
     "pino": "^10.3.1",
     "socket.io": "^4.8.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@types/pg": "^8.15.0",
+    "@types/pg": "^8.20.4",
     "prisma": "^7.9.1",
     "socket.io-client": "^4.8.3"
   }
