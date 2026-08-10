@@ -240,6 +240,7 @@ if test "${SKIP_BACKUP:-0}" != "1"; then
     docker compose "${compose_arguments[@]}" --profile demo --profile assistive --profile baileys --profile notifications \
       stop backend outbox realtime baileys media-download analysis transcription notification
   fi
+  SKIP_ENV_FILE=1 \
   COMPOSE_FILE="${compose_file}" \
   BACKUP_RESULT_FILE="${backup_result_file}" \
     scripts/backup-vps.sh

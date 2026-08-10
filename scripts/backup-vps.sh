@@ -9,7 +9,7 @@ snapshot_directory="${backup_directory}/${timestamp}"
 
 cd "${project_directory}"
 
-if test -f .env; then
+if test "${SKIP_ENV_FILE:-0}" != "1" && test -f .env; then
   set -a
   # shellcheck disable=SC1091
   source .env
